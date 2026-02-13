@@ -1,0 +1,69 @@
+stages:
+  - build
+  - deploy
+
+.variables_template: &variables_template
+  REGISTRY_URL: registry.hummatech.com
+  IMAGE_NAME: $REGISTRY_URL/$CI_PROJECT_PATH
+  TAG: latest
+  DOCKER_TLS_CERTDIR: ""
+
+# ================================
+# 1️⃣ Build Dev Image
+# ================================
+build_dev:
+  stage: build
+  image: docker:latest
+  variables:
+    <<: *variables_template
+  services:
+    - docker:dind
+  tags:
+    - runner-development
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - echo "🔹 Login Docker Registry"
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $REGISTRY_URL
+    - docker build -f Dockerfile.dev -t $IMAGE_NAME:$TAG .
+    - docker push $IMAGE_NAME:$TAG
+
+# ================================
+# 3️⃣ Deploy Dev (main branch only)
+# ================================
+deploy_dev:
+  stage: deploy
+  tags:
+    - runner-development-shell
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  variables:
+    <<: *variables_template
+    DEPLOY_DIR: "/home/gitlab-runner/apps/$APP_NAME"
+    SERVICE_NAME: "api-ujian"
+    CONTAINER_NAME: "api-ujian"
+  script:
+    # Pastikan folder deploy ada
+    - mkdir -p $DEPLOY_DIR
+    - sudo chown -R gitlab-runner:gitlab-runner $DEPLOY_DIR
+
+    # Copy docker-compose.yml ke folder deploy
+    - cp docker-compose-development.yml $DEPLOY_DIR/docker-compose-development.yml
+
+    # Buat file .env dari variable GitLab CI
+    # - echo "$ENV_DEVELOPMENT" > $DEPLOY_DIR/.env
+    # - cp /home/gitlab-runner/secrets/.env $DEPLOY_DIR/.env
+    - |
+      cat <<EOF > $DEPLOY_DIR/.env
+      $ENV_DEV
+      EOF
+
+    # Deploy container
+    - cd $DEPLOY_DIR
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $REGISTRY_URL
+    - docker compose -f docker-compose-development.yml pull
+    - docker compose -f docker-compose-development.yml -p $CONTAINER_NAME up -d
+    - docker exec $CONTAINER_NAME chown -R www-data:www-data storage bootstrap/cache
+    - docker exec $CONTAINER_NAME php artisan storage:link
+    - docker exec $CONTAINER_NAME php artisan migrate --force
+    - docker exec $CONTAINER_NAME php artisan optimize

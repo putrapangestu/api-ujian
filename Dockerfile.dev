@@ -1,0 +1,33 @@
+FROM php:8.2-fpm
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    git unzip libzip-dev libpng-dev libonig-dev libxml2-dev libicu-dev curl \
+    && docker-php-ext-install pdo pdo_mysql zip gd bcmatch mbstring xml intl
+
+# Workdir
+WORKDIR /var/www/html
+
+# Copy composer from official
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Copy source code
+COPY . .
+
+# Buat folder Laravel yang dibutuhkan
+RUN mkdir -p bootstrap/cache storage/framework/{sessions,cache,views} storage/logs \
+    && chmod -R 775 bootstrap/cache storage \
+    && chown -R www-data:www-data bootstrap/cache storage
+
+# Install dependencies (production only)
+RUN composer install --no-dev --optimize-autoloader
+
+# Expose port
+EXPOSE 9006
+
+# Copy PHP-FPM custom config
+RUN rm /usr/local/etc/php-fpm.d/www.conf
+COPY www.conf /usr/local/etc/php-fpm.d/www.conf
+
+# Start php-fpm
+CMD ["php-fpm", "-F", "-y", "/usr/local/etc/php-fpm.d/www.conf"]

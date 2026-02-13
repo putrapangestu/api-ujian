@@ -1,0 +1,26 @@
+services:
+  api-ujian:
+    image: registry.hummatech.com/products/wirapos/api-pos:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: api-ujian
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - /www/wwwroot/apidev-ujian.hummatech.com/storage:/var/www/html/storage
+    network_mode: "host"
+
+  nginx:
+    image: registry.hummatech.com/products/wirapos/api-pos:latest
+    container_name: nginx-ujian
+    restart: unless-stopped
+    ports:
+      - "8024:80"
+    volumes:
+      - /www/wwwroot/apidev-ujian.hummatech.com/storage:/var/www/html/storage:ro
+      - ./nginx-api-ujian:/etc/nginx/conf.d
+    depends_on:
+      - api-ujian
+    network_mode: "host"

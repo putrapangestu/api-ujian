@@ -1,0 +1,284 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Exam;
+use App\Models\Question;
+use App\Models\QuestionGroup;
+use App\Models\QuestionExam;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * ExamQuestionSelector Service Class
+ * 
+ * Service ini menangani pemilihan soal dari bank soal saat membuat ujian
+ * Menentukan nomor urut, range, dan urutan random untuk setiap siswa
+ * 
+ * @package App\Services
+ * @author Development Team
+ * @version 1.0.0
+ */
+class ExamQuestionSelectorService extends BaseService
+{
+    /**
+     * Select questions from question banks for exam
+     * 
+     * @param Exam $exam
+     * @param array $questionBanks Array of question bank selections
+     * @return array
+     */
+    public function selectQuestionsForExam(Exam $exam, array $questionBanks): array
+    {
+        return DB::transaction(function () use ($exam, $questionBanks) {
+            try {
+                $selectedQuestions = [];
+                $questionNumber = 1;
+
+                foreach ($questionBanks as $bankData) {
+                    $questionGroupId = $bankData['question_group_id'];
+                    $questionCount = $bankData['question_count'];
+                    $randomSelection = $bankData['random_selection'] ?? true;
+
+                    // Get question group
+                    $questionGroup = QuestionGroup::find($questionGroupId);
+                    if (!$questionGroup) {
+                        throw new \Exception("Question group with ID {$questionGroupId} not found");
+                    }
+
+                    // Get available questions from this group
+                    $availableQuestions = Question::where('question_group_id', $questionGroupId)
+                        ->where('is_active', true)
+                        ->whereNull('deleted_at')
+                        ->get();
+
+                    if ($availableQuestions->count() < $questionCount) {
+                        throw new \Exception("Not enough questions available in group {$questionGroup->name}. Available: {$availableQuestions->count()}, Required: {$questionCount}");
+                    }
+
+                    // Select questions
+                    if ($randomSelection) {
+                        $selectedQuestionsFromGroup = $availableQuestions->random($questionCount);
+                    } else {
+                        $selectedQuestionsFromGroup = $availableQuestions->take($questionCount);
+                    }
+
+                    // Create question_exam entries
+                    foreach ($selectedQuestionsFromGroup as $question) {
+                        QuestionExam::create([
+                            'exam_id' => $exam->id,
+                            'question_id' => $question->id,
+                            'question_group_id' => $questionGroupId,
+                            'question_number' => $questionNumber,
+                            'question_order' => $questionNumber, // Will be randomized per student later
+                            'is_active' => true,
+                        ]);
+
+                        $selectedQuestions[] = [
+                            'question_id' => $question->id,
+                            'question_group_id' => $questionGroupId,
+                            'question_number' => $questionNumber,
+                            'question' => $question->question_text,
+                            'group_name' => $questionGroup->name,
+                        ];
+
+                        $questionNumber++;
+                    }
+                }
+
+                // Update exam total questions
+                $exam->update(['total_questions' => count($selectedQuestions)]);
+
+                return $this->successResponse([
+                    'exam_id' => $exam->id,
+                    'total_questions' => count($selectedQuestions),
+                    'selected_questions' => $selectedQuestions,
+                    'question_banks' => $questionBanks,
+                ], 'Questions successfully selected for exam');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Error selecting questions for exam: ' . $e->getMessage());
+                return $this->errorResponse('Failed to select questions: ' . $e->getMessage());
+            }
+        });
+    }
+
+    /**
+     * Generate random question order for student
+     * 
+     * @param int $examId
+     * @param int $studentId
+     * @return array
+     */
+    public function generateRandomQuestionOrder(int $examId, int $studentId): array
+    {
+        try {
+            // Get all questions for this exam
+            $examQuestions = QuestionExam::where('exam_id', $examId)
+                ->where('is_active', true)
+                ->with(['question', 'questionGroup'])
+                ->get();
+
+            if ($examQuestions->isEmpty()) {
+                return $this->errorResponse('No questions found for this exam');
+            }
+
+            // Generate random order
+            $shuffledQuestions = $examQuestions->shuffle();
+            $questionOrderMap = [];
+
+            foreach ($shuffledQuestions as $index => $examQuestion) {
+                // Create a unique order for this student
+                $questionOrderMap[$examQuestion->id] = $index + 1;
+            }
+
+            // Log the randomization for audit purposes
+            Log::info('Question order generated for student', [
+                'exam_id' => $examId,
+                'student_id' => $studentId,
+                'question_count' => count($questionOrderMap),
+                'timestamp' => now()->toISOString(),
+            ]);
+
+            return $this->successData([
+                'exam_id' => $examId,
+                'student_id' => $studentId,
+                'question_order' => $questionOrderMap,
+                'total_questions' => count($questionOrderMap),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error generating random question order: ' . $e->getMessage());
+            return $this->errorResponse('Failed to generate question order: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get exam questions with proper ordering for student
+     * 
+     * @param int $examId
+     * @param int $studentId
+     * @return array
+     */
+    public function getExamQuestionsForStudent(int $examId, int $studentId): array
+    {
+        try {
+            // Generate random order for this student if not exists
+            $orderResult = $this->generateRandomQuestionOrder($examId, $studentId);
+            
+            if (!$orderResult['success']) {
+                return $orderResult;
+            }
+
+            $questionOrderMap = $orderResult['data']['question_order'];
+
+            // Get questions with proper ordering
+            $questions = QuestionExam::where('exam_id', $examId)
+                ->where('is_active', true)
+                ->with(['question', 'questionGroup'])
+                ->get()
+                ->sortBy(function ($examQuestion) use ($questionOrderMap) {
+                    return $questionOrderMap[$examQuestion->id] ?? 999;
+                })
+                ->values();
+
+            // Format questions for response
+            $formattedQuestions = $questions->map(function ($examQuestion, $index) use ($questionOrderMap) {
+                return [
+                    'id' => $examQuestion->id,
+                    'question_number' => $examQuestion->question_number,
+                    'question_order' => $questionOrderMap[$examQuestion->id] ?? ($index + 1),
+                    'question_text' => $examQuestion->question->question_text,
+                    'question_type' => $examQuestion->question->question_type,
+                    'score' => $examQuestion->question->score,
+                    'weight' => $examQuestion->weight,
+                    'group_name' => $examQuestion->questionGroup->name,
+                    'options' => $examQuestion->question->question_type === 'multiple_choice' 
+                        ? $examQuestion->question->options->map(function ($option) {
+                            return [
+                                'id' => $option->id,
+                                'option_text' => $option->option_text,
+                            ];
+                        })
+                        : [],
+                ];
+            });
+
+            return $this->successData([
+                'exam_id' => $examId,
+                'student_id' => $studentId,
+                'questions' => $formattedQuestions,
+                'total_questions' => count($formattedQuestions),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting exam questions for student: ' . $e->getMessage());
+            return $this->errorResponse('Failed to get exam questions: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Validate question bank selection
+     * 
+     * @param array $questionBanks
+     * @return array
+     */
+    public function validateQuestionBankSelection(array $questionBanks): array
+    {
+        try {
+            $errors = [];
+            $totalQuestions = 0;
+
+            foreach ($questionBanks as $index => $bankData) {
+                $questionGroupId = $bankData['question_group_id'] ?? null;
+                $questionCount = $bankData['question_count'] ?? 0;
+
+                if (!$questionGroupId) {
+                    $errors[] = "Question group ID is required for bank selection " . ($index + 1);
+                    continue;
+                }
+
+                if ($questionCount <= 0) {
+                    $errors[] = "Question count must be greater than 0 for bank selection " . ($index + 1);
+                    continue;
+                }
+
+                // Check if question group exists
+                $questionGroup = QuestionGroup::find($questionGroupId);
+                if (!$questionGroup) {
+                    $errors[] = "Question group with ID {$questionGroupId} not found";
+                    continue;
+                }
+
+                // Check if question group has enough questions
+                $availableQuestions = Question::where('question_group_id', $questionGroupId)
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at')
+                    ->count();
+
+                if ($availableQuestions < $questionCount) {
+                    $errors[] = "Question group '{$questionGroup->name}' only has {$availableQuestions} questions, but {$questionCount} requested";
+                }
+
+                $totalQuestions += $questionCount;
+            }
+
+            if (empty($errors)) {
+                return $this->successData([
+                    'total_questions' => $totalQuestions,
+                    'question_banks' => $questionBanks,
+                    'is_valid' => true,
+                ], 'Question bank selection is valid');
+            }
+
+            return $this->errorData([
+                'errors' => $errors,
+                'is_valid' => false,
+            ], 'Question bank selection validation failed');
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Validation error: ' . $e->getMessage());
+        }
+    }
+}

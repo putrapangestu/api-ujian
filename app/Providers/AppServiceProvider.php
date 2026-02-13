@@ -4,6 +4,15 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
+/**
+ * Application Service Provider
+ * 
+ * Provider utama untuk aplikasi
+ * 
+ * @package App\Providers
+ * @author Development Team
+ * @version 1.0.0
+ */
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -11,7 +20,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register Repository Service Provider
+        $this->app->register(RepositoryServiceProvider::class);
     }
 
     /**

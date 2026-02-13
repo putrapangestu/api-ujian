@@ -1,0 +1,159 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ExamController;
+use App\Http\Controllers\Api\StudentGroupController;
+use App\Http\Controllers\Api\StudentController;
+use App\Http\Controllers\Api\QuestionCategoryController;
+use App\Http\Controllers\Api\QuestionGroupController;
+use App\Http\Controllers\Api\QuestionController;
+use App\Http\Controllers\Api\QuestionBankController;
+use App\Http\Controllers\Api\ExamMonitoringController;
+use App\Http\Controllers\Api\ExamRollingController;
+
+/**
+ * API Routes
+ *
+ * File ini berisi semua routes untuk API endpoints
+ *
+ * @package Routes
+ * @author Development Team
+ * @version 1.0.0
+ */
+
+// Public routes
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register'])->name('auth.register');
+    Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
+});
+
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
+    // Auth routes
+    Route::prefix('auth')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
+        Route::get('/profile', [AuthController::class, 'profile'])->name('auth.profile');
+        Route::put('/profile', [AuthController::class, 'updateProfile'])->name('auth.update-profile');
+    });
+
+    // Exam routes
+    Route::prefix('exams')->group(function () {
+        Route::get('/', [ExamController::class, 'index'])->name('exams.index');
+        Route::get('/{id}', [ExamController::class, 'show'])->name('exams.show');
+        Route::post('/{id}/start', [ExamController::class, 'startExam'])->name('exams.start');
+        Route::post('/{id}/select-questions', [ExamController::class, 'selectQuestionsFromBanks'])->name('exams.select-questions');
+        Route::post('/{id}/questions-for-student', [ExamController::class, 'getExamQuestionsForStudent'])->name('exams.questions-for-student');
+        Route::post('/validate-question-banks', [ExamController::class, 'validateQuestionBankSelection'])->name('exams.validate-question-banks');
+    });
+
+    // Student Group routes
+    Route::prefix('student-groups')->group(function () {
+        Route::get('/', [StudentGroupController::class, 'index'])->name('student-groups.index');
+        Route::get('/{id}', [StudentGroupController::class, 'show'])->name('student-groups.show');
+        Route::post('/roll-students', [StudentGroupController::class, 'rollStudents'])->name('student-groups.roll');
+    });
+
+    // Student routes
+    Route::prefix('students')->group(function () {
+        Route::get('/', [StudentController::class, 'index'])->name('students.index');
+        Route::get('/{id}', [StudentController::class, 'show'])->name('students.show');
+        Route::post('/import', [StudentController::class, 'import'])->name('students.import');
+        Route::get('/export/{groupId}', [StudentController::class, 'export'])->name('students.export');
+    });
+
+    // Question Category routes
+    Route::prefix('question-categories')->group(function () {
+        Route::get('/', [QuestionCategoryController::class, 'index'])->name('question-categories.index');
+        Route::get('/{id}', [QuestionCategoryController::class, 'show'])->name('question-categories.show');
+    });
+
+    // Question Group routes
+    Route::prefix('question-groups')->group(function () {
+        Route::get('/', [QuestionGroupController::class, 'index'])->name('question-groups.index');
+        Route::get('/{id}', [QuestionGroupController::class, 'show'])->name('question-groups.show');
+        Route::post('/import', [QuestionGroupController::class, 'import'])->name('question-groups.import');
+        Route::get('/export', [QuestionGroupController::class, 'export'])->name('question-groups.export');
+    });
+
+    // Question routes
+    Route::prefix('questions')->group(function () {
+        Route::post('/', [QuestionController::class, 'store'])->name('questions.store');
+        Route::put('/{id}', [QuestionController::class, 'update'])->name('questions.update');
+        Route::post('/import', [QuestionController::class, 'import'])->name('questions.import');
+    });
+
+    // Question Bank routes
+    Route::prefix('question-bank')->group(function () {
+        Route::post('/import', [QuestionBankController::class, 'import'])->name('question-bank.import');
+        Route::get('/export', [QuestionBankController::class, 'export'])->name('question-bank.export');
+    });
+
+    // Exam Monitoring routes
+    Route::prefix('exam-monitoring')->group(function () {
+        Route::post('/record-action', [ExamMonitoringController::class, 'recordAction'])->name('exam-monitoring.record');
+        Route::get('/realtime/{examId}', [ExamMonitoringController::class, 'getRealtimeMonitoring'])->name('exam-monitoring.realtime');
+        Route::get('/student/{studentId}/{examId}', [ExamMonitoringController::class, 'getStudentMonitoring'])->name('exam-monitoring.student');
+        Route::get('/summary/{examId}', [ExamMonitoringController::class, 'getExamSummary'])->name('exam-monitoring.summary');
+        Route::get('/by-group/{examId}/{questionGroupId}', [ExamMonitoringController::class, 'getMonitoringByQuestionGroup'])->name('exam-monitoring.by-group');
+        Route::get('/by-category/{examId}', [ExamMonitoringController::class, 'getMonitoringByCategory'])->name('exam-monitoring.by-category');
+    });
+
+    // Exam Rolling routes
+    Route::prefix('exam-rolling')->group(function () {
+        Route::post('/roll-student', [ExamRollingController::class, 'rollStudent'])->name('exam-rolling.roll-student');
+        Route::post('/roll-multiple', [ExamRollingController::class, 'rollMultipleStudents'])->name('exam-rolling.roll-multiple');
+        Route::get('/rollable-students/{examId}', [ExamRollingController::class, 'getRollableStudents'])->name('exam-rolling.rollable-students');
+        Route::post('/validate', [ExamRollingController::class, 'validateRolling'])->name('exam-rolling.validate');
+        Route::post('/roll-student-background', [ExamRollingController::class, 'rollStudentWithBackgroundJob'])->name('exam-rolling.roll-student-background');
+        Route::post('/roll-multiple-background', [ExamRollingController::class, 'rollMultipleStudentsWithBackgroundJobs'])->name('exam-rolling.roll-multiple-background');
+        Route::post('/process-group/{examId}', [ExamRollingController::class, 'processExamForGroup'])->name('exam-rolling.process-group');
+    });
+
+    // Exam Question Selection routes
+    Route::prefix('exam-questions')->group(function () {
+        Route::post('/{examId}/select-from-banks', [ExamController::class, 'selectQuestionsFromBanks'])->name('exam-questions.select-from-banks');
+        Route::post('/validate-banks', [ExamController::class, 'validateQuestionBankSelection'])->name('exam-questions.validate-banks');
+        Route::post('/{examId}/for-student', [ExamController::class, 'getExamQuestionsForStudent'])->name('exam-questions.for-student');
+    });
+
+    // Admin routes
+    Route::middleware('admin')->prefix('admin')->group(function () {
+        // Exam management
+        Route::post('/exams', [ExamController::class, 'store'])->name('admin.exams.store');
+        Route::put('/exams/{id}', [ExamController::class, 'update'])->name('admin.exams.update');
+        Route::delete('/exams/{id}', [ExamController::class, 'destroy'])->name('admin.exams.destroy');
+
+        // Student Group management
+        Route::post('/student-groups', [StudentGroupController::class, 'store'])->name('admin.student-groups.store');
+        Route::put('/student-groups/{id}', [StudentGroupController::class, 'update'])->name('admin.student-groups.update');
+        Route::delete('/student-groups/{id}', [StudentGroupController::class, 'destroy'])->name('admin.student-groups.destroy');
+
+        // Student management
+        Route::post('/students', [StudentController::class, 'store'])->name('admin.students.store');
+        Route::put('/students/{id}', [StudentController::class, 'update'])->name('admin.students.update');
+        Route::delete('/students/{id}', [StudentController::class, 'destroy'])->name('admin.students.destroy');
+
+        // Question Category management
+        Route::post('/question-categories', [QuestionCategoryController::class, 'store'])->name('admin.question-categories.store');
+        Route::put('/question-categories/{id}', [QuestionCategoryController::class, 'update'])->name('admin.question-categories.update');
+        Route::delete('/question-categories/{id}', [QuestionCategoryController::class, 'destroy'])->name('admin.question-categories.destroy');
+
+        // Question Group management
+        Route::post('/question-groups', [QuestionGroupController::class, 'store'])->name('admin.question-groups.store');
+        Route::put('/question-groups/{id}', [QuestionGroupController::class, 'update'])->name('admin.question-groups.update');
+        Route::delete('/question-groups/{id}', [QuestionGroupController::class, 'destroy'])->name('admin.question-groups.destroy');
+    });
+});
+
+// Test route
+Route::get('/test', function () {
+    return response()->json([
+        'message' => 'API is working!',
+        'timestamp' => now()->toDateTimeString()
+    ]);
+});
+
+// Include Socket.IO and testing routes
+require __DIR__.'/socket-io.php';

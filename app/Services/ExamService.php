@@ -1,0 +1,230 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Exam;
+use App\Models\UserExam;
+use App\Repositories\ExamRepositoryInterface;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Exam Service Class
+ *
+ * Service ini menangani semua operasi terkait ujian
+ * Menggunakan database transaction untuk operasi yang melibatkan multiple tables
+ *
+ * @package App\Services
+ * @author Development Team
+ * @version 1.0.0
+ */
+class ExamService extends BaseService
+{
+    /**
+     * @var ExamRepositoryInterface
+     */
+    protected ExamRepositoryInterface $examRepository;
+
+    /**
+     * ExamService constructor
+     *
+     * @param ExamRepositoryInterface $examRepository
+     */
+    public function __construct(ExamRepositoryInterface $examRepository)
+    {
+        $this->examRepository = $examRepository;
+    }
+
+    /**
+     * Get all exams
+     *
+     * @param array $filters
+     * @return array
+     */
+    public function getAllExams(array $filters = []): array
+    {
+        try {
+            $exams = $this->examRepository->getWithQuestionCount();
+
+            return $this->successResponse($exams, 'Daftar ujian berhasil diambil');
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengambil daftar ujian: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get exam by ID
+     *
+     * @param int $id
+     * @return array
+     */
+    public function getExamById(int $id): array
+    {
+        try {
+            $exam = $this->examRepository->find($id, ['questions']);
+
+            if (!$exam) {
+                return $this->errorResponse('Ujian tidak ditemukan', null, 404);
+            }
+
+            return $this->successResponse($exam, 'Detail ujian berhasil diambil');
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengambil detail ujian: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create new exam
+     *
+     * @param array $data Validated data from request
+     * @return array
+     */
+    public function createExam(array $data): array
+    {
+        return DB::transaction(function () use ($data) {
+            try {
+                // Create exam
+                $exam = $this->examRepository->create($data);
+
+                // Attach question groups if provided
+                if (isset($data['question_groups']) && is_array($data['question_groups'])) {
+                    $exam->questionGroups()->attach($data['question_groups']);
+                }
+
+                return $this->successResponse($exam->load('questionGroups'), 'Ujian berhasil dibuat', 201);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return $this->errorResponse('Gagal membuat ujian: ' . $e->getMessage());
+            }
+        });
+    }
+
+    /**
+     * Update exam
+     *
+     * @param int $id
+     * @param array $data Validated data from request
+     * @return array
+     */
+    public function updateExam(int $id, array $data): array
+    {
+        return DB::transaction(function () use ($id, $data) {
+            try {
+                // Check if exam exists
+                $exam = $this->examRepository->find($id);
+                if (!$exam) {
+                    return $this->errorResponse('Ujian tidak ditemukan', null, 404);
+                }
+
+                // Update exam
+                $updated = $this->examRepository->update($id, $data);
+
+                if (!$updated) {
+                    return $this->errorResponse('Gagal update ujian');
+                }
+
+                // Update question groups if provided
+                if (isset($data['question_groups']) && is_array($data['question_groups'])) {
+                    $exam->questionGroups()->sync($data['question_groups']);
+                }
+
+                // Get updated exam with relationships
+                $updatedExam = $this->examRepository->find($id, ['questionGroups']);
+
+                return $this->successResponse($updatedExam, 'Ujian berhasil diupdate');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return $this->errorResponse('Gagal update ujian: ' . $e->getMessage());
+            }
+        });
+    }
+
+    /**
+     * Delete exam
+     *
+     * @param int $id
+     * @return array
+     */
+    public function deleteExam(int $id): array
+    {
+        return DB::transaction(function () use ($id) {
+            try {
+                // Check if exam exists
+                $exam = $this->examRepository->find($id);
+                if (!$exam) {
+                    return $this->errorResponse('Ujian tidak ditemukan', null, 404);
+                }
+
+                // Delete exam
+                $deleted = $this->examRepository->delete($id);
+
+                if (!$deleted) {
+                    return $this->errorResponse('Gagal menghapus ujian');
+                }
+
+                return $this->successResponse(null, 'Ujian berhasil dihapus');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return $this->errorResponse('Gagal menghapus ujian: ' . $e->getMessage());
+            }
+        });
+    }
+
+    /**
+     * Start exam for user
+     *
+     * @param int $examId
+     * @param int $userId
+     * @return array
+     */
+    public function startExam(int $examId, int $userId): array
+    {
+        return DB::transaction(function () use ($examId, $userId) {
+            try {
+                // Check if exam exists
+                $exam = $this->examRepository->find($examId);
+                if (!$exam) {
+                    return $this->errorResponse('Ujian tidak ditemukan', null, 404);
+                }
+
+                // Check if exam is available
+                if (!$exam->isAvailable()) {
+                    return $this->errorResponse('Ujian tidak tersedia saat ini');
+                }
+
+                // Check if user already has active exam
+                $existingExam = UserExam::where('user_id', $userId)
+                    ->where('exam_id', $examId)
+                    ->whereIn('status', ['in_progress', 'completed'])
+                    ->first();
+
+                if ($existingExam) {
+                    return $this->errorResponse('Anda sudah pernah mengikuti ujian ini');
+                }
+
+                // Create user exam
+                $userExam = UserExam::create([
+                    'user_id' => $userId,
+                    'exam_id' => $examId,
+                    'start_time' => Carbon::now(),
+                    'status' => UserExam::STATUS_IN_PROGRESS,
+                ]);
+
+                return $this->successResponse([
+                    'user_exam' => $userExam,
+                    'exam' => $exam,
+                    'end_time' => Carbon::now()->addMinutes($exam->duration)
+                ], 'Ujian berhasil dimulai');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return $this->errorResponse('Gagal memulai ujian: ' . $e->getMessage());
+            }
+        });
+    }
+}

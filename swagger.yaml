@@ -1,0 +1,712 @@
+openapi: 3.0.3
+info:
+  title: API Ujian CPNS
+  description: |
+    API Ujian CPNS adalah sistem manajemen ujian online yang komprehensif untuk seleksi CPNS.
+    
+    Fitur utama:
+    - Manajemen siswa dan grup
+    - Bank soal dengan kategori
+    - Pemilihan soal dari bank soal
+    - Rolling student dengan background job
+    - Random question order untuk setiap student
+    - Real-time monitoring dengan Socket.IO
+    - Import/export data
+    - Soft delete untuk semua data
+    
+    ## Autentikasi
+    API ini menggunakan Bearer Token untuk autentikasi. Tambahkan header:
+    ```
+    Authorization: Bearer YOUR_TOKEN
+    ```
+    
+    ## Response Format
+    Semua response mengikuti format standar:
+    ```json
+    {
+      "success": true/false,
+      "message": "Response message",
+      "data": {},
+      "errors": {}
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: Development Team
+    email: dev@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000/api
+    description: Development server
+  - url: https://api.ujian-cpns.com/api
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+paths:
+  # Authentication Endpoints
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Register a new user account
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - password_confirmation
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                password:
+                  type: string
+                  format: password
+                  example: password123
+                password_confirmation:
+                  type: string
+                  format: password
+                  example: password123
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate user and get access token
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                password:
+                  type: string
+                  format: password
+                  example: password123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Revoke user access token
+      operationId: logoutUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get user profile
+      description: Get current authenticated user profile
+      operationId: getUserProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+
+  # Exam Endpoints
+  /exams:
+    get:
+      tags:
+        - Exams
+      summary: Get all exams
+      description: Retrieve all exams with pagination
+      operationId: getExams
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            example: 1
+        - name: per_page
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            example: 10
+      responses:
+        '200':
+          description: Exams retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamListResponse'
+
+  /exams/{id}:
+    get:
+      tags:
+        - Exams
+      summary: Get exam by ID
+      description: Retrieve exam details by ID
+      operationId: getExamById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID of the exam
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Exam retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamResponse'
+        '404':
+          description: Exam not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /exams/{examId}/select-questions:
+    post:
+      tags:
+        - Exam Questions
+      summary: Select questions from question banks
+      description: Select questions from question banks for an exam
+      operationId: selectQuestionsFromBanks
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: examId
+          in: path
+          description: ID of the exam
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionBankSelectionRequest'
+      responses:
+        '200':
+          description: Questions selected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionSelectionResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /exams/validate-question-banks:
+    post:
+      tags:
+        - Exam Questions
+      summary: Validate question bank selection
+      description: Validate question bank selection before creating exam
+      operationId: validateQuestionBankSelection
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionBankSelectionRequest'
+      responses:
+        '200':
+          description: Validation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+
+  # Exam Rolling Endpoints
+  /exam-rolling/roll-student:
+    post:
+      tags:
+        - Exam Rolling
+      summary: Roll student to different group
+      description: Roll student to different group during exam
+      operationId: rollStudent
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_exam_id
+                - new_group_id
+              properties:
+                user_exam_id:
+                  type: integer
+                  example: 1
+                new_group_id:
+                  type: integer
+                  example: 2
+      responses:
+        '200':
+          description: Student rolled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RollStudentResponse'
+
+  /exam-rolling/roll-student-background:
+    post:
+      tags:
+        - Exam Rolling
+      summary: Roll student with background job
+      description: Roll student to different group using background job processing
+      operationId: rollStudentWithBackgroundJob
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_exam_id
+                - new_group_id
+              properties:
+                user_exam_id:
+                  type: integer
+                  example: 1
+                new_group_id:
+                  type: integer
+                  example: 2
+      responses:
+        '200':
+          description: Background job dispatched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackgroundJobResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Base Response Schemas
+    BaseResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          oneOf:
+            - type: object
+            - type: array
+        errors:
+          type: object
+          nullable: true
+
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            message:
+              type: string
+              example: Operation successful
+
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: Operation failed
+            errors:
+              type: object
+              example: {}
+
+    ValidationError:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            errors:
+              type: object
+              example:
+                field_name: ["Field is required"]
+
+    # Authentication Schemas
+    AuthResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+                token:
+                  type: string
+                  example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+
+    UserProfileResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/User'
+
+    # Exam Schemas
+    Exam:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Ujian CPNS Tahun 2024"
+        description:
+          type: string
+          example: "Ujian seleksi CPNS untuk formasi tahun 2024"
+        duration:
+          type: integer
+          example: 120
+          description: Duration in minutes
+        total_questions:
+          type: integer
+          example: 100
+        passing_score:
+          type: integer
+          example: 70
+        start_date:
+          type: string
+          format: date-time
+          example: "2024-02-01T00:00:00Z"
+        end_date:
+          type: string
+          format: date-time
+          example: "2024-02-28T23:59:59Z"
+        status:
+          type: string
+          enum: [active, inactive, draft]
+          example: active
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ExamResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Exam'
+
+    ExamListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Exam'
+
+    # Question Bank Schemas
+    QuestionBankSelectionRequest:
+      type: object
+      required:
+        - question_banks
+      properties:
+        question_banks:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required:
+              - question_group_id
+              - question_count
+            properties:
+              question_group_id:
+                type: integer
+                example: 1
+              question_count:
+                type: integer
+                example: 10
+                description: Number of questions to select from this group
+              random_selection:
+                type: boolean
+                example: true
+                default: true
+
+    QuestionSelectionResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                exam_id:
+                  type: integer
+                  example: 1
+                total_questions:
+                  type: integer
+                  example: 30
+                selected_questions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      question_id:
+                        type: integer
+                      question_group_id:
+                        type: integer
+                      question_number:
+                        type: integer
+                      question:
+                        type: string
+                      group_name:
+                        type: string
+
+    ValidationResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                total_questions:
+                  type: integer
+                  example: 30
+                question_banks:
+                  type: array
+                  items:
+                    type: object
+                is_valid:
+                  type: boolean
+                  example: true
+
+    # Exam Rolling Schemas
+    RollStudentResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                student:
+                  $ref: '#/components/schemas/Student'
+                old_group:
+                  $ref: '#/components/schemas/StudentGroup'
+                new_group:
+                  $ref: '#/components/schemas/StudentGroup'
+                user_exam_id:
+                  type: integer
+                  example: 1
+                exam_id:
+                  type: integer
+                  example: 1
+
+    BackgroundJobResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                student:
+                  $ref: '#/components/schemas/Student'
+                old_group:
+                  $ref: '#/components/schemas/StudentGroup'
+                new_group:
+                  $ref: '#/components/schemas/StudentGroup'
+                background_job_dispatched:
+                  type: boolean
+                  example: true
+
+    # User Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        role:
+          type: string
+          enum: [admin, user]
+          example: user
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # Student Schemas
+    Student:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nisn:
+          type: string
+          example: "1234567890"
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        phone:
+          type: string
+          example: "081234567890"
+        address:
+          type: string
+          example: "Jl. Example No. 123"
+        group_id:
+          type: integer
+          example: 1
+        status:
+          type: string
+          enum: [active, inactive]
+          example: active
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # Student Group Schemas
+    StudentGroup:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Kelas A"
+        description:
+          type: string
+          example: "Kelas unggulan"
+        code:
+          type: string
+          example: "KLS-A"
+        max_students:
+          type: integer
+          example: 50
+        status:
+          type: string
+          enum: [active, inactive, draft]
+          example: active
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time

@@ -1,0 +1,234 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Question;
+use App\Models\QuestionOption;
+use App\Repositories\QuestionRepositoryInterface;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Question Service Class
+ * 
+ * Service ini menangani semua operasi terkait soal dan opsi jawaban
+ * 
+ * @package App\Services
+ * @author Development Team
+ * @version 1.0.0
+ */
+class QuestionService extends BaseService
+{
+    /**
+     * @var QuestionRepositoryInterface
+     */
+    protected QuestionRepositoryInterface $questionRepository;
+
+    /**
+     * QuestionService constructor
+     * 
+     * @param QuestionRepositoryInterface $questionRepository
+     */
+    public function __construct(QuestionRepositoryInterface $questionRepository)
+    {
+        $this->questionRepository = $questionRepository;
+    }
+
+    /**
+     * Create new question with options
+     * 
+     * @param array $data Validated data from QuestionRequest
+     * @return array
+     */
+    public function createQuestion(array $data): array
+    {
+        return DB::transaction(function () use ($data) {
+            try {
+                // Create question
+                $question = Question::create($data);
+
+                // Create options for multiple choice questions
+                if ($question->question_type === 'multiple_choice' && isset($data['options'])) {
+                    foreach ($data['options'] as $optionData) {
+                        QuestionOption::create([
+                            'question_id' => $question->id,
+                            'option_text' => $optionData['text'],
+                            'is_correct' => $optionData['is_correct'],
+                            'score' => $optionData['score'],
+                            'option_label' => $optionData['label'] ?? null,
+                        ]);
+                    }
+                }
+
+                // Load relationships
+                $question->load(['options', 'category', 'questionGroup']);
+
+                return $this->successResponse($question, 'Soal berhasil dibuat', 201);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return $this->errorResponse('Gagal membuat soal: ' . $e->getMessage());
+            }
+        });
+    }
+
+    /**
+     * Update question with options
+     * 
+     * @param int $id
+     * @param array $data Validated data from QuestionRequest
+     * @return array
+     */
+    public function updateQuestion(int $id, array $data): array
+    {
+        return DB::transaction(function () use ($id, $data) {
+            try {
+                // Find question
+                $question = Question::find($id);
+                if (!$question) {
+                    return $this->errorResponse('Soal tidak ditemukan', null, 404);
+                }
+
+                // Update question
+                $question->update($data);
+
+                // Update options for multiple choice questions
+                if ($question->question_type === 'multiple_choice' && isset($data['options'])) {
+                    // Delete existing options
+                    $question->options()->delete();
+
+                    // Create new options
+                    foreach ($data['options'] as $optionData) {
+                        QuestionOption::create([
+                            'question_id' => $question->id,
+                            'option_text' => $optionData['text'],
+                            'is_correct' => $optionData['is_correct'],
+                            'score' => $optionData['score'],
+                            'option_label' => $optionData['label'] ?? null,
+                        ]);
+                    }
+                }
+
+                // Load relationships
+                $question->load(['options', 'category', 'questionGroup']);
+
+                return $this->successResponse($question, 'Soal berhasil diupdate');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return $this->errorResponse('Gagal update soal: ' . $e->getMessage());
+            }
+        });
+    }
+
+    /**
+     * Import questions from file
+     * 
+     * @param \Illuminate\Http\UploadedFile $file
+     * @param int $examId
+     * @param int|null $questionGroupId
+     * @return array
+     */
+    public function importQuestions($file, int $examId, ?int $questionGroupId = null): array
+    {
+        return DB::transaction(function () use ($file, $examId, $questionGroupId) {
+            try {
+                // Validate exam
+                $exam = Exam::find($examId);
+                if (!$exam) {
+                    return $this->errorResponse('Ujian tidak ditemukan', null, 404);
+                }
+
+                // Process file
+                $filePath = $file->store('temp');
+                $fileFullPath = storage_path('app/' . $filePath);
+
+                // Read Excel file
+                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($fileFullPath);
+                $worksheet = $spreadsheet->getActiveSheet();
+                $rows = $worksheet->toArray();
+
+                // Remove header row
+                array_shift($rows);
+
+                $questions = [];
+                $errors = [];
+                $rowNumber = 1;
+
+                foreach ($rows as $row) {
+                    $rowNumber++;
+
+                    // Validasi row data
+                    if (count($row) < 6) {
+                        $errors[] = "Baris $rowNumber: Data tidak lengkap";
+                        continue;
+                    }
+
+                    $questionText = trim($row[0]);
+                    $questionType = trim($row[1]);
+                    $categoryId = trim($row[2]);
+                    $score = trim($row[3]);
+                    $correctAnswer = trim($row[4]);
+                    $options = trim($row[5]);
+
+                    if (empty($questionText) || empty($questionType)) {
+                        $errors[] = "Baris $rowNumber: Teks soal dan tipe soal wajib diisi";
+                        continue;
+                    }
+
+                    // Validasi tipe soal
+                    if (!in_array($questionType, ['multiple_choice', 'essay', 'true_false'])) {
+                        $errors[] = "Baris $rowNumber: Tipe soal tidak valid";
+                        continue;
+                    }
+
+                    // Parse options untuk multiple choice
+                    $optionsData = [];
+                    if ($questionType === 'multiple_choice' && !empty($options)) {
+                        $optionTexts = explode('|', $options);
+                        foreach ($optionTexts as $index => $optionText) {
+                            $optionsData[] = [
+                                'text' => trim($optionText),
+                                'is_correct' => trim($optionText) === $correctAnswer,
+                                'score' => trim($optionText) === $correctAnswer ? $score : 0,
+                                'label' => chr(65 + $index), // A, B, C, D
+                            ];
+                        }
+                    }
+
+                    $questionData = [
+                        'exam_id' => $examId,
+                        'question_group_id' => $questionGroupId,
+                        'category_id' => $categoryId,
+                        'question_text' => $questionText,
+                        'question_type' => $questionType,
+                        'score' => $score,
+                        'correct_answer' => $correctAnswer,
+                        'options' => $optionsData,
+                    ];
+
+                    $result = $this->createQuestion($questionData);
+                    
+                    if ($result['success']) {
+                        $questions[] = $result['data'];
+                    } else {
+                        $errors[] = "Baris $rowNumber: " . $result['message'];
+                    }
+                }
+
+                // Clean up file
+                \Illuminate\Support\Facades\Storage::delete($filePath);
+
+                return $this->successResponse([
+                    'imported' => $questions,
+                    'errors' => $errors,
+                    'total_imported' => count($questions),
+                    'total_errors' => count($errors)
+                ], 'Import soal selesai');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return $this->errorResponse('Gagal import soal: ' . $e->getMessage());
+            }
+        });
+    }
+}

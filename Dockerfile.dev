@@ -23,7 +23,7 @@ RUN mkdir -p bootstrap/cache storage/framework/{sessions,cache,views} storage/lo
 RUN composer install --no-dev --optimize-autoloader
 
 # Expose port
-EXPOSE 9006
+EXPOSE 9008
 
 # Copy PHP-FPM custom config
 RUN rm /usr/local/etc/php-fpm.d/www.conf

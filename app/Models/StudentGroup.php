@@ -2,20 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * StudentGroup Model
- * 
+ *
  * Model ini merepresentasikan tabel student_groups dalam database
  * Digunakan untuk management grup siswa
- * 
+ *
  * @package App\Models
  * @author Development Team
  * @version 1.0.0
- * 
+ *
  * @property int $id
  * @property string $name
  * @property string $description
@@ -27,7 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class StudentGroup extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasUuids;
 
     /**
      * Status constants
@@ -61,7 +62,7 @@ class StudentGroup extends Model
 
     /**
      * Get students in this group
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function students()
@@ -71,7 +72,7 @@ class StudentGroup extends Model
 
     /**
      * Get exams assigned to this group
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
     public function exams()
@@ -83,7 +84,7 @@ class StudentGroup extends Model
 
     /**
      * Check if group is active
-     * 
+     *
      * @return bool
      */
     public function isActive(): bool
@@ -93,7 +94,7 @@ class StudentGroup extends Model
 
     /**
      * Get current student count
-     * 
+     *
      * @return int
      */
     public function getCurrentStudentCount(): int
@@ -103,7 +104,7 @@ class StudentGroup extends Model
 
     /**
      * Check if group has available slots
-     * 
+     *
      * @return bool
      */
     public function hasAvailableSlots(): bool
@@ -113,7 +114,7 @@ class StudentGroup extends Model
 
     /**
      * Get available slots
-     * 
+     *
      * @return int
      */
     public function getAvailableSlots(): int

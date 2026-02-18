@@ -6,9 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Migration untuk tabel exams
- * 
+ *
  * Migration ini membuat tabel exams untuk menyimpan data ujian
- * 
+ *
  * @package Database\Migrations
  * @author Development Team
  * @version 1.0.0
@@ -21,15 +21,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('exams', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('title');
             $table->text('description')->nullable();
             $table->integer('duration'); // dalam menit
             $table->integer('total_questions')->default(0);
             $table->integer('passing_score')->default(70); // nilai kelulusan
             $table->timestamps();
-            
-            $table->index('title');
+            $table->softDeletes();
         });
     }
 

@@ -2,20 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * QuestionExam Model
- * 
+ *
  * Model ini merepresentasikan tabel question_exam dalam database
  * Digunakan untuk menyimpan soal yang dipilih dari bank soal untuk ujian
- * 
+ *
  * @package App\Models
  * @author Development Team
  * @version 1.0.0
- * 
+ *
  * @property int $id
  * @property int $exam_id
  * @property int $question_id
@@ -26,14 +27,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
- * 
+ *
  * @property Exam $exam
  * @property Question $question
  * @property QuestionGroup $questionGroup
  */
 class QuestionExam extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasUuids;
 
     /**
      * The table associated with the model.

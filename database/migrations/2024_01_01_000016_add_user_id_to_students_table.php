@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Migration untuk menambahkan user_id ke tabel students
- * 
+ *
  * @package Database\Migrations
  * @author Development Team
  * @version 1.0.0
@@ -19,8 +19,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('students', function (Blueprint $table) {
-            $table->foreignId('user_id')->nullable()->after('group_id')->constrained()->onDelete('set null');
-            $table->index('user_id');
+            $table->foreignUuid('user_id')->nullable()->after('group_id')->constrained();
         });
     }
 

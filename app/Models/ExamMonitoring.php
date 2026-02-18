@@ -2,20 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * ExamMonitoring Model
- * 
+ *
  * Model ini merepresentasikan tabel exam_monitoring dalam database
  * Digunakan untuk monitoring realtime pengerjaan ujian
- * 
+ *
  * @package App\Models
  * @author Development Team
  * @version 1.0.0
- * 
+ *
  * @property int $id
  * @property int $user_exam_id
  * @property int $student_id
@@ -30,7 +31,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class ExamMonitoring extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasUuids;
 
     /**
      * Action constants
@@ -71,7 +72,7 @@ class ExamMonitoring extends Model
 
     /**
      * Get the user exam that owns the monitoring record
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function userExam()
@@ -81,7 +82,7 @@ class ExamMonitoring extends Model
 
     /**
      * Get the student that owns the monitoring record
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function student()
@@ -91,7 +92,7 @@ class ExamMonitoring extends Model
 
     /**
      * Get the exam that owns the monitoring record
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function exam()
@@ -101,7 +102,7 @@ class ExamMonitoring extends Model
 
     /**
      * Get the question that owns the monitoring record
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function question()
@@ -111,7 +112,7 @@ class ExamMonitoring extends Model
 
     /**
      * Check if action is start
-     * 
+     *
      * @return bool
      */
     public function isStart(): bool
@@ -121,7 +122,7 @@ class ExamMonitoring extends Model
 
     /**
      * Check if action is answer
-     * 
+     *
      * @return bool
      */
     public function isAnswer(): bool
@@ -131,7 +132,7 @@ class ExamMonitoring extends Model
 
     /**
      * Check if action is submit
-     * 
+     *
      * @return bool
      */
     public function isSubmit(): bool

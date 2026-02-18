@@ -2,20 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * UserExam Model
- * 
+ *
  * Model ini merepresentasikan tabel user_exams dalam database
  * Digunakan untuk menyimpan data ujian yang diikuti oleh user
- * 
+ *
  * @package App\Models
  * @author Development Team
  * @version 1.0.0
- * 
+ *
  * @property int $id
  * @property int $user_id
  * @property int $exam_id
@@ -29,7 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class UserExam extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasUuids;
 
     /**
      * Status constants
@@ -69,7 +70,7 @@ class UserExam extends Model
 
     /**
      * Get the user that owns the user exam
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function user()
@@ -79,7 +80,7 @@ class UserExam extends Model
 
     /**
      * Get the exam that owns the user exam
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function exam()
@@ -89,7 +90,7 @@ class UserExam extends Model
 
     /**
      * Get user answers for this user exam
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function userAnswers()
@@ -99,7 +100,7 @@ class UserExam extends Model
 
     /**
      * Check if exam is in progress
-     * 
+     *
      * @return bool
      */
     public function isInProgress(): bool
@@ -109,7 +110,7 @@ class UserExam extends Model
 
     /**
      * Check if exam is completed
-     * 
+     *
      * @return bool
      */
     public function isCompleted(): bool
@@ -119,7 +120,7 @@ class UserExam extends Model
 
     /**
      * Check if exam is expired
-     * 
+     *
      * @return bool
      */
     public function isExpired(): bool
@@ -129,7 +130,7 @@ class UserExam extends Model
 
     /**
      * Get duration in minutes
-     * 
+     *
      * @return int
      */
     public function getDurationAttribute(): int
@@ -137,13 +138,13 @@ class UserExam extends Model
         if (!$this->start_time || !$this->end_time) {
             return 0;
         }
-        
+
         return $this->start_time->diffInMinutes($this->end_time);
     }
 
     /**
      * Check if user passed the exam
-     * 
+     *
      * @return bool
      */
     public function isPassed(): bool
@@ -151,7 +152,7 @@ class UserExam extends Model
         if (!$this->score || !$this->exam) {
             return false;
         }
-        
+
         return $this->score >= $this->exam->passing_score;
     }
 }

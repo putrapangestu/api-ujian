@@ -2,20 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * QuestionGroup Model
- * 
+ *
  * Model ini merepresentasikan tabel question_groups dalam database
  * Digunakan untuk management grup soal/bank soal
- * 
+ *
  * @package App\Models
  * @author Development Team
  * @version 1.0.0
- * 
+ *
  * @property int $id
  * @property string $name
  * @property string|null $description
@@ -28,7 +29,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class QuestionGroup extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasUuids;
 
     /**
      * Status constants
@@ -71,7 +72,7 @@ class QuestionGroup extends Model
 
     /**
      * Get the questions for the question group.
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function questions()
@@ -81,7 +82,7 @@ class QuestionGroup extends Model
 
     /**
      * Get the exams that use this question group.
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
     public function exams()
@@ -93,7 +94,7 @@ class QuestionGroup extends Model
 
     /**
      * Check if the question group is active.
-     * 
+     *
      * @return bool
      */
     public function isActive(): bool
@@ -103,7 +104,7 @@ class QuestionGroup extends Model
 
     /**
      * Check if the question group is draft.
-     * 
+     *
      * @return bool
      */
     public function isDraft(): bool
@@ -113,7 +114,7 @@ class QuestionGroup extends Model
 
     /**
      * Update total questions count.
-     * 
+     *
      * @return void
      */
     public function updateTotalQuestions(): void

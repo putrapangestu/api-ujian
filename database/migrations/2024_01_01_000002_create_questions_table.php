@@ -6,9 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Migration untuk tabel questions
- * 
+ *
  * Migration ini membuat tabel questions untuk menyimpan data soal ujian
- * 
+ *
  * @package Database\Migrations
  * @author Development Team
  * @version 1.0.0
@@ -21,17 +21,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('questions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('exam_id')->constrained()->onDelete('cascade');
+            $table->uuid('id')->primary();
+            $table->foreignUuid('exam_id')->constrained();
             $table->text('question_text');
             $table->enum('question_type', ['multiple_choice', 'essay', 'true_false']);
             $table->json('options')->nullable(); // untuk multiple choice
             $table->string('correct_answer')->nullable();
             $table->integer('score')->default(1);
             $table->timestamps();
-            
-            $table->index('exam_id');
-            $table->index('question_type');
+            $table->softDeletes();
         });
     }
 

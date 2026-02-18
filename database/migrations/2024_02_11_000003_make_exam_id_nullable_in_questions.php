@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Migration untuk membuat exam_id nullable di tabel questions
- * 
+ *
  * @package Database\Migrations
  * @author Development Team
  * @version 1.0.0
@@ -19,7 +19,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('questions', function (Blueprint $table) {
-            $table->unsignedBigInteger('exam_id')->nullable()->change();
+            $table->foreignUuid('exam_id')->nullable()->change();
         });
     }
 

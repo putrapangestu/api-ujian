@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -11,14 +12,14 @@ use Laravel\Sanctum\HasApiTokens;
 
 /**
  * User Model
- * 
+ *
  * Model ini merepresentasikan tabel users dalam database
  * Digunakan untuk authentication dan management user
- * 
+ *
  * @package App\Models
  * @author Development Team
  * @version 1.0.0
- * 
+ *
  * @property int $id
  * @property string $name
  * @property string $email
@@ -30,7 +31,7 @@ use Laravel\Sanctum\HasApiTokens;
  */
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasUuids;
 
     /**
      * Role constants
@@ -76,7 +77,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Check if user is admin
-     * 
+     *
      * @return bool
      */
     public function isAdmin(): bool
@@ -86,7 +87,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Check if user is regular user
-     * 
+     *
      * @return bool
      */
     public function isUser(): bool
@@ -96,7 +97,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Get user exams relationship
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function userExams()
@@ -106,13 +107,13 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Get avatar URL
-     * 
+     *
      * @return string
      */
     public function getAvatarUrlAttribute(): string
     {
-        return $this->avatar 
-            ? asset('storage/' . $this->avatar) 
+        return $this->avatar
+            ? asset('storage/' . $this->avatar)
             : asset('images/default-avatar.png');
     }
 }

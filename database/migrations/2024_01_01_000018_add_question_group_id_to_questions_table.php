@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Migration untuk menambahkan question_group_id ke tabel questions
- * 
+ *
  * @package Database\Migrations
  * @author Development Team
  * @version 1.0.0
@@ -19,8 +19,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('questions', function (Blueprint $table) {
-            $table->foreignId('question_group_id')->nullable()->after('category_id')->constrained('question_groups')->onDelete('set null');
-            $table->index('question_group_id');
+            $table->foreignUuid('question_group_id')->nullable()->after('category_id')->constrained('question_groups');
         });
     }
 

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Migration untuk menambahkan category_id ke tabel questions
- * 
+ *
  * @package Database\Migrations
  * @author Development Team
  * @version 1.0.0
@@ -19,8 +19,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('questions', function (Blueprint $table) {
-            $table->foreignId('category_id')->nullable()->after('exam_id')->constrained('question_categories')->onDelete('set null');
-            $table->index('category_id');
+            $table->foreignUuid('category_id')->nullable()->after('exam_id')->constrained('question_categories');
         });
     }
 

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Migration untuk membuat tabel question_exam
  * Menyimpan soal yang dipilih dari bank soal untuk ujian
- * 
+ *
  * @package Database\Migrations
  * @author Development Team
  * @version 1.0.0
@@ -20,10 +20,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('question_exam', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('exam_id');
-            $table->unsignedBigInteger('question_id');
-            $table->unsignedBigInteger('question_group_id');
+            $table->uuid('id')->primary();
+            $table->foreignUuid('exam_id')->constrained();
+            $table->foreignUuid('question_id')->constrained();
+            $table->foreignUuid('question_group_id')->constrained();
             $table->integer('question_number'); // Nomor urut soal (1, 2, 3, dst)
             $table->integer('question_order'); // Urutan random untuk setiap student
             $table->integer('start_range')->nullable(); // Nomor mulai untuk grup soal
@@ -32,20 +32,6 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
-
-            // Foreign key constraints
-            $table->foreign('exam_id')->references('id')->on('exams')->onDelete('cascade');
-            $table->foreign('question_id')->references('id')->on('questions')->onDelete('cascade');
-            $table->foreign('question_group_id')->references('id')->on('question_groups')->onDelete('cascade');
-
-            // Indexes for performance
-            $table->index(['exam_id', 'question_number']);
-            $table->index(['exam_id', 'question_group_id']);
-            $table->index(['exam_id', 'question_order']);
-            $table->index(['question_id', 'is_active']);
-
-            // Unique constraint to prevent duplicate questions in same exam
-            $table->unique(['exam_id', 'question_id']);
         });
     }
 

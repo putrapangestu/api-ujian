@@ -2,20 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * UserAnswer Model
- * 
+ *
  * Model ini merepresentasikan tabel user_answers dalam database
  * Digunakan untuk menyimpan jawaban user untuk setiap soal
- * 
+ *
  * @package App\Models
  * @author Development Team
  * @version 1.0.0
- * 
+ *
  * @property int $id
  * @property int $user_exam_id
  * @property int $question_id
@@ -29,7 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class UserAnswer extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasUuids;
 
     /**
      * The attributes that are mass assignable.
@@ -63,7 +64,7 @@ class UserAnswer extends Model
 
     /**
      * Get the user exam that owns the user answer
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function userExam()
@@ -73,7 +74,7 @@ class UserAnswer extends Model
 
     /**
      * Get the question that owns the user answer
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function question()
@@ -83,7 +84,7 @@ class UserAnswer extends Model
 
     /**
      * Get the question option that owns the user answer
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function questionOption()

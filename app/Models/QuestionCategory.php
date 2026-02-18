@@ -2,20 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * QuestionCategory Model
- * 
+ *
  * Model ini merepresentasikan tabel question_categories dalam database
  * Digunakan untuk management kategori soal
- * 
+ *
  * @package App\Models
  * @author Development Team
  * @version 1.0.0
- * 
+ *
  * @property int $id
  * @property string $name
  * @property string $description
@@ -27,7 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class QuestionCategory extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasUuids;
 
     /**
      * Status constants
@@ -49,7 +50,7 @@ class QuestionCategory extends Model
 
     /**
      * Get questions in this category
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function questions()
@@ -59,7 +60,7 @@ class QuestionCategory extends Model
 
     /**
      * Get exams that use this category
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
     public function exams()
@@ -71,7 +72,7 @@ class QuestionCategory extends Model
 
     /**
      * Check if category is active
-     * 
+     *
      * @return bool
      */
     public function isActive(): bool
@@ -81,7 +82,7 @@ class QuestionCategory extends Model
 
     /**
      * Get question count for this category
-     * 
+     *
      * @return int
      */
     public function getQuestionCount(): int
@@ -91,7 +92,7 @@ class QuestionCategory extends Model
 
     /**
      * Get active questions count
-     * 
+     *
      * @return int
      */
     public function getActiveQuestionCount(): int

@@ -2,20 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * QuestionOption Model
- * 
+ *
  * Model ini merepresentasikan tabel question_options dalam database
  * Digunakan untuk menyimpan opsi jawaban dari soal
- * 
+ *
  * @package App\Models
  * @author Development Team
  * @version 1.0.0
- * 
+ *
  * @property int $id
  * @property int $question_id
  * @property string $option_text
@@ -27,7 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class QuestionOption extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasUuids;
 
     /**
      * The table associated with the model.
@@ -63,7 +64,7 @@ class QuestionOption extends Model
 
     /**
      * Get the question that owns the option.
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function question()
@@ -73,7 +74,7 @@ class QuestionOption extends Model
 
     /**
      * Check if this option is correct.
-     * 
+     *
      * @return bool
      */
     public function isCorrect(): bool
@@ -83,7 +84,7 @@ class QuestionOption extends Model
 
     /**
      * Get option label (A, B, C, D, etc.)
-     * 
+     *
      * @return string
      */
     public function getLabel(): string

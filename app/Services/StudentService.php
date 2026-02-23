@@ -11,10 +11,10 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
  * Student Service Class
- * 
+ *
  * Service ini menangani semua operasi terkait siswa
  * Termasuk fitur import dari Excel/CSV
- * 
+ *
  * @package App\Services
  * @author Development Team
  * @version 1.0.0
@@ -33,7 +33,7 @@ class StudentService extends BaseService
 
     /**
      * StudentService constructor
-     * 
+     *
      * @param StudentRepositoryInterface $studentRepository
      * @param StudentGroupRepositoryInterface $studentGroupRepository
      */
@@ -47,7 +47,7 @@ class StudentService extends BaseService
 
     /**
      * Get all students
-     * 
+     *
      * @param array $filters
      * @return array
      */
@@ -65,7 +65,7 @@ class StudentService extends BaseService
 
     /**
      * Get student by ID
-     * 
+     *
      * @param int $id
      * @return array
      */
@@ -87,7 +87,7 @@ class StudentService extends BaseService
 
     /**
      * Create new student
-     * 
+     *
      * @param array $data Validated data from StudentRequest
      * @return array
      */
@@ -108,6 +108,9 @@ class StudentService extends BaseService
                 // Create student
                 $student = $this->studentRepository->create($data);
 
+                // assign role student
+                $student->assignRole('student');
+
                 return $this->successResponse($student, 'Siswa berhasil dibuat', 201);
 
             } catch (\Exception $e) {
@@ -119,7 +122,7 @@ class StudentService extends BaseService
 
     /**
      * Update student
-     * 
+     *
      * @param int $id
      * @param array $data Validated data from StudentRequest
      * @return array
@@ -167,7 +170,7 @@ class StudentService extends BaseService
 
     /**
      * Delete student
-     * 
+     *
      * @param int $id
      * @return array
      */
@@ -204,7 +207,7 @@ class StudentService extends BaseService
 
     /**
      * Import students from Excel/CSV file
-     * 
+     *
      * @param \Illuminate\Http\UploadedFile $file
      * @param int $groupId
      * @return array
@@ -294,7 +297,7 @@ class StudentService extends BaseService
 
     /**
      * Export students to Excel
-     * 
+     *
      * @param int $groupId
      * @return array
      */

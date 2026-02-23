@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\Hash;
 
 /**
  * Student Repository Class
- * 
+ *
  * Repository ini menangani semua operasi database terkait Student model
- * 
+ *
  * @package App\Repositories
  * @author Development Team
  * @version 1.0.0
@@ -20,7 +20,7 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
 {
     /**
      * StudentRepository constructor
-     * 
+     *
      * @param Student $model
      */
     public function __construct(Student $model)
@@ -30,7 +30,7 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
 
     /**
      * Find student by NISN
-     * 
+     *
      * @param string $nisn
      * @return Student|null
      */
@@ -41,7 +41,7 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
 
     /**
      * Find student by email
-     * 
+     *
      * @param string $email
      * @return Student|null
      */
@@ -52,7 +52,7 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
 
     /**
      * Get students by group
-     * 
+     *
      * @param int $groupId
      * @return Collection
      */
@@ -63,7 +63,7 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
 
     /**
      * Get active students
-     * 
+     *
      * @return Collection
      */
     public function getActiveStudents(): Collection
@@ -73,7 +73,7 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
 
     /**
      * Search students by name or NISN
-     * 
+     *
      * @param string $search
      * @param int $limit
      * @return Collection
@@ -92,7 +92,7 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
 
     /**
      * Import students from array
-     * 
+     *
      * @param array $students
      * @return array
      */
@@ -123,6 +123,10 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
 
                     // Create student
                     $student = $this->create($studentData);
+
+                    // assign role student
+                    $student->assignRole('student');
+
                     $imported[] = $student;
 
                 } catch (\Exception $e) {

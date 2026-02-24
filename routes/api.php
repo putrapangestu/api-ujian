@@ -119,7 +119,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Admin routes
-    Route::middleware('admin')->prefix('admin')->group(function () {
+    Route::middleware('role:admin')->prefix('admin')->group(function () {
         // Exam management
         Route::post('/exams', [ExamController::class, 'store'])->name('admin.exams.store');
         Route::put('/exams/{id}', [ExamController::class, 'update'])->name('admin.exams.update');

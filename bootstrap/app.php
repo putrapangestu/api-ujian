@@ -7,9 +7,9 @@ use App\Http\Middleware\AdminMiddleware;
 
 /**
  * Bootstrap Application Configuration
- * 
+ *
  * File ini berisi konfigurasi aplikasi Laravel
- * 
+ *
  * @package Bootstrap
  * @author Development Team
  * @version 1.0.0
@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register custom middleware
         $middleware->alias([
             'admin' => AdminMiddleware::class,
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

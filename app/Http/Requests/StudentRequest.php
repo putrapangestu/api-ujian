@@ -34,7 +34,7 @@ class StudentRequest extends BaseRequest
 
         // Jika update, tambahkan unique rule untuk nisn dan email
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
-            $studentId = $this->route('student');
+            $studentId = $this->id;
             $rules['nisn'] = 'nullable|string|max:20|unique:students,nisn,' . $studentId;
             $rules['email'] = 'required|string|email|max:255|unique:users,email,' . $studentId;
         } else {

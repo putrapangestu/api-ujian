@@ -4,9 +4,9 @@ namespace App\Http\Requests;
 
 /**
  * QuestionGroup Request Class
- * 
+ *
  * Request ini digunakan untuk validasi data grup soal/bank soal
- * 
+ *
  * @package App\Http\Requests
  * @author Development Team
  * @version 1.0.0
@@ -29,7 +29,7 @@ class QuestionGroupRequest extends BaseRequest
 
         // Jika update, tambahkan unique rule untuk code
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
-            $groupId = $this->route('group');
+            $groupId = $this->id;
             $rules['code'] = 'required|string|max:50|unique:question_groups,code,' . $groupId;
         } else {
             $rules['code'] = 'required|string|max:50|unique:question_groups';

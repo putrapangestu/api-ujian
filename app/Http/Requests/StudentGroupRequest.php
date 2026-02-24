@@ -4,9 +4,9 @@ namespace App\Http\Requests;
 
 /**
  * StudentGroup Request Class
- * 
+ *
  * Request ini digunakan untuk validasi data grup siswa
- * 
+ *
  * @package App\Http\Requests
  * @author Development Team
  * @version 1.0.0
@@ -29,7 +29,7 @@ class StudentGroupRequest extends BaseRequest
 
         // Jika update, tambahkan unique rule untuk name
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
-            $groupId = $this->route('group');
+            $groupId = $this->id;
             $rules['name'] = 'required|string|max:255|unique:student_groups,name,' . $groupId;
         } else {
             $rules['name'] = 'required|string|max:255|unique:student_groups';

@@ -4,9 +4,9 @@ namespace App\Http\Requests;
 
 /**
  * QuestionCategory Request Class
- * 
+ *
  * Request ini digunakan untuk validasi data kategori soal
- * 
+ *
  * @package App\Http\Requests
  * @author Development Team
  * @version 1.0.0
@@ -29,7 +29,7 @@ class QuestionCategoryRequest extends BaseRequest
 
         // Jika update, tambahkan unique rule untuk code
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
-            $categoryId = $this->route('category');
+            $categoryId = $this->id;
             $rules['code'] = 'required|string|max:50|unique:question_categories,code,' . $categoryId;
         } else {
             $rules['code'] = 'required|string|max:50|unique:question_categories';

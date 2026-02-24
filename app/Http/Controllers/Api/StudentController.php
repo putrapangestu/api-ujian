@@ -6,18 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StudentRequest;
 use App\Services\StudentService;
 use Illuminate\Http\Request;
-use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
 /**
  * Student Controller
  *
  * Controller ini menangani semua operasi terkait siswa
  * Termasuk fitur import dan export
- *
- * @OA\Tag(
- *     name="Students",
- *     description="API endpoints for managing students"
- * )
  *
  * @package App\Http\Controllers\Api
  * @author Development Team
@@ -45,22 +40,19 @@ class StudentController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/students",
-     *     summary="Get all students",
-     *     tags={"Students"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation"
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/students",
+        summary: "Daftar siswa",
+        tags: ["Students"],
+        parameters: [
+            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "group_id", in: "query", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "status", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "per_page", in: "query", schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'group_id', 'status']);
@@ -79,22 +71,18 @@ class StudentController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/students/all",
-     *     summary="Get all students without pagination",
-     *     tags={"Students"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation"
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/students/all",
+        summary: "Daftar semua siswa",
+        tags: ["Students"],
+        parameters: [
+            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "group_id", in: "query", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "status", in: "query", schema: new OA\Schema(type: "string")),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function list(Request $request)
     {
         $filters = $request->only(['search', 'group_id', 'status']);
@@ -112,29 +100,14 @@ class StudentController extends Controller
      *
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/students/{id}",
-     *     summary="Get student by ID",
-     *     tags={"Students"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID siswa",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Student not found"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/students/{id}",
+        summary: "Detail siswa",
+        tags: ["Students"],
+        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function show($id)
     {
         $result = $this->studentService->getStudentById($id);
@@ -151,26 +124,29 @@ class StudentController extends Controller
      *
      * @param StudentRequest $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/admin/students",
-     *     summary="Create new student",
-     *     tags={"Students"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(type="object")
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Student created successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/admin/students",
+        summary: "Buat siswa",
+        tags: ["Admin","Students"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "nisn", type: "string", maxLength: 20),
+                    new OA\Property(property: "name", type: "string", maxLength: 255),
+                    new OA\Property(property: "email", type: "string", format: "email", maxLength: 255),
+                    new OA\Property(property: "phone", type: "string", maxLength: 20),
+                    new OA\Property(property: "address", type: "string", maxLength: 500),
+                    new OA\Property(property: "group_id", type: "integer"),
+                    new OA\Property(property: "birth_date", type: "string", format: "date"),
+                    new OA\Property(property: "user_id", type: "integer"),
+                    new OA\Property(property: "status", type: "string"),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function store(StudentRequest $request)
     {
         $result = $this->studentService->createStudent($request->validatedData());
@@ -188,33 +164,30 @@ class StudentController extends Controller
      * @param StudentRequest $request
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Put(
-     *     path="/admin/students/{id}",
-     *     summary="Update student",
-     *     tags={"Students"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID siswa",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(type="object")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Student updated successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Student not found"
-     *     )
-     * )
      */
+    #[OA\Put(
+        path: "/admin/students/{id}",
+        summary: "Perbarui siswa",
+        tags: ["Admin","Students"],
+        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "nisn", type: "string", maxLength: 20),
+                    new OA\Property(property: "name", type: "string", maxLength: 255),
+                    new OA\Property(property: "email", type: "string", format: "email", maxLength: 255),
+                    new OA\Property(property: "phone", type: "string", maxLength: 20),
+                    new OA\Property(property: "address", type: "string", maxLength: 500),
+                    new OA\Property(property: "group_id", type: "integer"),
+                    new OA\Property(property: "birth_date", type: "string", format: "date"),
+                    new OA\Property(property: "user_id", type: "integer"),
+                    new OA\Property(property: "status", type: "string"),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function update(StudentRequest $request, $id)
     {
         $result = $this->studentService->updateStudent($id, $request->validatedData());
@@ -231,29 +204,14 @@ class StudentController extends Controller
      *
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Delete(
-     *     path="/admin/students/{id}",
-     *     summary="Delete student",
-     *     tags={"Students"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID siswa",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Student deleted successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Student not found"
-     *     )
-     * )
      */
+    #[OA\Delete(
+        path: "/admin/students/{id}",
+        summary: "Hapus siswa",
+        tags: ["Admin","Students"],
+        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function destroy($id)
     {
         $result = $this->studentService->deleteStudent($id);
@@ -270,42 +228,25 @@ class StudentController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/students/import",
-     *     summary="Import students from Excel file",
-     *     tags={"Students"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="multipart/form-data",
-     *             @OA\Schema(
-     *                 required={"file","group_id"},
-     *                 @OA\Property(
-     *                     property="file",
-     *                     type="string",
-     *                     format="binary",
-     *                     description="Excel file berisi data siswa"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="group_id",
-     *                     type="integer",
-     *                     description="ID grup siswa tujuan"
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Students imported successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/students/import",
+        summary: "Import data siswa",
+        tags: ["Students"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "multipart/form-data",
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(property: "file", type: "string", format: "binary"),
+                        new OA\Property(property: "group_id", type: "integer"),
+                    ]
+                )
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function import(Request $request)
     {
         $request->validate([
@@ -331,29 +272,14 @@ class StudentController extends Controller
      * @param Request $request
      * @param int $groupId
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/students/export/{groupId}",
-     *     summary="Export students to Excel file",
-     *     tags={"Students"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="groupId",
-     *         in="path",
-     *         description="ID grup siswa",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Students exported successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Group not found"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/students/export/{groupId}",
+        summary: "Export data siswa",
+        tags: ["Students"],
+        parameters: [new OA\Parameter(name: "groupId", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function export(Request $request, $groupId)
     {
         $result = $this->studentService->exportStudents($groupId);

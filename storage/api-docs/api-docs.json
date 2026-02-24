@@ -1,45 +1,2274 @@
 {
-  "openapi": "3.1.0",
-  "info": {
-    "title": "API Ujian CPNS",
-    "version": "1.0.0",
-    "description": "Dokumentasi dasar API Ujian CPNS. (Generated statically)"
-  },
-  "servers": [
-    {
-      "url": "http://localhost:8000/api",
-      "description": "Local Development Server"
-    }
-  ],
-  "paths": {
-    "/auth/login": {
-      "post": {
-        "summary": "Login user",
-        "tags": ["Authentication"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["email", "password"],
-                "properties": {
-                  "email": { "type": "string", "format": "email" },
-                  "password": { "type": "string", "format": "password" }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Login berhasil"
-          },
-          "401": {
-            "description": "Email atau password salah"
-          }
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API Ujian CPNS",
+        "description": "API untuk sistem manajemen ujian CPNS",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/api",
+            "description": "Development Server"
         }
-      }
-    }
-  }
+    ],
+    "paths": {
+        "/auth/register": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Register user baru",
+                "operationId": "08136088c4862c313b35d6518bab8d3a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "maxLength": 255
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "minLength": 8
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "minLength": 8
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login user",
+                "operationId": "99d66635c4992aeaa6aa44ff653d0563",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "maxLength": 255
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "minLength": 6
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout user",
+                "operationId": "6abf3b64a4bc7838d56346f05a5153af",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Profil user saat ini",
+                "operationId": "f91aa4f90b4697b45b0a77998c9292b0",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/auth/profile": {
+            "put": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Update profil user",
+                "operationId": "1b6f918eb3f3cd3b4d27be8eb1979861",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {}
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exams": {
+            "get": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Daftar ujian",
+                "description": "Get all exams",
+                "operationId": "e063269a41b32018783ebc9989570c1b",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exams/{id}": {
+            "get": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Detail ujian",
+                "description": "Get exam by ID",
+                "operationId": "6c844d345556bc42f5c7a112077a2880",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/admin/exams": {
+            "post": {
+                "tags": [
+                    "Admin",
+                    "Exams"
+                ],
+                "summary": "Buat ujian",
+                "description": "Create new exam",
+                "operationId": "a29488787311263b09917935a19b9216",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "duration": {
+                                        "type": "integer",
+                                        "maximum": 300,
+                                        "minimum": 1
+                                    },
+                                    "total_questions": {
+                                        "type": "integer",
+                                        "maximum": 200,
+                                        "minimum": 1
+                                    },
+                                    "passing_score": {
+                                        "type": "integer",
+                                        "maximum": 100,
+                                        "minimum": 0
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "question_groups": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/admin/exams/{id}": {
+            "put": {
+                "tags": [
+                    "Admin",
+                    "Exams"
+                ],
+                "summary": "Perbarui ujian",
+                "description": "Update exam",
+                "operationId": "376df3ab1d663f935757b19d58fa1f36",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "duration": {
+                                        "type": "integer",
+                                        "maximum": 300,
+                                        "minimum": 1
+                                    },
+                                    "total_questions": {
+                                        "type": "integer",
+                                        "maximum": 200,
+                                        "minimum": 1
+                                    },
+                                    "passing_score": {
+                                        "type": "integer",
+                                        "maximum": 100,
+                                        "minimum": 0
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "question_groups": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Admin",
+                    "Exams"
+                ],
+                "summary": "Hapus ujian",
+                "description": "Delete exam",
+                "operationId": "f4c1e976aabbb7d043e717a1fd7a7cbd",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exams/{id}/select-questions": {
+            "post": {
+                "tags": [
+                    "Exams",
+                    "Exam Questions"
+                ],
+                "summary": "Pilih soal dari bank untuk ujian",
+                "description": "Select questions from question banks for exam",
+                "operationId": "c4ed7aa54132a6a99d04e188e12cd426",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "question_banks": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-questions/{examId}/select-from-banks": {
+            "post": {
+                "tags": [
+                    "Exams",
+                    "Exam Questions"
+                ],
+                "summary": "Pilih soal dari bank untuk ujian",
+                "operationId": "7ab193ee8e04f39f7935d69a6a17cba3",
+                "parameters": [
+                    {
+                        "name": "examId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "question_banks": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exams/validate-question-banks": {
+            "post": {
+                "tags": [
+                    "Exams",
+                    "Exam Questions"
+                ],
+                "summary": "Validasi pilihan bank soal",
+                "description": "Validate question bank selection",
+                "operationId": "5b77745299bcb3391aac6fdf997563d8",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "question_banks": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-questions/validate-banks": {
+            "post": {
+                "tags": [
+                    "Exams",
+                    "Exam Questions"
+                ],
+                "summary": "Validasi pilihan bank soal",
+                "operationId": "7b99053444e538f3e67e3a6c7e7273ab",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "question_banks": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exams/{id}/questions-for-student": {
+            "post": {
+                "tags": [
+                    "Exams",
+                    "Exam Questions"
+                ],
+                "summary": "Ambil soal ujian untuk siswa",
+                "description": "Get exam questions for student with random order",
+                "operationId": "299ce3571c31a392a16dc4f6e13a360c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "student_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-questions/{examId}/for-student": {
+            "post": {
+                "tags": [
+                    "Exams",
+                    "Exam Questions"
+                ],
+                "summary": "Ambil soal ujian untuk siswa",
+                "operationId": "81e186c267abec00d882366a726bae53",
+                "parameters": [
+                    {
+                        "name": "examId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "student_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exams/{id}/start": {
+            "post": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Mulai ujian untuk user terautentikasi",
+                "description": "Start exam for authenticated user",
+                "operationId": "ac3a04e2bfd16b4a68c6e86a6c43ccb9",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-monitoring/record-action": {
+            "post": {
+                "tags": [
+                    "Exam Monitoring"
+                ],
+                "summary": "Catat aksi ujian",
+                "description": "Record exam action for monitoring",
+                "operationId": "8606a3aebd43f6d02f47846affa7070c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "user_exam_id": {
+                                        "type": "integer"
+                                    },
+                                    "student_id": {
+                                        "type": "integer"
+                                    },
+                                    "exam_id": {
+                                        "type": "integer"
+                                    },
+                                    "action": {
+                                        "type": "string",
+                                        "enum": [
+                                            "start",
+                                            "answer",
+                                            "navigate",
+                                            "submit",
+                                            "pause",
+                                            "resume"
+                                        ]
+                                    },
+                                    "question_id": {
+                                        "type": "integer"
+                                    },
+                                    "answer": {
+                                        "type": "string"
+                                    },
+                                    "time_spent": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-monitoring/realtime/{examId}": {
+            "get": {
+                "tags": [
+                    "Exam Monitoring"
+                ],
+                "summary": "Monitoring realtime ujian",
+                "description": "Get real-time exam monitoring data",
+                "operationId": "52471a1a7daf2deb48eae0b91cb68efc",
+                "parameters": [
+                    {
+                        "name": "examId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-monitoring/student/{studentId}/{examId}": {
+            "get": {
+                "tags": [
+                    "Exam Monitoring"
+                ],
+                "summary": "Monitoring detail siswa",
+                "description": "Get detailed monitoring for specific student",
+                "operationId": "20f3e5754b9a2dcda1194bccb1e47e91",
+                "parameters": [
+                    {
+                        "name": "studentId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "examId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-monitoring/summary/{examId}": {
+            "get": {
+                "tags": [
+                    "Exam Monitoring"
+                ],
+                "summary": "Ringkasan monitoring ujian",
+                "description": "Get exam summary for monitoring dashboard",
+                "operationId": "8fa87dd4c84a1b8b2d020b512070ad8a",
+                "parameters": [
+                    {
+                        "name": "examId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-monitoring/by-group/{examId}/{questionGroupId}": {
+            "get": {
+                "tags": [
+                    "Exam Monitoring"
+                ],
+                "summary": "Monitoring per grup soal",
+                "description": "Get monitoring by question group",
+                "operationId": "2a5fe254ebd8397adc6498569a73460b",
+                "parameters": [
+                    {
+                        "name": "examId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "questionGroupId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-monitoring/by-category/{examId}": {
+            "get": {
+                "tags": [
+                    "Exam Monitoring"
+                ],
+                "summary": "Monitoring per kategori",
+                "description": "Get monitoring by category",
+                "operationId": "b865038be29b46957d7e84e1c6d31265",
+                "parameters": [
+                    {
+                        "name": "examId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-rolling/roll-student": {
+            "post": {
+                "tags": [
+                    "Exam Rolling"
+                ],
+                "summary": "Rolling satu siswa saat ujian",
+                "description": "Roll student to different group during exam",
+                "operationId": "e79a00c97f7f627053119f3fa3921efd",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "user_exam_id": {
+                                        "type": "integer"
+                                    },
+                                    "new_group_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-rolling/validate": {
+            "post": {
+                "tags": [
+                    "Exam Rolling"
+                ],
+                "summary": "Validasi rolling siswa",
+                "description": "Validate rolling operation",
+                "operationId": "7829271feab3a4e56e10d493baf19fc9",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "user_exam_id": {
+                                        "type": "integer"
+                                    },
+                                    "new_group_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-rolling/roll-multiple": {
+            "post": {
+                "tags": [
+                    "Exam Rolling"
+                ],
+                "summary": "Rolling banyak siswa saat ujian",
+                "description": "Roll multiple students to different groups during exam",
+                "operationId": "3ef2572ab731c8bc164c1054412240a5",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "rolls": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-rolling/rollable-students/{examId}": {
+            "get": {
+                "tags": [
+                    "Exam Rolling"
+                ],
+                "summary": "Daftar siswa yang bisa di-rolling",
+                "description": "Get students that can be rolled during exam",
+                "operationId": "84838d935035dda4d60562790ec68eb0",
+                "parameters": [
+                    {
+                        "name": "examId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-rolling/roll-student-background": {
+            "post": {
+                "tags": [
+                    "Exam Rolling"
+                ],
+                "summary": "Rolling satu siswa (jobs background)",
+                "description": "Roll student to different group during exam with background job",
+                "operationId": "2fb4e231d0592638102b4e217b0a79b4",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "user_exam_id": {
+                                        "type": "integer"
+                                    },
+                                    "new_group_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-rolling/roll-multiple-background": {
+            "post": {
+                "tags": [
+                    "Exam Rolling"
+                ],
+                "summary": "Rolling banyak siswa (jobs background)",
+                "description": "Roll multiple students to different groups during exam with background jobs",
+                "operationId": "e304c87c5cda636b0ed57f8fd2895856",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "rolls": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/exam-rolling/process-group/{examId}": {
+            "post": {
+                "tags": [
+                    "Exam Rolling"
+                ],
+                "summary": "Proses ujian untuk satu grup (jobs background)",
+                "description": "Process exam for all students in a group with background jobs",
+                "operationId": "b6d8d4a8c6021d01ded4850c10a98a6e",
+                "parameters": [
+                    {
+                        "name": "examId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "group_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/question-bank/import": {
+            "post": {
+                "tags": [
+                    "Question Bank"
+                ],
+                "summary": "Import bank soal",
+                "description": "Import question bank from Excel file",
+                "operationId": "3ec2a60aea5b3b8cc803f760622bf11f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "exam_id": {
+                                        "type": "integer"
+                                    },
+                                    "question_group_id": {
+                                        "type": "integer"
+                                    },
+                                    "category_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/question-bank/export": {
+            "get": {
+                "tags": [
+                    "Question Bank"
+                ],
+                "summary": "Export bank soal",
+                "description": "Export question bank to Excel file",
+                "operationId": "8057ee9bde11f2ba8f15efe940c7dca6",
+                "parameters": [
+                    {
+                        "name": "exam_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "question_group_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/question-categories": {
+            "get": {
+                "tags": [
+                    "Question Categories"
+                ],
+                "summary": "Daftar kategori soal",
+                "description": "Get all question categories",
+                "operationId": "3e45ef090c6b9567d8c63d985392fa47",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/question-categories/{id}": {
+            "get": {
+                "tags": [
+                    "Question Categories"
+                ],
+                "summary": "Detail kategori soal",
+                "description": "Get question category by ID",
+                "operationId": "f9d6b4ab91e40ad1def503fcf5e1185f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/admin/question-categories": {
+            "post": {
+                "tags": [
+                    "Admin",
+                    "Question Categories"
+                ],
+                "summary": "Buat kategori soal",
+                "description": "Create new question category",
+                "operationId": "40805f68a6c6a734d5848577bc4baaf2",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "code": {
+                                        "type": "string",
+                                        "maxLength": 50
+                                    },
+                                    "status": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/admin/question-categories/{id}": {
+            "put": {
+                "tags": [
+                    "Admin",
+                    "Question Categories"
+                ],
+                "summary": "Perbarui kategori soal",
+                "description": "Update question category",
+                "operationId": "f79f7ceca26e602e2925f2b2b6dcffea",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "code": {
+                                        "type": "string",
+                                        "maxLength": 50
+                                    },
+                                    "status": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Admin",
+                    "Question Categories"
+                ],
+                "summary": "Hapus kategori soal",
+                "description": "Delete question category",
+                "operationId": "973f659f4128caeaa23dbe91d436cbe7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/questions": {
+            "post": {
+                "tags": [
+                    "Questions"
+                ],
+                "summary": "Buat soal",
+                "description": "Create new question",
+                "operationId": "a12f796f2fdc772ce53ecadbad7e73f3",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "exam_id": {
+                                        "type": "integer"
+                                    },
+                                    "category_id": {
+                                        "type": "integer"
+                                    },
+                                    "question_group_id": {
+                                        "type": "integer"
+                                    },
+                                    "question_text": {
+                                        "type": "string",
+                                        "maxLength": 1000
+                                    },
+                                    "question_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "multiple_choice",
+                                            "essay",
+                                            "true_false"
+                                        ]
+                                    },
+                                    "score": {
+                                        "type": "integer",
+                                        "maximum": 100,
+                                        "minimum": 1
+                                    },
+                                    "options": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "correct_answer": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/questions/{id}": {
+            "put": {
+                "tags": [
+                    "Questions"
+                ],
+                "summary": "Perbarui soal",
+                "description": "Update question",
+                "operationId": "b22a942041bfd541a2a1fc4013c22b9a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "exam_id": {
+                                        "type": "integer"
+                                    },
+                                    "category_id": {
+                                        "type": "integer"
+                                    },
+                                    "question_group_id": {
+                                        "type": "integer"
+                                    },
+                                    "question_text": {
+                                        "type": "string",
+                                        "maxLength": 1000
+                                    },
+                                    "question_type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "multiple_choice",
+                                            "essay",
+                                            "true_false"
+                                        ]
+                                    },
+                                    "score": {
+                                        "type": "integer",
+                                        "maximum": 100,
+                                        "minimum": 1
+                                    },
+                                    "options": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "correct_answer": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/questions/import": {
+            "post": {
+                "tags": [
+                    "Questions"
+                ],
+                "summary": "Import soal",
+                "description": "Import questions from Excel file",
+                "operationId": "32a6d806330e4dfa0a35a8a944d92817",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "exam_id": {
+                                        "type": "integer"
+                                    },
+                                    "question_group_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/question-groups": {
+            "get": {
+                "tags": [
+                    "Question Groups"
+                ],
+                "summary": "Daftar grup soal",
+                "description": "Get all question groups",
+                "operationId": "394e4d4c73abb60ae0a30d2f89848ef2",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/question-groups/all": {
+            "get": {
+                "tags": [
+                    "Question Groups"
+                ],
+                "summary": "Daftar semua grup soal",
+                "description": "Get all question groups without pagination",
+                "operationId": "388ed9e1eaf28857106442b5ea4807bf",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/question-groups/{id}": {
+            "get": {
+                "tags": [
+                    "Question Groups"
+                ],
+                "summary": "Detail grup soal",
+                "description": "Get question group by ID",
+                "operationId": "79b8981c058d48c84a8613b759bb0ebf",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/admin/question-groups": {
+            "post": {
+                "tags": [
+                    "Admin",
+                    "Question Groups"
+                ],
+                "summary": "Buat grup soal",
+                "description": "Create new question group",
+                "operationId": "03bb544e227fa14dd3cd6158ccb805fb",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "code": {
+                                        "type": "string",
+                                        "maxLength": 50
+                                    },
+                                    "status": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/admin/question-groups/{id}": {
+            "put": {
+                "tags": [
+                    "Admin",
+                    "Question Groups"
+                ],
+                "summary": "Perbarui grup soal",
+                "description": "Update question group",
+                "operationId": "5b91b59bed02833a5fe80c1c497dbbfe",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "code": {
+                                        "type": "string",
+                                        "maxLength": 50
+                                    },
+                                    "status": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Admin",
+                    "Question Groups"
+                ],
+                "summary": "Hapus grup soal",
+                "description": "Delete question group",
+                "operationId": "2a76ac2c3d2c69cad273cddd0b8057c9",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/question-groups/import": {
+            "post": {
+                "tags": [
+                    "Question Groups"
+                ],
+                "summary": "Import grup soal",
+                "description": "Import question groups from Excel file",
+                "operationId": "a02017c1007d41d9948bc6c6f0d322b1",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/question-groups/export": {
+            "get": {
+                "tags": [
+                    "Question Groups"
+                ],
+                "summary": "Export grup soal",
+                "description": "Export question groups to Excel file",
+                "operationId": "8f30decb51e7fdc93a62cd8b10d78e83",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/students": {
+            "get": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Daftar siswa",
+                "description": "Get all students",
+                "operationId": "602b44d362d13bdd9b9131f32a937ae6",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "group_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/students/all": {
+            "get": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Daftar semua siswa",
+                "description": "Get all students without pagination",
+                "operationId": "84ec001a9bef4b50f702e65107bf3f1f",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "group_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/students/{id}": {
+            "get": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Detail siswa",
+                "description": "Get student by ID",
+                "operationId": "5d924ad767ea88da945ca1f2a3400eaf",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/admin/students": {
+            "post": {
+                "tags": [
+                    "Admin",
+                    "Students"
+                ],
+                "summary": "Buat siswa",
+                "description": "Create new student",
+                "operationId": "7487b69ef8ec32ea82f822e23b80f322",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "nisn": {
+                                        "type": "string",
+                                        "maxLength": 20
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "maxLength": 255
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "maxLength": 20
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                    },
+                                    "group_id": {
+                                        "type": "integer"
+                                    },
+                                    "birth_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "user_id": {
+                                        "type": "integer"
+                                    },
+                                    "status": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/admin/students/{id}": {
+            "put": {
+                "tags": [
+                    "Admin",
+                    "Students"
+                ],
+                "summary": "Perbarui siswa",
+                "description": "Update student",
+                "operationId": "062e495dc043fb978694d774c9074ac4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "nisn": {
+                                        "type": "string",
+                                        "maxLength": 20
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "maxLength": 255
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "maxLength": 20
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                    },
+                                    "group_id": {
+                                        "type": "integer"
+                                    },
+                                    "birth_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "user_id": {
+                                        "type": "integer"
+                                    },
+                                    "status": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Admin",
+                    "Students"
+                ],
+                "summary": "Hapus siswa",
+                "description": "Delete student",
+                "operationId": "ee00c1e8f7a868d8822dfa871380274b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/students/import": {
+            "post": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Import data siswa",
+                "description": "Import students from Excel file",
+                "operationId": "e224b77d8a91a84bbccc45fdf9399c50",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "group_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/students/export/{groupId}": {
+            "get": {
+                "tags": [
+                    "Students"
+                ],
+                "summary": "Export data siswa",
+                "description": "Export students to Excel file",
+                "operationId": "1dcadb3e5130da81650707961b4333ee",
+                "parameters": [
+                    {
+                        "name": "groupId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/student-groups": {
+            "get": {
+                "tags": [
+                    "Student Groups"
+                ],
+                "summary": "Daftar grup siswa",
+                "description": "Get all student groups",
+                "operationId": "4025130fcd1fca1efccd42d879f22c47",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/student-groups/all": {
+            "get": {
+                "tags": [
+                    "Student Groups"
+                ],
+                "summary": "Daftar semua grup siswa",
+                "description": "Get all student groups without pagination",
+                "operationId": "a45deb7e286563c99eca47114774b763",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/student-groups/{id}": {
+            "get": {
+                "tags": [
+                    "Student Groups"
+                ],
+                "summary": "Detail grup siswa",
+                "description": "Get student group by ID",
+                "operationId": "c5ab6416f5b065e9a703bdb5cfedd1e2",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/admin/student-groups": {
+            "post": {
+                "tags": [
+                    "Admin",
+                    "Student Groups"
+                ],
+                "summary": "Buat grup siswa",
+                "description": "Create new student group",
+                "operationId": "94e2417691b5cfbc3aa24fb7b8155389",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/admin/student-groups/{id}": {
+            "put": {
+                "tags": [
+                    "Admin",
+                    "Student Groups"
+                ],
+                "summary": "Perbarui grup siswa",
+                "description": "Update student group",
+                "operationId": "2ead850d24b6ddd18fc125edbfc92a80",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Admin",
+                    "Student Groups"
+                ],
+                "summary": "Hapus grup siswa",
+                "description": "Delete student group",
+                "operationId": "7d5f71931a39a6d50359ddb245b74b1f",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/student-groups/roll-students": {
+            "post": {
+                "tags": [
+                    "Student Groups"
+                ],
+                "summary": "Rolling siswa antar grup",
+                "description": "Roll students to new group",
+                "operationId": "38eec5c1e278149fc5f8829a4df895b3",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/ping": {
+            "get": {
+                "tags": [
+                    "Debug"
+                ],
+                "summary": "Ping test",
+                "operationId": "665c7ebd5088d68fb35b467d93f5e34c",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/admin/users/all": {
+            "get": {
+                "tags": [
+                    "Admin",
+                    "Users"
+                ],
+                "summary": "Daftar semua user (admin)",
+                "description": "Get all users without pagination",
+                "operationId": "cc51c7914d1b490de44c3a5582fe65d2",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Masukkan token dalam format: Bearer <token>",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Auth"
+        },
+        {
+            "name": "Exams",
+            "description": "Exams"
+        },
+        {
+            "name": "Admin",
+            "description": "Admin"
+        },
+        {
+            "name": "Exam Questions",
+            "description": "Exam Questions"
+        },
+        {
+            "name": "Exam Monitoring",
+            "description": "Exam Monitoring"
+        },
+        {
+            "name": "Exam Rolling",
+            "description": "Exam Rolling"
+        },
+        {
+            "name": "Question Bank",
+            "description": "Question Bank"
+        },
+        {
+            "name": "Question Categories",
+            "description": "Question Categories"
+        },
+        {
+            "name": "Questions",
+            "description": "Questions"
+        },
+        {
+            "name": "Question Groups",
+            "description": "Question Groups"
+        },
+        {
+            "name": "Students",
+            "description": "Students"
+        },
+        {
+            "name": "Student Groups",
+            "description": "Student Groups"
+        },
+        {
+            "name": "Debug",
+            "description": "Debug"
+        },
+        {
+            "name": "Users",
+            "description": "Users"
+        }
+    ]
 }

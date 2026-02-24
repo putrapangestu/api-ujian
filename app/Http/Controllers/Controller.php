@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
-use OpenApi\Annotations as OA;
+// use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
 /**
  * Base Controller for all controllers in the application
@@ -13,72 +14,29 @@ use OpenApi\Annotations as OA;
  * This class provides basic functions that can be used by all controllers
  * Uses AuthorizesRequests and ValidatesRequests traits from Laravel
  *
- * @OA\SecurityScheme(
- *     securityScheme="bearerAuth",
- *     type="http",
- *     scheme="bearer",
- *     bearerFormat="JWT",
- *     description="Enter JWT token in format: Bearer {token}"
- * )
- *
- * @OA\Schema(
- *     schema="BaseResponse",
- *     type="object",
- *     @OA\Property(property="success", type="boolean", example=true),
- *     @OA\Property(property="message", type="string", example="Operation successful"),
- *     @OA\Property(property="data", type="object", nullable=true),
- *     @OA\Property(property="errors", type="object", nullable=true)
- * )
- *
- * @OA\Schema(
- *     schema="ErrorResponse",
- *     type="object",
- *     @OA\Property(property="success", type="boolean", example=false),
- *     @OA\Property(property="message", type="string", example="Operation failed"),
- *     @OA\Property(property="data", type="object", nullable=true),
- *     @OA\Property(property="errors", type="object", nullable=true)
- * )
- *
- * @OA\Schema(
- *     schema="ValidationError",
- *     type="object",
- *     @OA\Property(property="success", type="boolean", example=false),
- *     @OA\Property(property="message", type="string", example="Validation error"),
- *     @OA\Property(property="errors", type="object", example={"field_name": ["Field is required"]})
- * )
- *
- * @OA\Info(
- *     title="API Ujian CPNS",
- *     version="1.0.0",
- *     description="API untuk sistem manajemen ujian CPNS dengan fitur lengkap",
- *     @OA\Contact(
- *         name="Development Team",
- *         email="dev@example.com"
- *     ),
- *     @OA\License(
- *         name="MIT",
- *         url="https://opensource.org/licenses/MIT"
- *     )
- * )
- *
- * @OA\Server(
- *     url="http://localhost:8000/api",
- *     description="Development server"
- * )
- *
- * @OA\Server(
- *     url="https://api.ujian-cpns.com/api",
- *     description="Production server"
- * )
- *
- * @OA\PathItem(
- *     path="/"
- * )
  *
  * @package App\Http\Controllers
  * @author Development Team
  * @version 1.0.0
  */
+
+#[OA\Info(
+    title: "API Ujian CPNS",
+    version: "1.0.0",
+    description: "API untuk sistem manajemen ujian CPNS"
+)]
+#[OA\Server(
+    url: "/api",
+    description: "Development Server"
+)]
+#[OA\SecurityScheme(
+    securityScheme: "bearerAuth",
+    type: "http",
+    scheme: "bearer",
+    bearerFormat: "JWT",
+    description: "Masukkan token dalam format: Bearer <token>"
+)]
+
 abstract class Controller extends BaseController
 {
     use AuthorizesRequests, ValidatesRequests;

@@ -5,17 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\QuestionBankService;
 use Illuminate\Http\Request;
-use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
 /**
  * QuestionBank Controller
  *
  * Controller ini menangani import/export bank soal
- *
- * @OA\Tag(
- *     name="Question Bank",
- *     description="API endpoints for managing question bank import/export"
- * )
  *
  * @package App\Http\Controllers\Api
  * @author Development Team
@@ -43,55 +38,27 @@ class QuestionBankController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/question-bank/import",
-     *     summary="Import question bank from Excel file",
-     *     tags={"Question Bank"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="multipart/form-data",
-     *             @OA\Schema(
-     *                 required={"file"},
-     *                 @OA\Property(
-     *                     property="file",
-     *                     type="string",
-     *                     format="binary",
-     *                     description="Excel file berisi bank soal"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="exam_id",
-     *                     type="integer",
-     *                     nullable=true,
-     *                     description="ID ujian terkait (opsional)"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="question_group_id",
-     *                     type="integer",
-     *                     nullable=true,
-     *                     description="ID grup soal (opsional)"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="category_id",
-     *                     type="integer",
-     *                     nullable=true,
-     *                     description="ID kategori soal (opsional)"
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Question bank imported successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/question-bank/import",
+        summary: "Import bank soal",
+        tags: ["Question Bank"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "multipart/form-data",
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(property: "file", type: "string", format: "binary"),
+                        new OA\Property(property: "exam_id", type: "integer"),
+                        new OA\Property(property: "question_group_id", type: "integer"),
+                        new OA\Property(property: "category_id", type: "integer"),
+                    ]
+                )
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function import(Request $request)
     {
         $request->validate([
@@ -120,39 +87,18 @@ class QuestionBankController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/question-bank/export",
-     *     summary="Export question bank to Excel file",
-     *     tags={"Question Bank"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="exam_id",
-     *         in="query",
-     *         description="Filter by exam ID",
-     *         required=false,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(
-     *         name="question_group_id",
-     *         in="query",
-     *         description="Filter by question group ID",
-     *         required=false,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(
-     *         name="category_id",
-     *         in="query",
-     *         description="Filter by question category ID",
-     *         required=false,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Question bank exported successfully"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/question-bank/export",
+        summary: "Export bank soal",
+        tags: ["Question Bank"],
+        parameters: [
+            new OA\Parameter(name: "exam_id", in: "query", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "question_group_id", in: "query", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "category_id", in: "query", schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function export(Request $request)
     {
         $request->validate([

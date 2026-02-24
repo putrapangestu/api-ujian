@@ -6,17 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\QuestionCategoryRequest;
 use App\Services\QuestionCategoryService;
 use Illuminate\Http\Request;
-use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
 /**
  * QuestionCategory Controller
  *
  * Controller ini menangani semua operasi terkait kategori soal
- *
- * @OA\Tag(
- *     name="Question Categories",
- *     description="API endpoints for managing question categories"
- * )
  *
  * @package App\Http\Controllers\Api
  * @author Development Team
@@ -44,18 +39,18 @@ class QuestionCategoryController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/question-categories",
-     *     summary="Get all question categories",
-     *     tags={"Question Categories"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/question-categories",
+        summary: "Daftar kategori soal",
+        tags: ["Question Categories"],
+        parameters: [
+            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "status", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "per_page", in: "query", schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'status']);
@@ -74,29 +69,14 @@ class QuestionCategoryController extends Controller
      *
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/question-categories/{id}",
-     *     summary="Get question category by ID",
-     *     tags={"Question Categories"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID kategori soal",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Question category not found"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/question-categories/{id}",
+        summary: "Detail kategori soal",
+        tags: ["Question Categories"],
+        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function show($id)
     {
         $result = $this->questionCategoryService->getCategoryById($id);
@@ -113,26 +93,24 @@ class QuestionCategoryController extends Controller
      *
      * @param QuestionCategoryRequest $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/admin/question-categories",
-     *     summary="Create new question category",
-     *     tags={"Question Categories"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(type="object")
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Question category created successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/admin/question-categories",
+        summary: "Buat kategori soal",
+        tags: ["Admin","Question Categories"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "name", type: "string", maxLength: 255),
+                    new OA\Property(property: "description", type: "string"),
+                    new OA\Property(property: "code", type: "string", maxLength: 50),
+                    new OA\Property(property: "status", type: "string"),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function store(QuestionCategoryRequest $request)
     {
         $result = $this->questionCategoryService->createCategory($request->validatedData());
@@ -150,33 +128,25 @@ class QuestionCategoryController extends Controller
      * @param QuestionCategoryRequest $request
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Put(
-     *     path="/admin/question-categories/{id}",
-     *     summary="Update question category",
-     *     tags={"Question Categories"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID kategori soal",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(type="object")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Question category updated successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Question category not found"
-     *     )
-     * )
      */
+    #[OA\Put(
+        path: "/admin/question-categories/{id}",
+        summary: "Perbarui kategori soal",
+        tags: ["Admin","Question Categories"],
+        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "name", type: "string", maxLength: 255),
+                    new OA\Property(property: "description", type: "string"),
+                    new OA\Property(property: "code", type: "string", maxLength: 50),
+                    new OA\Property(property: "status", type: "string"),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function update(QuestionCategoryRequest $request, $id)
     {
         $result = $this->questionCategoryService->updateCategory($id, $request->validatedData());
@@ -193,29 +163,14 @@ class QuestionCategoryController extends Controller
      *
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Delete(
-     *     path="/admin/question-categories/{id}",
-     *     summary="Delete question category",
-     *     tags={"Question Categories"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID kategori soal",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Question category deleted successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Question category not found"
-     *     )
-     * )
      */
+    #[OA\Delete(
+        path: "/admin/question-categories/{id}",
+        summary: "Hapus kategori soal",
+        tags: ["Admin","Question Categories"],
+        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function destroy($id)
     {
         $result = $this->questionCategoryService->deleteCategory($id);

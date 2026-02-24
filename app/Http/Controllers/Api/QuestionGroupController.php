@@ -6,17 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\QuestionGroupRequest;
 use App\Services\QuestionGroupService;
 use Illuminate\Http\Request;
-use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
 /**
  * QuestionGroup Controller
  *
  * Controller ini menangani semua operasi terkait grup soal/bank soal
- *
- * @OA\Tag(
- *     name="Question Groups",
- *     description="API endpoints for managing question groups"
- * )
  *
  * @package App\Http\Controllers\Api
  * @author Development Team
@@ -44,18 +39,18 @@ class QuestionGroupController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/question-groups",
-     *     summary="Get all question groups",
-     *     tags={"Question Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/question-groups",
+        summary: "Daftar grup soal",
+        tags: ["Question Groups"],
+        parameters: [
+            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "status", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "per_page", in: "query", schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'status']);
@@ -74,18 +69,17 @@ class QuestionGroupController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/question-groups/all",
-     *     summary="Get all question groups without pagination",
-     *     tags={"Question Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/question-groups/all",
+        summary: "Daftar semua grup soal",
+        tags: ["Question Groups"],
+        parameters: [
+            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "status", in: "query", schema: new OA\Schema(type: "string")),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function listAll(Request $request)
     {
         $filters = $request->only(['search', 'status']);
@@ -103,29 +97,14 @@ class QuestionGroupController extends Controller
      *
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/question-groups/{id}",
-     *     summary="Get question group by ID",
-     *     tags={"Question Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID grup soal",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Question group not found"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/question-groups/{id}",
+        summary: "Detail grup soal",
+        tags: ["Question Groups"],
+        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function show($id)
     {
         $result = $this->questionGroupService->getGroupById($id);
@@ -142,26 +121,24 @@ class QuestionGroupController extends Controller
      *
      * @param QuestionGroupRequest $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/admin/question-groups",
-     *     summary="Create new question group",
-     *     tags={"Question Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(type="object")
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Question group created successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/admin/question-groups",
+        summary: "Buat grup soal",
+        tags: ["Admin","Question Groups"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "name", type: "string", maxLength: 255),
+                    new OA\Property(property: "description", type: "string"),
+                    new OA\Property(property: "code", type: "string", maxLength: 50),
+                    new OA\Property(property: "status", type: "string"),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function store(QuestionGroupRequest $request)
     {
         $result = $this->questionGroupService->createGroup($request->validatedData());
@@ -179,33 +156,25 @@ class QuestionGroupController extends Controller
      * @param QuestionGroupRequest $request
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Put(
-     *     path="/admin/question-groups/{id}",
-     *     summary="Update question group",
-     *     tags={"Question Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID grup soal",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(type="object")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Question group updated successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Question group not found"
-     *     )
-     * )
      */
+    #[OA\Put(
+        path: "/admin/question-groups/{id}",
+        summary: "Perbarui grup soal",
+        tags: ["Admin","Question Groups"],
+        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "name", type: "string", maxLength: 255),
+                    new OA\Property(property: "description", type: "string"),
+                    new OA\Property(property: "code", type: "string", maxLength: 50),
+                    new OA\Property(property: "status", type: "string"),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function update(QuestionGroupRequest $request, $id)
     {
         $result = $this->questionGroupService->updateGroup($id, $request->validatedData());
@@ -222,29 +191,14 @@ class QuestionGroupController extends Controller
      *
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Delete(
-     *     path="/admin/question-groups/{id}",
-     *     summary="Delete question group",
-     *     tags={"Question Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID grup soal",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Question group deleted successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Question group not found"
-     *     )
-     * )
      */
+    #[OA\Delete(
+        path: "/admin/question-groups/{id}",
+        summary: "Hapus grup soal",
+        tags: ["Admin","Question Groups"],
+        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function destroy($id)
     {
         $result = $this->questionGroupService->deleteGroup($id);
@@ -261,37 +215,24 @@ class QuestionGroupController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/question-groups/import",
-     *     summary="Import question groups from Excel file",
-     *     tags={"Question Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="multipart/form-data",
-     *             @OA\Schema(
-     *                 required={"file"},
-     *                 @OA\Property(
-     *                     property="file",
-     *                     type="string",
-     *                     format="binary",
-     *                     description="Excel file berisi data grup soal"
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Question groups imported successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/question-groups/import",
+        summary: "Import grup soal",
+        tags: ["Question Groups"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "multipart/form-data",
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(property: "file", type: "string", format: "binary"),
+                    ]
+                )
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function import(Request $request)
     {
         $request->validate([
@@ -313,18 +254,13 @@ class QuestionGroupController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/question-groups/export",
-     *     summary="Export question groups to Excel file",
-     *     tags={"Question Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Question groups exported successfully"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/question-groups/export",
+        summary: "Export grup soal",
+        tags: ["Question Groups"],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function export(Request $request)
     {
         $result = $this->questionGroupService->exportGroups();

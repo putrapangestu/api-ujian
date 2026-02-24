@@ -7,7 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
-use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
 /**
  * Authentication Controller
@@ -35,45 +35,23 @@ class AuthController extends Controller
         $this->authService = $authService;
     }
 
-    /**
-     * @OA\Post(
-     *     path="/auth/register",
-     *     summary="Register new user",
-     *     tags={"Authentication"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"name", "email", "password", "password_confirmation"},
-     *             @OA\Property(property="name", type="string", example="John Doe"),
-     *             @OA\Property(property="email", type="string", format="email", example="john@example.com"),
-     *             @OA\Property(property="password", type="string", format="password", example="password123"),
-     *             @OA\Property(property="password_confirmation", type="string", format="password", example="password123")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Registration successful",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Registrasi berhasil"),
-     *             @OA\Property(property="data", type="object",
-     *                 @OA\Property(property="user", type="object"),
-     *                 @OA\Property(property="token", type="string"),
-     *                 @OA\Property(property="token_type", type="string", example="Bearer")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="Registrasi gagal"),
-     *             @OA\Property(property="errors", type="object")
-     *         )
-     *     )
-     * )
-     */
+    #[OA\Post(
+        path: "/auth/register",
+        summary: "Register user baru",
+        tags: ["Auth"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "name", type: "string", maxLength: 255),
+                    new OA\Property(property: "email", type: "string", format: "email", maxLength: 255),
+                    new OA\Property(property: "password", type: "string", minLength: 8),
+                    new OA\Property(property: "password_confirmation", type: "string", minLength: 8),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 201, description: "Created")]
+    )]
     public function register(RegisterRequest $request)
     {
         $result = $this->authService->register($request->validatedData());
@@ -85,42 +63,21 @@ class AuthController extends Controller
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/auth/login",
-     *     summary="Login user",
-     *     tags={"Authentication"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"email", "password"},
-     *             @OA\Property(property="email", type="string", format="email", example="john@example.com"),
-     *             @OA\Property(property="password", type="string", format="password", example="password123")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Login successful",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Login berhasil"),
-     *             @OA\Property(property="data", type="object",
-     *                 @OA\Property(property="user", type="object"),
-     *                 @OA\Property(property="token", type="string"),
-     *                 @OA\Property(property="token_type", type="string", example="Bearer")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Invalid credentials",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="Email atau password salah")
-     *         )
-     *     )
-     * )
-     */
+    #[OA\Post(
+        path: "/auth/login",
+        summary: "Login user",
+        tags: ["Auth"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "email", type: "string", format: "email", maxLength: 255),
+                    new OA\Property(property: "password", type: "string", minLength: 6),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function login(LoginRequest $request)
     {
         $result = $this->authService->login($request->validatedData());
@@ -132,30 +89,12 @@ class AuthController extends Controller
         return $this->errorResponse($result['message'], 401, $result['errors'] ?? null);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/auth/logout",
-     *     summary="Logout user",
-     *     tags={"Authentication"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Logout successful",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Logout berhasil")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthenticated",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="Unauthenticated")
-     *         )
-     *     )
-     * )
-     */
+    #[OA\Post(
+        path: "/auth/logout",
+        summary: "Logout user",
+        tags: ["Auth"],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function logout(Request $request)
     {
         $result = $this->authService->logout($request->user());
@@ -167,23 +106,12 @@ class AuthController extends Controller
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
     }
 
-    /**
-     * @OA\Get(
-     *     path="/auth/me",
-     *     summary="Get user profile",
-     *     tags={"Authentication"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Profile retrieved successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Profile berhasil diambil"),
-     *             @OA\Property(property="data", type="object")
-     *         )
-     *     )
-     * )
-     */
+    #[OA\Get(
+        path: "/auth/me",
+        summary: "Profil user saat ini",
+        tags: ["Auth"],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function profile(Request $request)
     {
         $result = $this->authService->profile($request->user());
@@ -195,30 +123,16 @@ class AuthController extends Controller
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
     }
 
-    /**
-     * @OA\Put(
-     *     path="/auth/profile",
-     *     summary="Update user profile",
-     *     tags={"Authentication"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             @OA\Property(property="name", type="string", example="John Doe"),
-     *             @OA\Property(property="email", type="string", format="email", example="john@example.com")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Profile updated successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Profile berhasil diupdate"),
-     *             @OA\Property(property="data", type="object")
-     *         )
-     *     )
-     * )
-     */
+    #[OA\Put(
+        path: "/auth/profile",
+        summary: "Update profil user",
+        tags: ["Auth"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent()
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function updateProfile(Request $request)
     {
         $result = $this->authService->updateProfile($request->user(), $request->all());

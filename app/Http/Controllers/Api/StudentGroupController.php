@@ -6,18 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StudentGroupRequest;
 use App\Services\StudentGroupService;
 use Illuminate\Http\Request;
-use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
 /**
  * StudentGroup Controller
  *
  * Controller ini menangani semua operasi terkait grup siswa
  * Termasuk rolling siswa antar grup
- *
- * @OA\Tag(
- *     name="Student Groups",
- *     description="API endpoints for managing student groups"
- * )
  *
  * @package App\Http\Controllers\Api
  * @author Development Team
@@ -45,22 +40,8 @@ class StudentGroupController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/student-groups",
-     *     summary="Get all student groups",
-     *     tags={"Student Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation"
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized"
-     *     )
-     * )
      */
+    #[OA\Get(path: "/student-groups", summary: "Daftar grup siswa", tags: ["Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'status']);
@@ -79,22 +60,8 @@ class StudentGroupController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/student-groups/all",
-     *     summary="Get all student groups without pagination",
-     *     tags={"Student Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation"
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized"
-     *     )
-     * )
      */
+    #[OA\Get(path: "/student-groups/all", summary: "Daftar semua grup siswa", tags: ["Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
     public function listAll(Request $request)
     {
         $filters = $request->only(['search', 'status']);
@@ -112,29 +79,8 @@ class StudentGroupController extends Controller
      *
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/student-groups/{id}",
-     *     summary="Get student group by ID",
-     *     tags={"Student Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID grup siswa",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Student group not found"
-     *     )
-     * )
      */
+    #[OA\Get(path: "/student-groups/{id}", summary: "Detail grup siswa", tags: ["Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
     public function show($id)
     {
         $result = $this->studentGroupService->getGroupById($id);
@@ -151,32 +97,8 @@ class StudentGroupController extends Controller
      *
      * @param StudentGroupRequest $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/admin/student-groups",
-     *     summary="Create new student group",
-     *     tags={"Student Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             type="object"
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Student group created successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized"
-     *     )
-     * )
      */
+    #[OA\Post(path: "/admin/student-groups", summary: "Buat grup siswa", tags: ["Admin","Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
     public function store(StudentGroupRequest $request)
     {
         $result = $this->studentGroupService->createGroup($request->validatedData());
@@ -194,39 +116,8 @@ class StudentGroupController extends Controller
      * @param StudentGroupRequest $request
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Put(
-     *     path="/admin/student-groups/{id}",
-     *     summary="Update student group",
-     *     tags={"Student Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID grup siswa",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             type="object"
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Student group updated successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Student group not found"
-     *     )
-     * )
      */
+    #[OA\Put(path: "/admin/student-groups/{id}", summary: "Perbarui grup siswa", tags: ["Admin","Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
     public function update(StudentGroupRequest $request, $id)
     {
         $result = $this->studentGroupService->updateGroup($id, $request->validatedData());
@@ -243,29 +134,8 @@ class StudentGroupController extends Controller
      *
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Delete(
-     *     path="/admin/student-groups/{id}",
-     *     summary="Delete student group",
-     *     tags={"Student Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID grup siswa",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Student group deleted successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Student group not found"
-     *     )
-     * )
      */
+    #[OA\Delete(path: "/admin/student-groups/{id}", summary: "Hapus grup siswa", tags: ["Admin","Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
     public function destroy($id)
     {
         $result = $this->studentGroupService->deleteGroup($id);
@@ -282,36 +152,8 @@ class StudentGroupController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/student-groups/roll-students",
-     *     summary="Roll students to new group",
-     *     tags={"Student Groups"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             type="object",
-     *             required={"from_group_id","to_group_id","student_ids"},
-     *             @OA\Property(property="from_group_id", type="integer", example=1),
-     *             @OA\Property(property="to_group_id", type="integer", example=2),
-     *             @OA\Property(
-     *                 property="student_ids",
-     *                 type="array",
-     *                 @OA\Items(type="integer", example=1)
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Students rolled successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     )
-     * )
      */
+    #[OA\Post(path: "/student-groups/roll-students", summary: "Rolling siswa antar grup", tags: ["Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
     public function rollStudents(Request $request)
     {
         $request->validate([

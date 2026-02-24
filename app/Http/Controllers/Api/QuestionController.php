@@ -6,17 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\QuestionRequest;
 use App\Services\QuestionService;
 use Illuminate\Http\Request;
-use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
 /**
  * Question Controller
  *
  * Controller ini menangani semua operasi terkait soal
- *
- * @OA\Tag(
- *     name="Questions",
- *     description="API endpoints for managing questions"
- * )
  *
  * @package App\Http\Controllers\Api
  * @author Development Team
@@ -44,26 +39,28 @@ class QuestionController extends Controller
      *
      * @param QuestionRequest $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/questions",
-     *     summary="Create new question",
-     *     tags={"Questions"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(type="object")
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Question created successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/questions",
+        summary: "Buat soal",
+        tags: ["Questions"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "exam_id", type: "integer"),
+                    new OA\Property(property: "category_id", type: "integer"),
+                    new OA\Property(property: "question_group_id", type: "integer"),
+                    new OA\Property(property: "question_text", type: "string", maxLength: 1000),
+                    new OA\Property(property: "question_type", type: "string", enum: ["multiple_choice","essay","true_false"]),
+                    new OA\Property(property: "score", type: "integer", minimum: 1, maximum: 100),
+                    new OA\Property(property: "options", type: "array", items: new OA\Items(type: "object")),
+                    new OA\Property(property: "correct_answer", type: "string"),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function store(QuestionRequest $request)
     {
         $result = $this->questionService->createQuestion($request->validatedData());
@@ -81,33 +78,29 @@ class QuestionController extends Controller
      * @param QuestionRequest $request
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Put(
-     *     path="/questions/{id}",
-     *     summary="Update question",
-     *     tags={"Questions"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID soal",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(type="object")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Question updated successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Question not found"
-     *     )
-     * )
      */
+    #[OA\Put(
+        path: "/questions/{id}",
+        summary: "Perbarui soal",
+        tags: ["Questions"],
+        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "exam_id", type: "integer"),
+                    new OA\Property(property: "category_id", type: "integer"),
+                    new OA\Property(property: "question_group_id", type: "integer"),
+                    new OA\Property(property: "question_text", type: "string", maxLength: 1000),
+                    new OA\Property(property: "question_type", type: "string", enum: ["multiple_choice","essay","true_false"]),
+                    new OA\Property(property: "score", type: "integer", minimum: 1, maximum: 100),
+                    new OA\Property(property: "options", type: "array", items: new OA\Items(type: "object")),
+                    new OA\Property(property: "correct_answer", type: "string"),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function update(QuestionRequest $request, $id)
     {
         $result = $this->questionService->updateQuestion($id, $request->validatedData());
@@ -124,48 +117,26 @@ class QuestionController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/questions/import",
-     *     summary="Import questions from Excel file",
-     *     tags={"Questions"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="multipart/form-data",
-     *             @OA\Schema(
-     *                 required={"file","exam_id"},
-     *                 @OA\Property(
-     *                     property="file",
-     *                     type="string",
-     *                     format="binary",
-     *                     description="Excel file berisi data soal"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="exam_id",
-     *                     type="integer",
-     *                     description="ID ujian terkait"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="question_group_id",
-     *                     type="integer",
-     *                     nullable=true,
-     *                     description="ID grup soal (opsional)"
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Questions imported successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/questions/import",
+        summary: "Import soal",
+        tags: ["Questions"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "multipart/form-data",
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(property: "file", type: "string", format: "binary"),
+                        new OA\Property(property: "exam_id", type: "integer"),
+                        new OA\Property(property: "question_group_id", type: "integer"),
+                    ]
+                )
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function import(Request $request)
     {
         $request->validate([

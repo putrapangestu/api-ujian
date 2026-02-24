@@ -5,17 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\ExamMonitoringService;
 use Illuminate\Http\Request;
-use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
 /**
  * ExamMonitoring Controller
  *
  * Controller ini menangani monitoring realtime pengerjaan ujian
- *
- * @OA\Tag(
- *     name="Exam Monitoring",
- *     description="API endpoints for exam monitoring"
- )
  *
  * @package App\Http\Controllers\Api
  * @author Development Team
@@ -43,40 +38,27 @@ class ExamMonitoringController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/exam-monitoring/record-action",
-     *     summary="Record exam action for monitoring",
-     *     tags={"Exam Monitoring"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             type="object",
-     *             required={"user_exam_id","student_id","exam_id","action"},
-     *             @OA\Property(property="user_exam_id", type="integer"),
-     *             @OA\Property(property="student_id", type="integer"),
-     *             @OA\Property(property="exam_id", type="integer"),
-     *             @OA\Property(
-     *                 property="action",
-     *                 type="string",
-     *                 enum={"start","answer","navigate","submit","pause","resume"}
-     *             ),
-     *             @OA\Property(property="question_id", type="integer", nullable=true),
-     *             @OA\Property(property="answer", type="string", nullable=true),
-     *             @OA\Property(property="time_spent", type="integer", nullable=true)
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Action recorded successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/exam-monitoring/record-action",
+        summary: "Catat aksi ujian",
+        tags: ["Exam Monitoring"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "user_exam_id", type: "integer"),
+                    new OA\Property(property: "student_id", type: "integer"),
+                    new OA\Property(property: "exam_id", type: "integer"),
+                    new OA\Property(property: "action", type: "string", enum: ["start","answer","navigate","submit","pause","resume"]),
+                    new OA\Property(property: "question_id", type: "integer"),
+                    new OA\Property(property: "answer", type: "string"),
+                    new OA\Property(property: "time_spent", type: "integer", minimum: 0),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function recordAction(Request $request)
     {
         $request->validate([
@@ -104,25 +86,14 @@ class ExamMonitoringController extends Controller
      * @param Request $request
      * @param int $examId
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/exam-monitoring/realtime/{examId}",
-     *     summary="Get real-time exam monitoring data",
-     *     tags={"Exam Monitoring"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="examId",
-     *         in="path",
-     *         description="ID ujian",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Monitoring data retrieved successfully"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/exam-monitoring/realtime/{examId}",
+        summary: "Monitoring realtime ujian",
+        tags: ["Exam Monitoring"],
+        parameters: [new OA\Parameter(name: "examId", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function getRealtimeMonitoring(Request $request, $examId)
     {
         $result = $this->examMonitoringService->getRealtimeMonitoring($examId);
@@ -141,32 +112,17 @@ class ExamMonitoringController extends Controller
      * @param int $studentId
      * @param int $examId
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/exam-monitoring/student/{studentId}/{examId}",
-     *     summary="Get monitoring for specific student",
-     *     tags={"Exam Monitoring"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="studentId",
-     *         in="path",
-     *         description="ID siswa",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(
-     *         name="examId",
-     *         in="path",
-     *         description="ID ujian",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Monitoring data retrieved successfully"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/exam-monitoring/student/{studentId}/{examId}",
+        summary: "Monitoring detail siswa",
+        tags: ["Exam Monitoring"],
+        parameters: [
+            new OA\Parameter(name: "studentId", in: "path", required: true, schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "examId", in: "path", required: true, schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function getStudentMonitoring(Request $request, $studentId, $examId)
     {
         $result = $this->examMonitoringService->getStudentMonitoring($studentId, $examId);
@@ -184,25 +140,14 @@ class ExamMonitoringController extends Controller
      * @param Request $request
      * @param int $examId
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/exam-monitoring/summary/{examId}",
-     *     summary="Get exam summary for monitoring",
-     *     tags={"Exam Monitoring"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="examId",
-     *         in="path",
-     *         description="ID ujian",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Summary retrieved successfully"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/exam-monitoring/summary/{examId}",
+        summary: "Ringkasan monitoring ujian",
+        tags: ["Exam Monitoring"],
+        parameters: [new OA\Parameter(name: "examId", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function getExamSummary(Request $request, $examId)
     {
         $result = $this->examMonitoringService->getExamSummary($examId);
@@ -221,32 +166,17 @@ class ExamMonitoringController extends Controller
      * @param int $examId
      * @param int $questionGroupId
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/exam-monitoring/by-group/{examId}/{questionGroupId}",
-     *     summary="Get monitoring by question group",
-     *     tags={"Exam Monitoring"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="examId",
-     *         in="path",
-     *         description="ID ujian",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(
-     *         name="questionGroupId",
-     *         in="path",
-     *         description="ID grup soal",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Monitoring data retrieved successfully"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/exam-monitoring/by-group/{examId}/{questionGroupId}",
+        summary: "Monitoring per grup soal",
+        tags: ["Exam Monitoring"],
+        parameters: [
+            new OA\Parameter(name: "examId", in: "path", required: true, schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "questionGroupId", in: "path", required: true, schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function getMonitoringByQuestionGroup(Request $request, $examId, $questionGroupId)
     {
         $result = $this->examMonitoringService->getMonitoringByQuestionGroup($examId, $questionGroupId);
@@ -264,25 +194,14 @@ class ExamMonitoringController extends Controller
      * @param Request $request
      * @param int $examId
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/exam-monitoring/by-category/{examId}",
-     *     summary="Get monitoring by category",
-     *     tags={"Exam Monitoring"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="examId",
-     *         in="path",
-     *         description="ID ujian",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Monitoring data retrieved successfully"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/exam-monitoring/by-category/{examId}",
+        summary: "Monitoring per kategori",
+        tags: ["Exam Monitoring"],
+        parameters: [new OA\Parameter(name: "examId", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function getMonitoringByCategory(Request $request, $examId)
     {
         $result = $this->examMonitoringService->getMonitoringByCategory($examId);

@@ -8,17 +8,13 @@ use App\Models\Exam;
 use App\Services\ExamService;
 use App\Services\ExamQuestionSelectorService;
 use Illuminate\Http\Request;
-use OpenApi\Annotations as OA;
+use OpenApi\Attributes as OA;
 
 /**
  * Exam Controller
  *
  * Controller ini menangani semua operasi terkait ujian
  *
- * @OA\Tag(
- *     name="Exams",
- *     description="API endpoints for managing exams"
- * )
  *
  * @package App\Http\Controllers\Api
  * @author Development Team
@@ -53,47 +49,18 @@ class ExamController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/exams",
-     *     summary="Get all exams",
-     *     tags={"Exams"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="page",
-     *         in="query",
-     *         description="Page number for pagination",
-     *         required=false,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(
-     *         name="per_page",
-     *         in="query",
-     *         description="Number of items per page",
-     *         required=false,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Exams retrieved successfully"),
-     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Exam"))
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="Unauthorized")
-     *         )
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/exams",
+        summary: "Daftar ujian",
+        tags: ["Exams"],
+        parameters: [
+            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "status", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "per_page", in: "query", schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'status']);
@@ -112,29 +79,16 @@ class ExamController extends Controller
      *
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Get(
-     *     path="/exams/{id}",
-     *     summary="Get exam by ID",
-     *     tags={"Exams"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID ujian",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Exam retrieved successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Exam not found"
-     *     )
-     * )
      */
+    #[OA\Get(
+        path: "/exams/{id}",
+        summary: "Detail ujian",
+        tags: ["Exams"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function show($id)
     {
         $result = $this->examService->getExamById($id);
@@ -151,26 +105,28 @@ class ExamController extends Controller
      *
      * @param ExamRequest $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/admin/exams",
-     *     summary="Create new exam",
-     *     tags={"Exams"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(type="object")
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Exam created successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/admin/exams",
+        summary: "Buat ujian",
+        tags: ["Admin","Exams"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "title", type: "string", maxLength: 255),
+                    new OA\Property(property: "description", type: "string"),
+                    new OA\Property(property: "duration", type: "integer", minimum: 1, maximum: 300),
+                    new OA\Property(property: "total_questions", type: "integer", minimum: 1, maximum: 200),
+                    new OA\Property(property: "passing_score", type: "integer", minimum: 0, maximum: 100),
+                    new OA\Property(property: "start_date", type: "string", format: "date-time"),
+                    new OA\Property(property: "end_date", type: "string", format: "date-time"),
+                    new OA\Property(property: "question_groups", type: "array", items: new OA\Items(type: "integer")),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function store(ExamRequest $request)
     {
         $result = $this->examService->createExam($request->validatedData());
@@ -188,33 +144,31 @@ class ExamController extends Controller
      * @param ExamRequest $request
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Put(
-     *     path="/admin/exams/{id}",
-     *     summary="Update exam",
-     *     tags={"Exams"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID ujian",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(type="object")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Exam updated successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Exam not found"
-     *     )
-     * )
      */
+    #[OA\Put(
+        path: "/admin/exams/{id}",
+        summary: "Perbarui ujian",
+        tags: ["Admin","Exams"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "title", type: "string", maxLength: 255),
+                    new OA\Property(property: "description", type: "string"),
+                    new OA\Property(property: "duration", type: "integer", minimum: 1, maximum: 300),
+                    new OA\Property(property: "total_questions", type: "integer", minimum: 1, maximum: 200),
+                    new OA\Property(property: "passing_score", type: "integer", minimum: 0, maximum: 100),
+                    new OA\Property(property: "start_date", type: "string", format: "date-time"),
+                    new OA\Property(property: "end_date", type: "string", format: "date-time"),
+                    new OA\Property(property: "question_groups", type: "array", items: new OA\Items(type: "integer")),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function update(ExamRequest $request, $id)
     {
         $result = $this->examService->updateExam($id, $request->validatedData());
@@ -231,29 +185,16 @@ class ExamController extends Controller
      *
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Delete(
-     *     path="/admin/exams/{id}",
-     *     summary="Delete exam",
-     *     tags={"Exams"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID ujian",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Exam deleted successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Exam not found"
-     *     )
-     * )
      */
+    #[OA\Delete(
+        path: "/admin/exams/{id}",
+        summary: "Hapus ujian",
+        tags: ["Admin","Exams"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function destroy($id)
     {
         $result = $this->examService->deleteExam($id);
@@ -271,67 +212,41 @@ class ExamController extends Controller
      * @param \Illuminate\Http\Request $request
      * @param int $examId
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/exam-questions/{examId}/select-from-banks",
-     *     summary="Select questions from question banks for exam",
-     *     tags={"Exam Questions"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="examId",
-     *         in="path",
-     *         description="ID of the exam",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             type="object",
-     *             required={"question_banks"},
-     *             @OA\Property(
-     *                 property="question_banks",
-     *                 type="array",
-     *                 @OA\Items(
-     *                     type="object",
-     *                     required={"question_group_id", "question_count"},
-     *                     @OA\Property(property="question_group_id", type="integer", example=1),
-     *                     @OA\Property(property="question_count", type="integer", example=10),
-     *                     @OA\Property(property="random_selection", type="boolean", example=true)
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Questions selected successfully",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Questions successfully selected for exam"),
-     *             @OA\Property(property="data", type="object")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Bad request",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="Validation error")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="Unauthorized")
-     *         )
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/exams/{id}/select-questions",
+        summary: "Pilih soal dari bank untuk ujian",
+        tags: ["Exams","Exam Questions"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "question_banks", type: "array", items: new OA\Items(type: "object"))
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    #[OA\Post(
+        path: "/exam-questions/{examId}/select-from-banks",
+        summary: "Pilih soal dari bank untuk ujian",
+        tags: ["Exams","Exam Questions"],
+        parameters: [
+            new OA\Parameter(name: "examId", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "question_banks", type: "array", items: new OA\Items(type: "object"))
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function selectQuestionsFromBanks(Request $request, Exam $exam)
     {
         $request->validate([
@@ -358,39 +273,35 @@ class ExamController extends Controller
      *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/exam-questions/validate-banks",
-     *     summary="Validate question bank selection",
-     *     tags={"Exam Questions"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             type="object",
-     *             required={"question_banks"},
-     *             @OA\Property(
-     *                 property="question_banks",
-     *                 type="array",
-     *                 @OA\Items(
-     *                     type="object",
-     *                     required={"question_group_id","question_count"},
-     *                     @OA\Property(property="question_group_id", type="integer"),
-     *                     @OA\Property(property="question_count", type="integer")
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Selection is valid"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/exams/validate-question-banks",
+        summary: "Validasi pilihan bank soal",
+        tags: ["Exams","Exam Questions"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "question_banks", type: "array", items: new OA\Items(type: "object"))
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    #[OA\Post(
+        path: "/exam-questions/validate-banks",
+        summary: "Validasi pilihan bank soal",
+        tags: ["Exams","Exam Questions"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "question_banks", type: "array", items: new OA\Items(type: "object"))
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function validateQuestionBankSelection(Request $request)
     {
         $request->validate([
@@ -416,37 +327,41 @@ class ExamController extends Controller
      * @param \Illuminate\Http\Request $request
      * @param int $examId
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/exam-questions/{examId}/for-student",
-     *     summary="Get exam questions for student",
-     *     tags={"Exam Questions"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="examId",
-     *         in="path",
-     *         description="ID ujian",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             type="object",
-     *             required={"student_id"},
-     *             @OA\Property(property="student_id", type="integer")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Questions retrieved successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Validation error"
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/exams/{id}/questions-for-student",
+        summary: "Ambil soal ujian untuk siswa",
+        tags: ["Exams","Exam Questions"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "student_id", type: "integer"),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    #[OA\Post(
+        path: "/exam-questions/{examId}/for-student",
+        summary: "Ambil soal ujian untuk siswa",
+        tags: ["Exams","Exam Questions"],
+        parameters: [
+            new OA\Parameter(name: "examId", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "student_id", type: "integer"),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function getExamQuestionsForStudent(Request $request, $examId)
     {
         $request->validate([
@@ -468,29 +383,16 @@ class ExamController extends Controller
      * @param Request $request
      * @param string $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @OA\Post(
-     *     path="/exams/{id}/start",
-     *     summary="Start exam for authenticated user",
-     *     tags={"Exams"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID ujian",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Exam started successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Cannot start exam"
-     *     )
-     * )
      */
+    #[OA\Post(
+        path: "/exams/{id}/start",
+        summary: "Mulai ujian untuk user terautentikasi",
+        tags: ["Exams"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
     public function startExam(Request $request, $id)
     {
         $userId = $request->user()->id;

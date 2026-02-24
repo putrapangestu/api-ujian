@@ -54,6 +54,7 @@ class Student extends Model
         'group_id',
         'user_id',
         'status',
+        'birth_date'
     ];
 
     /**

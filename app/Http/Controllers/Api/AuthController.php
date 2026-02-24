@@ -13,11 +13,6 @@ use OpenApi\Annotations as OA;
  * Authentication Controller
  *
  * Controller ini menangani semua operasi authentication
- * 
- * @OA\Tag(
- *     name="Authentication",
- *     description="API endpoints for authentication"
- * )
  *
  * @package App\Http\Controllers\Api
  * @author Development Team

@@ -73,6 +73,24 @@ class StudentService extends BaseService
     }
 
     /**
+     * Get all students
+     *
+     * @param array $filters
+     * @return array
+     */
+    public function getListAllStudents(array $filters = []): array
+    {
+        try {
+            $students = $this->studentRepository->all(['*'], ['group']);
+
+            return $this->successResponse($students, 'Daftar siswa berhasil diambil');
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengambil daftar siswa: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Get student by ID
      *
      * @param int $id

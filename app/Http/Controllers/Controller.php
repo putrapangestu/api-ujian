@@ -47,31 +47,32 @@ use OpenApi\Annotations as OA;
  *     @OA\Property(property="errors", type="object", example={"field_name": ["Field is required"]})
  * )
  *
- * @OA\OpenApi(
- *     @OA\Info(
- *         title="API Ujian CPNS",
- *         version="1.0.0",
- *         description="API untuk sistem manajemen ujian CPNS dengan fitur lengkap",
- *         @OA\Contact(
- *             name="Development Team",
- *             email="dev@example.com"
- *         ),
- *         @OA\License(
- *             name="MIT",
- *             url="https://opensource.org/licenses/MIT"
- *         )
+ * @OA\Info(
+ *     title="API Ujian CPNS",
+ *     version="1.0.0",
+ *     description="API untuk sistem manajemen ujian CPNS dengan fitur lengkap",
+ *     @OA\Contact(
+ *         name="Development Team",
+ *         email="dev@example.com"
  *     ),
- *     @OA\Server(
- *         url="http://localhost:8000/api",
- *         description="Development server"
- *     ),
- *     @OA\Server(
- *         url="https://api.ujian-cpns.com/api",
- *         description="Production server"
- *     ),
- *     @OA\PathItem(
- *         path="/"
+ *     @OA\License(
+ *         name="MIT",
+ *         url="https://opensource.org/licenses/MIT"
  *     )
+ * )
+ *
+ * @OA\Server(
+ *     url="http://localhost:8000/api",
+ *     description="Development server"
+ * )
+ *
+ * @OA\Server(
+ *     url="https://api.ujian-cpns.com/api",
+ *     description="Production server"
+ * )
+ *
+ * @OA\PathItem(
+ *     path="/"
  * )
  *
  * @package App\Http\Controllers

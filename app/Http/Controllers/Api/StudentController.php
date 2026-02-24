@@ -74,6 +74,39 @@ class StudentController extends Controller
     }
 
     /**
+     * Get all students
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Get(
+     *     path="/students",
+     *     summary="Get all students",
+     *     tags={"Students"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation"
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized"
+     *     )
+     * )
+     */
+    public function list(Request $request)
+    {
+        $filters = $request->only(['search', 'group_id', 'status']);
+        $result = $this->studentService->getListAllStudents($filters);
+
+        if ($result['success']) {
+            return $this->successResponse($result['data'], $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
+
+    /**
      * Get student by ID
      *
      * @param int $id

@@ -2,13 +2,14 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 /**
  * Application Service Provider
- * 
+ *
  * Provider utama untuk aplikasi
- * 
+ *
  * @package App\Providers
  * @author Development Team
  * @version 1.0.0
@@ -29,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        if (config('app.force_https')) {
+            URL::forceScheme('https');
+        }
     }
 }

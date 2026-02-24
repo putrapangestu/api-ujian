@@ -7,13 +7,14 @@ use App\Models\Student;
 use App\Models\Exam;
 use App\Models\StudentGroup;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * ExamRolling Service Class
- * 
+ *
  * Service ini menangani rolling user yang mengikuti ujian
  * Memungkinkan pemindahan siswa antar grup yang sedang mengikuti ujian
- * 
+ *
  * @package App\Services
  * @author Development Team
  * @version 1.0.0
@@ -22,7 +23,7 @@ class ExamRollingService extends BaseService
 {
     /**
      * Roll student to different group during exam
-     * 
+     *
      * @param int $userExamId
      * @param int $newGroupId
      * @return array
@@ -87,7 +88,7 @@ class ExamRollingService extends BaseService
 
     /**
      * Roll multiple students to different groups during exam
-     * 
+     *
      * @param array $rollData Array of ['user_exam_id' => int, 'new_group_id' => int]
      * @return array
      */
@@ -132,7 +133,7 @@ class ExamRollingService extends BaseService
 
     /**
      * Get students that can be rolled during exam
-     * 
+     *
      * @param int $examId
      * @return array
      */
@@ -179,7 +180,7 @@ class ExamRollingService extends BaseService
 
     /**
      * Validate rolling operation
-     * 
+     *
      * @param int $userExamId
      * @param int $newGroupId
      * @return array
@@ -234,7 +235,7 @@ class ExamRollingService extends BaseService
 
     /**
      * Log rolling action for audit trail
-     * 
+     *
      * @param UserExam $userExam
      * @param StudentGroup|null $oldGroup
      * @param StudentGroup $newGroup
@@ -242,7 +243,7 @@ class ExamRollingService extends BaseService
      */
     private function logRollingAction(UserExam $userExam, ?StudentGroup $oldGroup, StudentGroup $newGroup): void
     {
-        \Log::info('Student rolled during exam', [
+        Log::info('Student rolled during exam', [
             'user_exam_id' => $userExam->id,
             'student_id' => $userExam->student_id,
             'exam_id' => $userExam->exam_id,
@@ -256,7 +257,7 @@ class ExamRollingService extends BaseService
 
     /**
      * Broadcast rolling event to Socket.IO
-     * 
+     *
      * @param UserExam $userExam
      * @param StudentGroup|null $oldGroup
      * @param StudentGroup $newGroup
@@ -283,12 +284,12 @@ class ExamRollingService extends BaseService
         ];
 
         // Log the broadcast (will be replaced with actual Socket.IO broadcast)
-        \Log::info('Socket.IO Broadcast - Student Rolled:', $broadcastData);
+        Log::info('Socket.IO Broadcast - Student Rolled:', $broadcastData);
     }
 
     /**
      * Calculate exam progress percentage
-     * 
+     *
      * @param UserExam $userExam
      * @return float
      */
@@ -306,7 +307,7 @@ class ExamRollingService extends BaseService
 
     /**
      * Calculate time remaining for exam
-     * 
+     *
      * @param UserExam $userExam
      * @return int
      */

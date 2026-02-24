@@ -63,7 +63,7 @@ class StudentService extends BaseService
     public function getAllStudents(array $filters = []): array
     {
         try {
-            $students = $this->studentRepository->all(['group'], ['*']);
+            $students = $this->studentRepository->all(['*'], ['group']);
 
             return $this->successResponse($students, 'Daftar siswa berhasil diambil');
 
@@ -81,7 +81,7 @@ class StudentService extends BaseService
     public function getStudentById(int $id): array
     {
         try {
-            $student = $this->studentRepository->find($id, ['group', 'userExams.exam']);
+            $student = $this->studentRepository->find($id, ['group', 'userExams.exam'], ['*']);
 
             if (!$student) {
                 return $this->errorResponse('Siswa tidak ditemukan', null, 404);

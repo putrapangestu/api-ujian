@@ -5,14 +5,15 @@ namespace App\Services;
 use App\Models\QuestionGroup;
 use App\Repositories\QuestionGroupRepositoryInterface;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
  * QuestionGroup Service Class
- * 
+ *
  * Service ini menangani semua operasi terkait grup soal/bank soal
  * Termasuk fitur import dari Excel/CSV
- * 
+ *
  * @package App\Services
  * @author Development Team
  * @version 1.0.0
@@ -26,7 +27,7 @@ class QuestionGroupService extends BaseService
 
     /**
      * QuestionGroupService constructor
-     * 
+     *
      * @param QuestionGroupRepositoryInterface $questionGroupRepository
      */
     public function __construct(QuestionGroupRepositoryInterface $questionGroupRepository)
@@ -36,7 +37,7 @@ class QuestionGroupService extends BaseService
 
     /**
      * Get all question groups
-     * 
+     *
      * @param array $filters
      * @return array
      */
@@ -63,7 +64,7 @@ class QuestionGroupService extends BaseService
 
     /**
      * Get question group by ID
-     * 
+     *
      * @param int $id
      * @return array
      */
@@ -85,7 +86,7 @@ class QuestionGroupService extends BaseService
 
     /**
      * Create new question group
-     * 
+     *
      * @param array $data Validated data from QuestionGroupRequest
      * @return array
      */
@@ -106,7 +107,7 @@ class QuestionGroupService extends BaseService
 
     /**
      * Update question group
-     * 
+     *
      * @param int $id
      * @param array $data Validated data from QuestionGroupRequest
      * @return array
@@ -142,7 +143,7 @@ class QuestionGroupService extends BaseService
 
     /**
      * Delete question group
-     * 
+     *
      * @param int $id
      * @return array
      */
@@ -184,7 +185,7 @@ class QuestionGroupService extends BaseService
 
     /**
      * Import question groups from Excel file
-     * 
+     *
      * @param \Illuminate\Http\UploadedFile $file
      * @return array
      */
@@ -242,10 +243,10 @@ class QuestionGroupService extends BaseService
                 }
 
                 // Import groups
-                $result = $this->questionGroupRepository->importGroups($groups);
+                $result = $this->questionGroupRepository->importGroup($groups);
 
                 // Clean up file
-                \Illuminate\Support\Facades\Storage::delete($filePath);
+                Storage::delete($filePath);
 
                 return $this->successResponse([
                     'imported' => $result['imported'],
@@ -263,7 +264,7 @@ class QuestionGroupService extends BaseService
 
     /**
      * Export question groups to Excel
-     * 
+     *
      * @return array
      */
     public function exportGroups(): array

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Exam;
 use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Repositories\QuestionRepositoryInterface;
@@ -9,9 +10,9 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Question Service Class
- * 
+ *
  * Service ini menangani semua operasi terkait soal dan opsi jawaban
- * 
+ *
  * @package App\Services
  * @author Development Team
  * @version 1.0.0
@@ -25,7 +26,7 @@ class QuestionService extends BaseService
 
     /**
      * QuestionService constructor
-     * 
+     *
      * @param QuestionRepositoryInterface $questionRepository
      */
     public function __construct(QuestionRepositoryInterface $questionRepository)
@@ -35,7 +36,7 @@ class QuestionService extends BaseService
 
     /**
      * Create new question with options
-     * 
+     *
      * @param array $data Validated data from QuestionRequest
      * @return array
      */
@@ -73,7 +74,7 @@ class QuestionService extends BaseService
 
     /**
      * Update question with options
-     * 
+     *
      * @param int $id
      * @param array $data Validated data from QuestionRequest
      * @return array
@@ -122,7 +123,7 @@ class QuestionService extends BaseService
 
     /**
      * Import questions from file
-     * 
+     *
      * @param \Illuminate\Http\UploadedFile $file
      * @param int $examId
      * @param int|null $questionGroupId
@@ -207,7 +208,7 @@ class QuestionService extends BaseService
                     ];
 
                     $result = $this->createQuestion($questionData);
-                    
+
                     if ($result['success']) {
                         $questions[] = $result['data'];
                     } else {

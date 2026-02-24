@@ -10,53 +10,14 @@ use Illuminate\Http\Request;
 use OpenApi\Annotations as OA;
 
 /**
- * @OA\Info(
- *     title="API Ujian CPNS",
- *     version="1.0.0",
- *     description="API untuk aplikasi ujian CPNS dengan fitur authentication, ujian, dan manajemen",
- *     @OA\Contact(
- *         email="admin@ujian-cpns.com"
- *     ),
- *     @OA\License(
- *         name="MIT",
- *         url="https://opensource.org/licenses/MIT"
- *     )
- * )
- *
- * @OA\Server(
- *     url="http://localhost:8000/api",
- *     description="Local Development Server"
- * )
- *
- * @OA\SecurityScheme(
- *     securityScheme="bearerAuth",
- *     type="http",
- *     scheme="bearer",
- *     bearerFormat="JWT",
- *     description="Masukkan token JWT dengan format: Bearer {token}"
- * )
- *
- * @OA\PathItem(
- *     path="/api/auth/register"
- * )
- *
- * @OA\PathItem(
- *     path="/api/auth/login"
- * )
- *
- * @OA\PathItem(
- *     path="/api/auth/logout"
- * )
- *
- * @OA\PathItem(
- *     path="/api/auth/profile"
- * )
- */
-
-/**
  * Authentication Controller
  *
  * Controller ini menangani semua operasi authentication
+ * 
+ * @OA\Tag(
+ *     name="Authentication",
+ *     description="API endpoints for authentication"
+ * )
  *
  * @package App\Http\Controllers\Api
  * @author Development Team

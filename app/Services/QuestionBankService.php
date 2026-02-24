@@ -12,10 +12,10 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
  * QuestionBank Service Class
- * 
+ *
  * Service ini menangani import bank soal yang komprehensif
  * Mendukung berbagai format dan validasi yang kompleks
- * 
+ *
  * @package App\Services
  * @author Development Team
  * @version 1.0.0
@@ -24,7 +24,7 @@ class QuestionBankService extends BaseService
 {
     /**
      * Import question bank from Excel file
-     * 
+     *
      * @param \Illuminate\Http\UploadedFile $file
      * @param int|null $examId
      * @param int|null $questionGroupId
@@ -71,7 +71,7 @@ class QuestionBankService extends BaseService
 
                     try {
                         $result = $this->processQuestionRow($row, $rowNumber, $examId, $questionGroupId, $categoryId);
-                        
+
                         if ($result['success']) {
                             $questions[] = $result['data'];
                         } else {
@@ -108,7 +108,7 @@ class QuestionBankService extends BaseService
 
     /**
      * Process single question row
-     * 
+     *
      * @param array $row
      * @param int $rowNumber
      * @param int|null $examId
@@ -187,7 +187,7 @@ class QuestionBankService extends BaseService
             while ($optionIndex < count($row) && !empty(trim($row[$optionIndex]))) {
                 $optionText = trim($row[$optionIndex]);
                 $isCorrect = $optionText === $correctAnswer;
-                
+
                 $options[] = QuestionOption::create([
                     'question_id' => $question->id,
                     'option_text' => $optionText,
@@ -204,7 +204,7 @@ class QuestionBankService extends BaseService
                 return $this->errorResponse("Baris $rowNumber: Minimal 2 opsi untuk multiple choice");
             }
 
-            if (!$options->where('is_correct', true)->first()) {
+            if (!$question->options->where('is_correct', true)->first()) {
                 return $this->errorResponse("Baris $rowNumber: Tidak ada opsi yang benar");
             }
         }
@@ -217,7 +217,7 @@ class QuestionBankService extends BaseService
 
     /**
      * Export question bank to Excel
-     * 
+     *
      * @param int|null $examId
      * @param int|null $questionGroupId
      * @param int|null $categoryId
@@ -275,7 +275,7 @@ class QuestionBankService extends BaseService
 
                 // Set options for multiple choice
                 if ($question->question_type === 'multiple_choice') {
-                    $options = $question->options->sortBy('option_label');
+                    $options = $questions->options->sortBy('option_label');
                     $optionColumn = 'G';
                     foreach ($options as $option) {
                         $sheet->setCellValue($optionColumn . $row, $option->option_text);

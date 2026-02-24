@@ -14,8 +14,8 @@ use OpenApi\Annotations as OA;
  *
  * @OA\Tag(
  *     name="Exam Monitoring",
- *     description="API endpoints for real-time exam monitoring"
- * )
+ *     description="API endpoints for exam monitoring"
+ )
  *
  * @package App\Http\Controllers\Api
  * @author Development Team

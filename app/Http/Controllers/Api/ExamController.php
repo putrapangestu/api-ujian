@@ -97,19 +97,20 @@ class ExamController extends Controller
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'status']);
-        $result = $this->examService->getAllExams($filters);
+        $perPage = (int) $request->get('per_page', 15);
+        $result = $this->examService->getAllExams($filters, $perPage);
 
         if ($result['success']) {
-            return $this->successResponse($result['data'], $result['message']);
+            return response()->json($result, 200);
         }
 
-        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+        return response()->json($result, 400);
     }
 
     /**
      * Get exam by ID
      *
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Get(
@@ -185,7 +186,7 @@ class ExamController extends Controller
      * Update exam
      *
      * @param ExamRequest $request
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Put(
@@ -228,7 +229,7 @@ class ExamController extends Controller
     /**
      * Delete exam
      *
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Delete(
@@ -465,7 +466,7 @@ class ExamController extends Controller
      * Start exam for authenticated user
      *
      * @param Request $request
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Post(

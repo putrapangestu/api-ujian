@@ -6,14 +6,16 @@ use App\Models\ExamMonitoring;
 use App\Models\UserExam;
 use App\Models\QuestionGroup;
 use App\Repositories\StudentRepositoryInterface;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * ExamMonitoring Service Class
- * 
+ *
  * Service ini menangani monitoring realtime pengerjaan ujian
  * Menggunakan Socket.IO untuk realtime updates
- * 
+ *
  * @package App\Services
  * @author Development Team
  * @version 1.0.0
@@ -27,7 +29,7 @@ class ExamMonitoringService extends BaseService
 
     /**
      * ExamMonitoringService constructor
-     * 
+     *
      * @param StudentRepositoryInterface $studentRepository
      */
     public function __construct(StudentRepositoryInterface $studentRepository)
@@ -37,7 +39,7 @@ class ExamMonitoringService extends BaseService
 
     /**
      * Record exam action for monitoring
-     * 
+     *
      * @param array $data
      * @return array
      */
@@ -75,7 +77,7 @@ class ExamMonitoringService extends BaseService
 
     /**
      * Get real-time exam monitoring data
-     * 
+     *
      * @param int $examId
      * @return array
      */
@@ -113,7 +115,7 @@ class ExamMonitoringService extends BaseService
 
     /**
      * Get detailed monitoring for specific student
-     * 
+     *
      * @param int $studentId
      * @param int $examId
      * @return array
@@ -153,7 +155,7 @@ class ExamMonitoringService extends BaseService
 
     /**
      * Get exam summary for monitoring dashboard
-     * 
+     *
      * @param int $examId
      * @return array
      */
@@ -196,7 +198,7 @@ class ExamMonitoringService extends BaseService
 
     /**
      * Get exam monitoring by question group
-     * 
+     *
      * @param int $examId
      * @param int $questionGroupId
      * @return array
@@ -276,7 +278,7 @@ class ExamMonitoringService extends BaseService
 
     /**
      * Get detailed monitoring by category
-     * 
+     *
      * @param int $examId
      * @return array
      */
@@ -294,7 +296,7 @@ class ExamMonitoringService extends BaseService
 
             foreach ($categories as $category) {
                 $questionIds = $category->questions->pluck('id');
-                
+
                 // Get answers for this category
                 $answers = \App\Models\UserAnswer::whereIn('question_id', $questionIds)
                     ->whereHas('userExam', function ($query) use ($examId) {
@@ -332,7 +334,7 @@ class ExamMonitoringService extends BaseService
 
     /**
      * Calculate time remaining for exam
-     * 
+     *
      * @param UserExam $userExam
      * @return int
      */
@@ -352,7 +354,7 @@ class ExamMonitoringService extends BaseService
 
     /**
      * Calculate progress percentage
-     * 
+     *
      * @param UserExam $userExam
      * @return float
      */
@@ -370,7 +372,7 @@ class ExamMonitoringService extends BaseService
 
     /**
      * Calculate statistics from monitoring records
-     * 
+     *
      * @param \Illuminate\Database\Eloquent\Collection $records
      * @return array
      */
@@ -400,7 +402,7 @@ class ExamMonitoringService extends BaseService
 
     /**
      * Broadcast monitoring data to Socket.IO
-     * 
+     *
      * @param ExamMonitoring $monitoring
      * @return void
      */
@@ -430,6 +432,6 @@ class ExamMonitoringService extends BaseService
         ];
 
         // Log the broadcast data (will be replaced with actual Socket.IO broadcast)
-        \Log::info('Socket.IO Broadcast:', $broadcastData);
+        Log::info('Socket.IO Broadcast:', $broadcastData);
     }
 }

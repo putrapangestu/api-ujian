@@ -59,7 +59,37 @@ class QuestionGroupController extends Controller
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'status']);
-        $result = $this->questionGroupService->getAllGroups($filters);
+        $perPage = (int) $request->get('per_page', 15);
+        $result = $this->questionGroupService->getAllGroups($filters, $perPage);
+
+        if ($result['success']) {
+            return response()->json($result, 200);
+        }
+
+        return response()->json($result, 400);
+    }
+
+    /**
+     * Get all question groups without pagination
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Get(
+     *     path="/question-groups/all",
+     *     summary="Get all question groups without pagination",
+     *     tags={"Question Groups"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation"
+     *     )
+     * )
+     */
+    public function listAll(Request $request)
+    {
+        $filters = $request->only(['search', 'status']);
+        $result = $this->questionGroupService->getAllGroupsList($filters);
 
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
@@ -71,7 +101,7 @@ class QuestionGroupController extends Controller
     /**
      * Get question group by ID
      *
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Get(
@@ -147,7 +177,7 @@ class QuestionGroupController extends Controller
      * Update question group
      *
      * @param QuestionGroupRequest $request
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Put(
@@ -190,7 +220,7 @@ class QuestionGroupController extends Controller
     /**
      * Delete question group
      *
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Delete(

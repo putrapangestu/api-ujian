@@ -4,13 +4,14 @@ namespace App\Services;
 
 use App\Models\QuestionCategory;
 use App\Repositories\QuestionCategoryRepositoryInterface;
+use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\DB;
 
 /**
  * QuestionCategory Service Class
- * 
+ *
  * Service ini menangani semua operasi terkait kategori soal
- * 
+ *
  * @package App\Services
  * @author Development Team
  * @version 1.0.0
@@ -24,7 +25,7 @@ class QuestionCategoryService extends BaseService
 
     /**
      * QuestionCategoryService constructor
-     * 
+     *
      * @param QuestionCategoryRepositoryInterface $questionCategoryRepository
      */
     public function __construct(QuestionCategoryRepositoryInterface $questionCategoryRepository)
@@ -33,15 +34,62 @@ class QuestionCategoryService extends BaseService
     }
 
     /**
-     * Get all question categories
-     * 
+     * Get all question categories (paginated)
+     *
+     * @param array $filters
+     * @param int $perPage
+     * @return array
+     */
+    public function getAllCategories(array $filters = [], int $perPage = 15): array
+    {
+        try {
+            $query = QuestionCategory::query()->withCount('questions');
+
+            if (isset($filters['search'])) {
+                $search = $filters['search'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            if (isset($filters['status'])) {
+                $query->where('status', $filters['status']);
+            }
+
+            $categories = $query->paginate($perPage);
+
+            return ResponseHelper::paginate($categories, 'Daftar kategori soal berhasil diambil');
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengambil daftar kategori soal: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get all question categories without pagination
+     *
      * @param array $filters
      * @return array
      */
-    public function getAllCategories(array $filters = []): array
+    public function getAllCategoriesList(array $filters = []): array
     {
         try {
-            $categories = $this->questionCategoryRepository->getWithQuestionCount();
+            $query = QuestionCategory::query()->withCount('questions');
+
+            if (isset($filters['search'])) {
+                $search = $filters['search'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            if (isset($filters['status'])) {
+                $query->where('status', $filters['status']);
+            }
+
+            $categories = $query->get();
 
             return $this->successResponse($categories, 'Daftar kategori soal berhasil diambil');
 
@@ -52,11 +100,11 @@ class QuestionCategoryService extends BaseService
 
     /**
      * Get question category by ID
-     * 
-     * @param int $id
+     *
+     * @param string $id
      * @return array
      */
-    public function getCategoryById(int $id): array
+    public function getCategoryById(string $id): array
     {
         try {
             $category = $this->questionCategoryRepository->find($id, ['questions']);
@@ -74,7 +122,7 @@ class QuestionCategoryService extends BaseService
 
     /**
      * Create new question category
-     * 
+     *
      * @param array $data Validated data from QuestionCategoryRequest
      * @return array
      */
@@ -95,12 +143,12 @@ class QuestionCategoryService extends BaseService
 
     /**
      * Update question category
-     * 
-     * @param int $id
+     *
+     * @param string $id
      * @param array $data Validated data from QuestionCategoryRequest
      * @return array
      */
-    public function updateCategory(int $id, array $data): array
+    public function updateCategory(string $id, array $data): array
     {
         return DB::transaction(function () use ($id, $data) {
             try {
@@ -131,11 +179,11 @@ class QuestionCategoryService extends BaseService
 
     /**
      * Delete question category
-     * 
-     * @param int $id
+     *
+     * @param string $id
      * @return array
      */
-    public function deleteCategory(int $id): array
+    public function deleteCategory(string $id): array
     {
         return DB::transaction(function () use ($id) {
             try {

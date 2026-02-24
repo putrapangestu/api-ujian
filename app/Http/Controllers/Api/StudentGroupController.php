@@ -64,7 +64,41 @@ class StudentGroupController extends Controller
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'status']);
-        $result = $this->studentGroupService->getAllGroups($filters);
+        $perPage = (int) $request->get('per_page', 15);
+        $result = $this->studentGroupService->getAllGroups($filters, $perPage);
+
+        if ($result['success']) {
+            return response()->json($result, 200);
+        }
+
+        return response()->json($result, 400);
+    }
+
+    /**
+     * Get all student groups without pagination
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Get(
+     *     path="/student-groups/all",
+     *     summary="Get all student groups without pagination",
+     *     tags={"Student Groups"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation"
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized"
+     *     )
+     * )
+     */
+    public function listAll(Request $request)
+    {
+        $filters = $request->only(['search', 'status']);
+        $result = $this->studentGroupService->getAllGroupsList($filters);
 
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
@@ -76,7 +110,7 @@ class StudentGroupController extends Controller
     /**
      * Get student group by ID
      *
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Get(
@@ -158,7 +192,7 @@ class StudentGroupController extends Controller
      * Update student group
      *
      * @param StudentGroupRequest $request
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Put(
@@ -207,7 +241,7 @@ class StudentGroupController extends Controller
     /**
      * Delete student group
      *
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Delete(

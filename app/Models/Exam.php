@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @author Development Team
  * @version 1.0.0
  *
- * @property int $id
+ * @property string $id
  * @property string $title
  * @property string $description
  * @property int $duration Durasi dalam menit

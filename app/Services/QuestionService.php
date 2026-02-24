@@ -75,11 +75,11 @@ class QuestionService extends BaseService
     /**
      * Update question with options
      *
-     * @param int $id
+     * @param string $id
      * @param array $data Validated data from QuestionRequest
      * @return array
      */
-    public function updateQuestion(int $id, array $data): array
+    public function updateQuestion(string $id, array $data): array
     {
         return DB::transaction(function () use ($id, $data) {
             try {

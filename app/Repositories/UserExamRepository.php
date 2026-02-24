@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 /**
  * UserExam Repository Implementation
- * 
+ *
  * Repository ini mengimplementasikan UserExamRepositoryInterface
- * 
+ *
  * @package App\Repositories
  * @author Development Team
  * @version 1.0.0
@@ -19,10 +19,10 @@ class UserExamRepository implements UserExamRepositoryInterface
     /**
      * Find user exam by ID
      *
-     * @param int $id
+     * @param string $id
      * @return UserExam|null
      */
-    public function findById(int $id): ?UserExam
+    public function findById(string $id): ?UserExam
     {
         return UserExam::find($id);
     }
@@ -77,36 +77,36 @@ class UserExamRepository implements UserExamRepositoryInterface
     /**
      * Update user exam
      *
-     * @param int $id
+     * @param string $id
      * @param array $data
      * @return UserExam|null
      */
-    public function update(int $id, array $data): ?UserExam
+    public function update(string $id, array $data): ?UserExam
     {
         $userExam = $this->findById($id);
-        
+
         if ($userExam) {
             $userExam->update($data);
             return $userExam;
         }
-        
+
         return null;
     }
 
     /**
      * Delete user exam
      *
-     * @param int $id
+     * @param string $id
      * @return bool
      */
-    public function delete(int $id): bool
+    public function delete(string $id): bool
     {
         $userExam = $this->findById($id);
-        
+
         if ($userExam) {
             return $userExam->delete();
         }
-        
+
         return false;
     }
 

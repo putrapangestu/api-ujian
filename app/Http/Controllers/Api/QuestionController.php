@@ -79,7 +79,7 @@ class QuestionController extends Controller
      * Update question
      *
      * @param QuestionRequest $request
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Put(

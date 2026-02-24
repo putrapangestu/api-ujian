@@ -21,7 +21,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @author Development Team
  * @version 1.0.0
  *
- * @property int $id
+ * @property string $id
  * @property string $name
  * @property string $email
  * @property string $password

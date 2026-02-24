@@ -6,6 +6,7 @@ use App\Models\Student;
 use App\Repositories\StudentRepositoryInterface;
 use App\Repositories\StudentGroupRepositoryInterface;
 use App\Repositories\UserRepositoryInterface;
+use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -58,14 +59,34 @@ class StudentService extends BaseService
      * Get all students
      *
      * @param array $filters
+     * @param int $perPage
      * @return array
      */
-    public function getAllStudents(array $filters = []): array
+    public function getAllStudents(array $filters = [], int $perPage = 15): array
     {
         try {
-            $students = $this->studentRepository->all(['*'], ['group']);
+            $query = Student::query()->with('group');
 
-            return $this->successResponse($students, 'Daftar siswa berhasil diambil');
+            if (isset($filters['search'])) {
+                $search = $filters['search'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('nisn', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+
+            if (isset($filters['group_id'])) {
+                $query->where('group_id', $filters['group_id']);
+            }
+
+            if (isset($filters['status'])) {
+                $query->where('status', $filters['status']);
+            }
+
+            $students = $query->paginate($perPage);
+
+            return ResponseHelper::paginate($students, 'Daftar siswa berhasil diambil');
 
         } catch (\Exception $e) {
             return $this->errorResponse('Gagal mengambil daftar siswa: ' . $e->getMessage());
@@ -93,10 +114,10 @@ class StudentService extends BaseService
     /**
      * Get student by ID
      *
-     * @param int $id
+     * @param string $id
      * @return array
      */
-    public function getStudentById(int $id): array
+    public function getStudentById(string $id): array
     {
         try {
             $student = $this->studentRepository->find($id, ['group', 'userExams.exam'], ['*']);
@@ -161,11 +182,11 @@ class StudentService extends BaseService
     /**
      * Update student
      *
-     * @param int $id
+     * @param string $id
      * @param array $data Validated data from StudentRequest
      * @return array
      */
-    public function updateStudent(int $id, array $data): array
+    public function updateStudent(string $id, array $data): array
     {
         return DB::transaction(function () use ($id, $data) {
             try {
@@ -212,10 +233,10 @@ class StudentService extends BaseService
     /**
      * Delete student
      *
-     * @param int $id
+     * @param string $id
      * @return array
      */
-    public function deleteStudent(int $id): array
+    public function deleteStudent(string $id): array
     {
         return DB::transaction(function () use ($id) {
             try {

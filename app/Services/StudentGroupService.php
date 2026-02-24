@@ -4,14 +4,15 @@ namespace App\Services;
 
 use App\Models\StudentGroup;
 use App\Repositories\StudentGroupRepositoryInterface;
+use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\DB;
 
 /**
  * StudentGroup Service Class
- * 
+ *
  * Service ini menangani semua operasi terkait grup siswa
  * Menggunakan database transaction untuk operasi yang melibatkan multiple tables
- * 
+ *
  * @package App\Services
  * @author Development Team
  * @version 1.0.0
@@ -25,7 +26,7 @@ class StudentGroupService extends BaseService
 
     /**
      * StudentGroupService constructor
-     * 
+     *
      * @param StudentGroupRepositoryInterface $studentGroupRepository
      */
     public function __construct(StudentGroupRepositoryInterface $studentGroupRepository)
@@ -34,15 +35,62 @@ class StudentGroupService extends BaseService
     }
 
     /**
-     * Get all student groups
-     * 
+     * Get all student groups (paginated)
+     *
+     * @param array $filters
+     * @param int $perPage
+     * @return array
+     */
+    public function getAllGroups(array $filters = [], int $perPage = 15): array
+    {
+        try {
+            $query = StudentGroup::query()->withCount('students');
+
+            if (isset($filters['search'])) {
+                $search = $filters['search'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            if (isset($filters['status'])) {
+                $query->where('status', $filters['status']);
+            }
+
+            $groups = $query->paginate($perPage);
+
+            return ResponseHelper::paginate($groups, 'Daftar grup siswa berhasil diambil');
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengambil daftar grup siswa: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get all student groups without pagination
+     *
      * @param array $filters
      * @return array
      */
-    public function getAllGroups(array $filters = []): array
+    public function getAllGroupsList(array $filters = []): array
     {
         try {
-            $groups = $this->studentGroupRepository->getWithStudentCount();
+            $query = StudentGroup::query()->withCount('students');
+
+            if (isset($filters['search'])) {
+                $search = $filters['search'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            if (isset($filters['status'])) {
+                $query->where('status', $filters['status']);
+            }
+
+            $groups = $query->get();
 
             return $this->successResponse($groups, 'Daftar grup siswa berhasil diambil');
 
@@ -53,11 +101,11 @@ class StudentGroupService extends BaseService
 
     /**
      * Get student group by ID
-     * 
-     * @param int $id
+     *
+     * @param string $id
      * @return array
      */
-    public function getGroupById(int $id): array
+    public function getGroupById(string $id): array
     {
         try {
             $group = $this->studentGroupRepository->find($id, ['students']);
@@ -75,7 +123,7 @@ class StudentGroupService extends BaseService
 
     /**
      * Create new student group
-     * 
+     *
      * @param array $data Validated data from StudentGroupRequest
      * @return array
      */
@@ -96,12 +144,12 @@ class StudentGroupService extends BaseService
 
     /**
      * Update student group
-     * 
-     * @param int $id
+     *
+     * @param string $id
      * @param array $data Validated data from StudentGroupRequest
      * @return array
      */
-    public function updateGroup(int $id, array $data): array
+    public function updateGroup(string $id, array $data): array
     {
         return DB::transaction(function () use ($id, $data) {
             try {
@@ -132,11 +180,11 @@ class StudentGroupService extends BaseService
 
     /**
      * Delete student group
-     * 
-     * @param int $id
+     *
+     * @param string $id
      * @return array
      */
-    public function deleteGroup(int $id): array
+    public function deleteGroup(string $id): array
     {
         return DB::transaction(function () use ($id) {
             try {
@@ -169,7 +217,7 @@ class StudentGroupService extends BaseService
 
     /**
      * Roll students to new group
-     * 
+     *
      * @param int $fromGroupId
      * @param int $toGroupId
      * @param array $studentIds

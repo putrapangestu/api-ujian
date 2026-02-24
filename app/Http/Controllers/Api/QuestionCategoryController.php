@@ -59,19 +59,20 @@ class QuestionCategoryController extends Controller
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'status']);
-        $result = $this->questionCategoryService->getAllCategories($filters);
+        $perPage = (int) $request->get('per_page', 15);
+        $result = $this->questionCategoryService->getAllCategories($filters, $perPage);
 
         if ($result['success']) {
-            return $this->successResponse($result['data'], $result['message']);
+            return response()->json($result, 200);
         }
 
-        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+        return response()->json($result, 400);
     }
 
     /**
      * Get question category by ID
      *
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Get(
@@ -147,7 +148,7 @@ class QuestionCategoryController extends Controller
      * Update question category
      *
      * @param QuestionCategoryRequest $request
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Put(
@@ -190,7 +191,7 @@ class QuestionCategoryController extends Controller
     /**
      * Delete question category
      *
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Delete(

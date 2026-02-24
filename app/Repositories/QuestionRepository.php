@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Question Repository Implementation
- * 
+ *
  * Repository ini mengimplementasikan QuestionRepositoryInterface
- * 
+ *
  * @package App\Repositories
  * @author Development Team
  * @version 1.0.0
@@ -19,10 +19,10 @@ class QuestionRepository implements QuestionRepositoryInterface
     /**
      * Find question by ID
      *
-     * @param int $id
+     * @param string $id
      * @return Question|null
      */
-    public function findById(int $id): ?Question
+    public function findById(string $id): ?Question
     {
         return Question::find($id);
     }
@@ -94,36 +94,36 @@ class QuestionRepository implements QuestionRepositoryInterface
     /**
      * Update question
      *
-     * @param int $id
+     * @param string $id
      * @param array $data
      * @return Question|null
      */
-    public function update(int $id, array $data): ?Question
+    public function update(string $id, array $data): ?Question
     {
         $question = $this->findById($id);
-        
+
         if ($question) {
             $question->update($data);
             return $question;
         }
-        
+
         return null;
     }
 
     /**
      * Delete question
      *
-     * @param int $id
+     * @param string $id
      * @return bool
      */
-    public function delete(int $id): bool
+    public function delete(string $id): bool
     {
         $question = $this->findById($id);
-        
+
         if ($question) {
             return $question->delete();
         }
-        
+
         return false;
     }
 

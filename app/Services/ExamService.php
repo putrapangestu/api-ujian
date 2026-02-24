@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Exam;
 use App\Models\UserExam;
 use App\Repositories\ExamRepositoryInterface;
+use App\Helpers\ResponseHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -39,14 +40,29 @@ class ExamService extends BaseService
      * Get all exams
      *
      * @param array $filters
+     * @param int $perPage
      * @return array
      */
-    public function getAllExams(array $filters = []): array
+    public function getAllExams(array $filters = [], int $perPage = 15): array
     {
         try {
-            $exams = $this->examRepository->getWithQuestionCount();
+            $query = Exam::query()->withCount('questions');
 
-            return $this->successResponse($exams, 'Daftar ujian berhasil diambil');
+            if (isset($filters['search'])) {
+                $search = $filters['search'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            if (isset($filters['status'])) {
+                $query->where('status', $filters['status']);
+            }
+
+            $exams = $query->paginate($perPage);
+
+            return ResponseHelper::paginate($exams, 'Daftar ujian berhasil diambil');
 
         } catch (\Exception $e) {
             return $this->errorResponse('Gagal mengambil daftar ujian: ' . $e->getMessage());
@@ -56,10 +72,10 @@ class ExamService extends BaseService
     /**
      * Get exam by ID
      *
-     * @param int $id
+     * @param string $id
      * @return array
      */
-    public function getExamById(int $id): array
+    public function getExamById(string $id): array
     {
         try {
             $exam = $this->examRepository->find($id, ['questions']);
@@ -105,11 +121,11 @@ class ExamService extends BaseService
     /**
      * Update exam
      *
-     * @param int $id
+     * @param string $id
      * @param array $data Validated data from request
      * @return array
      */
-    public function updateExam(int $id, array $data): array
+    public function updateExam(string $id, array $data): array
     {
         return DB::transaction(function () use ($id, $data) {
             try {
@@ -146,10 +162,10 @@ class ExamService extends BaseService
     /**
      * Delete exam
      *
-     * @param int $id
+     * @param string $id
      * @return array
      */
-    public function deleteExam(int $id): array
+    public function deleteExam(string $id): array
     {
         return DB::transaction(function () use ($id) {
             try {

@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\QuestionController;
 use App\Http\Controllers\Api\QuestionBankController;
 use App\Http\Controllers\Api\ExamMonitoringController;
 use App\Http\Controllers\Api\ExamRollingController;
+use App\Http\Controllers\Api\UserController;
 
 /**
  * API Routes
@@ -51,6 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Student Group routes
     Route::prefix('student-groups')->group(function () {
         Route::get('/', [StudentGroupController::class, 'index'])->name('student-groups.index');
+        Route::get('/all', [StudentGroupController::class, 'listAll'])->name('student-groups.all');
         Route::get('/{id}', [StudentGroupController::class, 'show'])->name('student-groups.show');
         Route::post('/roll-students', [StudentGroupController::class, 'rollStudents'])->name('student-groups.roll');
     });
@@ -58,6 +60,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Student routes
     Route::prefix('students')->group(function () {
         Route::get('/', [StudentController::class, 'index'])->name('students.index');
+        Route::get('/all', [StudentController::class, 'list'])->name('students.all');
         Route::get('/{id}', [StudentController::class, 'show'])->name('students.show');
         Route::post('/import', [StudentController::class, 'import'])->name('students.import');
         Route::get('/export/{groupId}', [StudentController::class, 'export'])->name('students.export');
@@ -72,6 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Question Group routes
     Route::prefix('question-groups')->group(function () {
         Route::get('/', [QuestionGroupController::class, 'index'])->name('question-groups.index');
+        Route::get('/all', [QuestionGroupController::class, 'listAll'])->name('question-groups.all');
         Route::get('/{id}', [QuestionGroupController::class, 'show'])->name('question-groups.show');
         Route::post('/import', [QuestionGroupController::class, 'import'])->name('question-groups.import');
         Route::get('/export', [QuestionGroupController::class, 'export'])->name('question-groups.export');
@@ -144,6 +148,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/question-groups', [QuestionGroupController::class, 'store'])->name('admin.question-groups.store');
         Route::put('/question-groups/{id}', [QuestionGroupController::class, 'update'])->name('admin.question-groups.update');
         Route::delete('/question-groups/{id}', [QuestionGroupController::class, 'destroy'])->name('admin.question-groups.destroy');
+
+        // User management
+        Route::get('/users/all', [UserController::class, 'listAll'])->name('admin.users.all');
     });
 });
 

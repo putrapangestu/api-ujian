@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @author Development Team
  * @version 1.0.0
  *
- * @property int $id
+ * @property string $id
  * @property int $user_exam_id
  * @property int $student_id
  * @property int $exam_id

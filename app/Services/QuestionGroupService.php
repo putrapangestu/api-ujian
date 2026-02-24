@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\QuestionGroup;
 use App\Repositories\QuestionGroupRepositoryInterface;
+use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -36,24 +37,62 @@ class QuestionGroupService extends BaseService
     }
 
     /**
-     * Get all question groups
+     * Get all question groups (paginated)
+     *
+     * @param array $filters
+     * @param int $perPage
+     * @return array
+     */
+    public function getAllGroups(array $filters = [], int $perPage = 15): array
+    {
+        try {
+            $query = QuestionGroup::query()->withCount('questions');
+
+            if (isset($filters['search'])) {
+                $search = $filters['search'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            if (isset($filters['status'])) {
+                $query->where('status', $filters['status']);
+            }
+
+            $groups = $query->paginate($perPage);
+
+            return ResponseHelper::paginate($groups, 'Daftar grup soal berhasil diambil');
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengambil daftar grup soal: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get all question groups without pagination
      *
      * @param array $filters
      * @return array
      */
-    public function getAllGroups(array $filters = []): array
+    public function getAllGroupsList(array $filters = []): array
     {
         try {
-            $groups = $this->questionGroupRepository->getWithQuestionCount();
+            $query = QuestionGroup::query()->withCount('questions');
 
-            // Apply filters
             if (isset($filters['search'])) {
-                $groups = $this->questionGroupRepository->search($filters['search']);
+                $search = $filters['search'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
             }
 
             if (isset($filters['status'])) {
-                $groups = $groups->where('status', $filters['status']);
+                $query->where('status', $filters['status']);
             }
+
+            $groups = $query->get();
 
             return $this->successResponse($groups, 'Daftar grup soal berhasil diambil');
 

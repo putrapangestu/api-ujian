@@ -6,9 +6,9 @@ use App\Models\UserExam;
 
 /**
  * UserExam Repository Interface
- * 
+ *
  * Interface ini mendefinisikan kontrak untuk UserExam repository
- * 
+ *
  * @package App\Repositories
  * @author Development Team
  * @version 1.0.0
@@ -18,10 +18,10 @@ interface UserExamRepositoryInterface
     /**
      * Find user exam by ID
      *
-     * @param int $id
+     * @param string $id
      * @return UserExam|null
      */
-    public function findById(int $id): ?UserExam;
+    public function findById(string $id): ?UserExam;
 
     /**
      * Find user exam by exam ID and student ID
@@ -59,19 +59,19 @@ interface UserExamRepositoryInterface
     /**
      * Update user exam
      *
-     * @param int $id
+     * @param string $id
      * @param array $data
      * @return UserExam|null
      */
-    public function update(int $id, array $data): ?UserExam;
+    public function update(string $id, array $data): ?UserExam;
 
     /**
      * Delete user exam
      *
-     * @param int $id
+     * @param string $id
      * @return bool
      */
-    public function delete(int $id): bool;
+    public function delete(string $id): bool;
 
     /**
      * Get user exams with answers

@@ -64,24 +64,25 @@ class StudentController extends Controller
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'group_id', 'status']);
-        $result = $this->studentService->getAllStudents($filters);
+        $perPage = (int) $request->get('per_page', 15);
+        $result = $this->studentService->getAllStudents($filters, $perPage);
 
         if ($result['success']) {
-            return $this->successResponse($result['data'], $result['message']);
+            return response()->json($result, 200);
         }
 
-        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+        return response()->json($result, 400);
     }
 
     /**
-     * Get all students
+     * Get all students without pagination
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Get(
-     *     path="/students",
-     *     summary="Get all students",
+     *     path="/students/all",
+     *     summary="Get all students without pagination",
      *     tags={"Students"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Response(
@@ -109,7 +110,7 @@ class StudentController extends Controller
     /**
      * Get student by ID
      *
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Get(
@@ -185,7 +186,7 @@ class StudentController extends Controller
      * Update student
      *
      * @param StudentRequest $request
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Put(
@@ -228,7 +229,7 @@ class StudentController extends Controller
     /**
      * Delete student
      *
-     * @param int $id
+     * @param string $id
      * @return \Illuminate\Http\JsonResponse
      *
      * @OA\Delete(

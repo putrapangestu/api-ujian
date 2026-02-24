@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
+use OpenApi\Annotations as OA;
 
 /**
  * Base Controller untuk semua controllers dalam aplikasi
- * 
+ *
  * Class ini menyediakan fungsi dasar yang dapat digunakan oleh semua controller
  * Menggunakan traits AuthorizesRequests dan ValidatesRequests dari Laravel
- * 
+ *
  * @OA\Info(
  *     title="API Ujian CPNS",
  *     version="1.0.0",
@@ -25,17 +26,17 @@ use Illuminate\Routing\Controller as BaseController;
  *         url="https://opensource.org/licenses/MIT"
  *     )
  * )
- * 
+ *
  * @OA\Server(
  *     url="http://localhost:8000/api",
  *     description="Development server"
  * )
- * 
+ *
  * @OA\Server(
  *     url="https://api.ujian-cpns.com/api",
  *     description="Production server"
  * )
- * 
+ *
  * @OA\SecurityScheme(
  *     securityScheme="bearerAuth",
  *     type="http",
@@ -43,7 +44,7 @@ use Illuminate\Routing\Controller as BaseController;
  *     bearerFormat="JWT",
  *     description="Masukkan token JWT dalam format: Bearer {token}"
  * )
- * 
+ *
  * @OA\Schema(
  *     schema="BaseResponse",
  *     type="object",
@@ -52,7 +53,7 @@ use Illuminate\Routing\Controller as BaseController;
  *     @OA\Property(property="data", type="object", nullable=true),
  *     @OA\Property(property="errors", type="object", nullable=true)
  * )
- * 
+ *
  * @OA\Schema(
  *     schema="ErrorResponse",
  *     type="object",
@@ -61,7 +62,7 @@ use Illuminate\Routing\Controller as BaseController;
  *     @OA\Property(property="data", type="object", nullable=true),
  *     @OA\Property(property="errors", type="object", nullable=true)
  * )
- * 
+ *
  * @OA\Schema(
  *     schema="ValidationError",
  *     type="object",
@@ -69,7 +70,7 @@ use Illuminate\Routing\Controller as BaseController;
  *     @OA\Property(property="message", type="string", example="Validation error"),
  *     @OA\Property(property="errors", type="object", example={"field_name": ["Field is required"]})
  * )
- * 
+ *
  * @package App\Http\Controllers
  * @author Development Team
  * @version 1.0.0
@@ -80,7 +81,7 @@ abstract class Controller extends BaseController
 
     /**
      * Response sukses standar
-     * 
+     *
      * @param mixed $data Data yang akan dikirim dalam response
      * @param string $message Pesan sukses
      * @param int $code HTTP status code (default: 200)
@@ -97,7 +98,7 @@ abstract class Controller extends BaseController
 
     /**
      * Response error standar
-     * 
+     *
      * @param string $message Pesan error
      * @param int $code HTTP status code (default: 400)
      * @param mixed $errors Detail error tambahan

@@ -4,15 +4,17 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExamRequest;
+use App\Models\Exam;
 use App\Services\ExamService;
 use App\Services\ExamQuestionSelectorService;
 use Illuminate\Http\Request;
+use OpenApi\Annotations as OA;
 
 /**
  * Exam Controller
  *
  * Controller ini menangani semua operasi terkait ujian
- * 
+ *
  * @OA\Tag(
  *     name="Exams",
  *     description="API endpoints for managing exams"
@@ -51,9 +53,9 @@ class ExamController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     * 
+     *
      * @OA\Get(
-     *     path="/api/exams",
+     *     path="/exams",
      *     summary="Get all exams",
      *     tags={"Exams"},
      *     security={{"bearerAuth":{}}},
@@ -109,6 +111,28 @@ class ExamController extends Controller
      *
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Get(
+     *     path="/exams/{id}",
+     *     summary="Get exam by ID",
+     *     tags={"Exams"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID ujian",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Exam retrieved successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Exam not found"
+     *     )
+     * )
      */
     public function show($id)
     {
@@ -126,6 +150,25 @@ class ExamController extends Controller
      *
      * @param ExamRequest $request
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Post(
+     *     path="/admin/exams",
+     *     summary="Create new exam",
+     *     tags={"Exams"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(type="object")
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Exam created successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Validation error"
+     *     )
+     * )
      */
     public function store(ExamRequest $request)
     {
@@ -144,6 +187,32 @@ class ExamController extends Controller
      * @param ExamRequest $request
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Put(
+     *     path="/admin/exams/{id}",
+     *     summary="Update exam",
+     *     tags={"Exams"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID ujian",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(type="object")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Exam updated successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Exam not found"
+     *     )
+     * )
      */
     public function update(ExamRequest $request, $id)
     {
@@ -161,6 +230,28 @@ class ExamController extends Controller
      *
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Delete(
+     *     path="/admin/exams/{id}",
+     *     summary="Delete exam",
+     *     tags={"Exams"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID ujian",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Exam deleted successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Exam not found"
+     *     )
+     * )
      */
     public function destroy($id)
     {
@@ -179,9 +270,9 @@ class ExamController extends Controller
      * @param \Illuminate\Http\Request $request
      * @param int $examId
      * @return \Illuminate\Http\JsonResponse
-     * 
+     *
      * @OA\Post(
-     *     path="/api/exam-questions/{examId}/select-from-banks",
+     *     path="/exam-questions/{examId}/select-from-banks",
      *     summary="Select questions from question banks for exam",
      *     tags={"Exam Questions"},
      *     security={{"bearerAuth":{}}},
@@ -240,7 +331,7 @@ class ExamController extends Controller
      *     )
      * )
      */
-    public function selectQuestionsFromBanks(Request $request, $examId)
+    public function selectQuestionsFromBanks(Request $request, Exam $exam)
     {
         $request->validate([
             'question_banks' => 'required|array|min:1',
@@ -252,7 +343,7 @@ class ExamController extends Controller
             'question_banks.*.weight' => 'nullable|integer|min:1|max:10',
         ]);
 
-        $result = $this->questionSelectorService->selectQuestionsForExam($examId, $request->question_banks);
+        $result = $this->questionSelectorService->selectQuestionsForExam($exam, $request->question_banks);
 
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
@@ -266,6 +357,38 @@ class ExamController extends Controller
      *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Post(
+     *     path="/exam-questions/validate-banks",
+     *     summary="Validate question bank selection",
+     *     tags={"Exam Questions"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"question_banks"},
+     *             @OA\Property(
+     *                 property="question_banks",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     required={"question_group_id","question_count"},
+     *                     @OA\Property(property="question_group_id", type="integer"),
+     *                     @OA\Property(property="question_count", type="integer")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Selection is valid"
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Validation error"
+     *     )
+     * )
      */
     public function validateQuestionBankSelection(Request $request)
     {
@@ -292,6 +415,36 @@ class ExamController extends Controller
      * @param \Illuminate\Http\Request $request
      * @param int $examId
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Post(
+     *     path="/exam-questions/{examId}/for-student",
+     *     summary="Get exam questions for student",
+     *     tags={"Exam Questions"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="examId",
+     *         in="path",
+     *         description="ID ujian",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"student_id"},
+     *             @OA\Property(property="student_id", type="integer")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Questions retrieved successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Validation error"
+     *     )
+     * )
      */
     public function getExamQuestionsForStudent(Request $request, $examId)
     {
@@ -314,6 +467,28 @@ class ExamController extends Controller
      * @param Request $request
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Post(
+     *     path="/exams/{id}/start",
+     *     summary="Start exam for authenticated user",
+     *     tags={"Exams"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID ujian",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Exam started successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Cannot start exam"
+     *     )
+     * )
      */
     public function startExam(Request $request, $id)
     {

@@ -6,12 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Services\ExamRollingService;
 use App\Services\ExamRollingBackgroundService;
 use Illuminate\Http\Request;
+use OpenApi\Annotations as OA;
 
 /**
  * ExamRolling Controller
  *
  * Controller ini menangani rolling user yang mengikuti ujian
- * 
+ *
  * @OA\Tag(
  *     name="Exam Rolling",
  *     description="API endpoints for exam rolling operations"
@@ -50,6 +51,30 @@ class ExamRollingController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Post(
+     *     path="/exam-rolling/roll-student",
+     *     summary="Roll single student to different group during exam",
+     *     tags={"Exam Rolling"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"user_exam_id","new_group_id"},
+     *             @OA\Property(property="user_exam_id", type="integer"),
+     *             @OA\Property(property="new_group_id", type="integer")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Student rolled successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Validation error"
+     *     )
+     * )
      */
     public function rollStudent(Request $request)
     {
@@ -75,6 +100,30 @@ class ExamRollingController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Post(
+     *     path="/exam-rolling/validate",
+     *     summary="Validate rolling operation",
+     *     tags={"Exam Rolling"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"user_exam_id","new_group_id"},
+     *             @OA\Property(property="user_exam_id", type="integer"),
+     *             @OA\Property(property="new_group_id", type="integer")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Rolling operation is valid"
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Validation error"
+     *     )
+     * )
      */
     public function validateRolling(Request $request)
     {
@@ -87,11 +136,11 @@ class ExamRollingController extends Controller
             $request->user_exam_id,
             $request->new_group_id
         );
-        
+
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
         }
-        
+
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
     }
 
@@ -100,6 +149,38 @@ class ExamRollingController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Post(
+     *     path="/exam-rolling/roll-multiple",
+     *     summary="Roll multiple students to different groups during exam",
+     *     tags={"Exam Rolling"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"rolls"},
+     *             @OA\Property(
+     *                 property="rolls",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     required={"user_exam_id","new_group_id"},
+     *                     @OA\Property(property="user_exam_id", type="integer"),
+     *                     @OA\Property(property="new_group_id", type="integer")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Students rolled successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Validation error"
+     *     )
+     * )
      */
     public function rollMultipleStudents(Request $request)
     {
@@ -124,6 +205,24 @@ class ExamRollingController extends Controller
      * @param Request $request
      * @param int $examId
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Get(
+     *     path="/exam-rolling/rollable-students/{examId}",
+     *     summary="Get students that can be rolled during exam",
+     *     tags={"Exam Rolling"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="examId",
+     *         in="path",
+     *         description="ID ujian",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Rollable students retrieved successfully"
+     *     )
+     * )
      */
     public function getRollableStudents(Request $request, $examId)
     {
@@ -141,6 +240,26 @@ class ExamRollingController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Post(
+     *     path="/exam-rolling/roll-student-background",
+     *     summary="Roll student with background job",
+     *     tags={"Exam Rolling"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"user_exam_id","new_group_id"},
+     *             @OA\Property(property="user_exam_id", type="integer"),
+     *             @OA\Property(property="new_group_id", type="integer")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Background job dispatched successfully"
+     *     )
+     * )
      */
     public function rollStudentWithBackgroundJob(Request $request)
     {
@@ -166,6 +285,34 @@ class ExamRollingController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Post(
+     *     path="/exam-rolling/roll-multiple-background",
+     *     summary="Roll multiple students with background jobs",
+     *     tags={"Exam Rolling"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"rolls"},
+     *             @OA\Property(
+     *                 property="rolls",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     required={"user_exam_id","new_group_id"},
+     *                     @OA\Property(property="user_exam_id", type="integer"),
+     *                     @OA\Property(property="new_group_id", type="integer")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Background jobs dispatched successfully"
+     *     )
+     * )
      */
     public function rollMultipleStudentsWithBackgroundJobs(Request $request)
     {
@@ -190,6 +337,32 @@ class ExamRollingController extends Controller
      * @param Request $request
      * @param int $examId
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @OA\Post(
+     *     path="/exam-rolling/process-group/{examId}",
+     *     summary="Process exam for all students in a group",
+     *     tags={"Exam Rolling"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="examId",
+     *         in="path",
+     *         description="ID ujian",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"group_id"},
+     *             @OA\Property(property="group_id", type="integer")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Background job dispatched successfully"
+     *     )
+     * )
      */
     public function processExamForGroup(Request $request, $examId)
     {

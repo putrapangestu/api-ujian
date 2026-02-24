@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * ExamQuestionSelector Service Class
- * 
+ *
  * Service ini menangani pemilihan soal dari bank soal saat membuat ujian
  * Menentukan nomor urut, range, dan urutan random untuk setiap siswa
- * 
+ *
  * @package App\Services
  * @author Development Team
  * @version 1.0.0
@@ -23,7 +23,7 @@ class ExamQuestionSelectorService extends BaseService
 {
     /**
      * Select questions from question banks for exam
-     * 
+     *
      * @param Exam $exam
      * @param array $questionBanks Array of question bank selections
      * @return array
@@ -106,7 +106,7 @@ class ExamQuestionSelectorService extends BaseService
 
     /**
      * Generate random question order for student
-     * 
+     *
      * @param int $examId
      * @param int $studentId
      * @return array
@@ -141,7 +141,7 @@ class ExamQuestionSelectorService extends BaseService
                 'timestamp' => now()->toISOString(),
             ]);
 
-            return $this->successData([
+            return $this->successResponse([
                 'exam_id' => $examId,
                 'student_id' => $studentId,
                 'question_order' => $questionOrderMap,
@@ -156,7 +156,7 @@ class ExamQuestionSelectorService extends BaseService
 
     /**
      * Get exam questions with proper ordering for student
-     * 
+     *
      * @param int $examId
      * @param int $studentId
      * @return array
@@ -166,7 +166,7 @@ class ExamQuestionSelectorService extends BaseService
         try {
             // Generate random order for this student if not exists
             $orderResult = $this->generateRandomQuestionOrder($examId, $studentId);
-            
+
             if (!$orderResult['success']) {
                 return $orderResult;
             }
@@ -194,7 +194,7 @@ class ExamQuestionSelectorService extends BaseService
                     'score' => $examQuestion->question->score,
                     'weight' => $examQuestion->weight,
                     'group_name' => $examQuestion->questionGroup->name,
-                    'options' => $examQuestion->question->question_type === 'multiple_choice' 
+                    'options' => $examQuestion->question->question_type === 'multiple_choice'
                         ? $examQuestion->question->options->map(function ($option) {
                             return [
                                 'id' => $option->id,
@@ -205,7 +205,7 @@ class ExamQuestionSelectorService extends BaseService
                 ];
             });
 
-            return $this->successData([
+            return $this->successResponse([
                 'exam_id' => $examId,
                 'student_id' => $studentId,
                 'questions' => $formattedQuestions,
@@ -220,7 +220,7 @@ class ExamQuestionSelectorService extends BaseService
 
     /**
      * Validate question bank selection
-     * 
+     *
      * @param array $questionBanks
      * @return array
      */
@@ -265,17 +265,17 @@ class ExamQuestionSelectorService extends BaseService
             }
 
             if (empty($errors)) {
-                return $this->successData([
+                return $this->successResponse([
                     'total_questions' => $totalQuestions,
                     'question_banks' => $questionBanks,
                     'is_valid' => true,
                 ], 'Question bank selection is valid');
             }
 
-            return $this->errorData([
+            return $this->errorResponse('Question bank selection validation failed',[
                 'errors' => $errors,
                 'is_valid' => false,
-            ], 'Question bank selection validation failed');
+            ]);
 
         } catch (\Exception $e) {
             return $this->errorResponse('Validation error: ' . $e->getMessage());

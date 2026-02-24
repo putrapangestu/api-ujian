@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
+use OpenApi\Annotations as OA;
 
 /**
  * @OA\Info(
@@ -212,7 +213,7 @@ class AuthController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/auth/profile",
+     *     path="/auth/me",
      *     summary="Get user profile",
      *     tags={"Authentication"},
      *     security={{"bearerAuth":{}}},

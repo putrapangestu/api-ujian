@@ -314,6 +314,7 @@ return [
          */
         'constants' => [
             'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'http://my-default-host.com'),
+            'L5_SWAGGER_BASE_API' => rtrim(env('APP_URL', 'http://localhost:8000'), '/') . (env('L5_SWAGGER_BASE_PATH', '/api')),
         ],
     ],
 ];

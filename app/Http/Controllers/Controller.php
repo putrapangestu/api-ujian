@@ -27,7 +27,7 @@ use OpenApi\Attributes as OA;
 )]
 #[OA\Server(
     url: "/api",
-    description: "Development Server"
+    description: "Default Server"
 )]
 #[OA\SecurityScheme(
     securityScheme: "bearerAuth",

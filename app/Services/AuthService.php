@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\Auth;
 
 /**
  * Auth Service Class
- * 
+ *
  * Service ini menangani semua operasi authentication
- * 
+ *
  * @package App\Services
  * @author Development Team
  * @version 1.0.0
@@ -25,7 +25,7 @@ class AuthService extends BaseService
 
     /**
      * AuthService constructor
-     * 
+     *
      * @param UserRepositoryInterface $userRepository
      */
     public function __construct(UserRepositoryInterface $userRepository)
@@ -35,7 +35,7 @@ class AuthService extends BaseService
 
     /**
      * Register new user
-     * 
+     *
      * @param array $data Validated data from RegisterRequest
      * @return array
      */
@@ -44,7 +44,6 @@ class AuthService extends BaseService
         try {
             // Hash password
             $data['password'] = Hash::make($data['password']);
-            $data['role'] = User::ROLE_USER;
 
             // Create user
             $user = $this->userRepository->create($data);
@@ -65,7 +64,7 @@ class AuthService extends BaseService
 
     /**
      * Login user
-     * 
+     *
      * @param array $credentials Validated data from LoginRequest
      * @return array
      */
@@ -86,6 +85,7 @@ class AuthService extends BaseService
             return $this->successResponse([
                 'user' => $user,
                 'token' => $token,
+                'roles' => $user->roles->pluck('name')->toArray(),
                 'token_type' => 'Bearer'
             ], 'Login berhasil');
 
@@ -96,7 +96,7 @@ class AuthService extends BaseService
 
     /**
      * Logout user
-     * 
+     *
      * @param User $user
      * @return array
      */
@@ -115,14 +115,17 @@ class AuthService extends BaseService
 
     /**
      * Get user profile
-     * 
+     *
      * @param User $user
      * @return array
      */
     public function profile(User $user): array
     {
         try {
-            return $this->successResponse($user, 'Profile berhasil diambil');
+            return $this->successResponse([
+                'user' => $user,
+                'roles' => $user->roles->pluck('name')->toArray(),
+            ], 'Profile berhasil diambil');
 
         } catch (\Exception $e) {
             return $this->errorResponse('Gagal mengambil profile: ' . $e->getMessage());
@@ -131,7 +134,7 @@ class AuthService extends BaseService
 
     /**
      * Update user profile
-     * 
+     *
      * @param User $user
      * @param array $data Validated data
      * @return array

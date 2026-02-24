@@ -34,7 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
     Route::prefix('auth')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
-        Route::get('/profile', [AuthController::class, 'profile'])->name('auth.profile');
+        Route::get('/me', [AuthController::class, 'profile'])->name('auth.profile');
         Route::put('/profile', [AuthController::class, 'updateProfile'])->name('auth.update-profile');
     });
 

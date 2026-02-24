@@ -22,11 +22,11 @@ return new class extends Migration
     {
         Schema::create('students', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('nisn')->unique();
+            $table->string('nisn')->unique()->nullable();
             $table->string('name');
-            $table->string('email')->unique();
             $table->string('phone')->nullable();
             $table->text('address')->nullable();
+            $table->date('birth_date');
             $table->foreignUuid('group_id')->constrained('student_groups');
             $table->enum('status', ['active', 'inactive', 'graduated', 'dropped'])->default('active');
             $table->timestamps();

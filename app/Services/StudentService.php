@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Student;
 use App\Repositories\StudentRepositoryInterface;
 use App\Repositories\StudentGroupRepositoryInterface;
+use App\Repositories\UserRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -31,18 +32,26 @@ class StudentService extends BaseService
      */
     protected StudentGroupRepositoryInterface $studentGroupRepository;
 
+     /**
+     * @var UserRepositoryInterface
+     */
+    protected UserRepositoryInterface $userRepository;
+
     /**
      * StudentService constructor
      *
      * @param StudentRepositoryInterface $studentRepository
      * @param StudentGroupRepositoryInterface $studentGroupRepository
+     * @param UserRepositoryInterface $userRepository
      */
     public function __construct(
         StudentRepositoryInterface $studentRepository,
-        StudentGroupRepositoryInterface $studentGroupRepository
+        StudentGroupRepositoryInterface $studentGroupRepository,
+        UserRepositoryInterface $userRepository
     ) {
         $this->studentRepository = $studentRepository;
         $this->studentGroupRepository = $studentGroupRepository;
+        $this->userRepository = $userRepository;
     }
 
     /**
@@ -96,16 +105,27 @@ class StudentService extends BaseService
         return DB::transaction(function () use ($data) {
             try {
                 // Check if group exists and has available slots
-                $group = $this->studentGroupRepository->find($data['group_id']);
-                if (!$group) {
-                    return $this->errorResponse('Grup tidak ditemukan', null, 404);
-                }
+                if(isset($data['group_id'])) {
+                    $group = $this->studentGroupRepository->find($data['group_id']);
+                    if (!$group) {
+                        return $this->errorResponse('Grup tidak ditemukan', null, 404);
+                    }
 
-                if (!$group->hasAvailableSlots()) {
-                    return $this->errorResponse('Grup sudah penuh');
+                    if (!$group->hasAvailableSlots()) {
+                        return $this->errorResponse('Grup sudah penuh');
+                    }
                 }
 
                 // Create student
+                $user = $this->userRepository->create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'password' => bcrypt($data['birth_date']),
+                ]);
+
+                // Add user_id to student data
+                $data['user_id'] = $user->id;
+
                 $student = $this->studentRepository->create($data);
 
                 // assign role student
@@ -148,6 +168,9 @@ class StudentService extends BaseService
                         return $this->errorResponse('Grup baru sudah penuh');
                     }
                 }
+
+                // update user email if changed
+                $this->userRepository->update($student->user_id, ['email' => $data['email'], 'name' => $data['name']]);
 
                 // Update student
                 $updated = $this->studentRepository->update($id, $data);

@@ -21,12 +21,13 @@ class StudentRequest extends BaseRequest
     public function rules(): array
     {
         $rules = [
-            'nisn' => 'required|string|max:20',
+            'nisn' => 'nullable|string|max:20',
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
-            'group_id' => 'required|exists:student_groups,id',
+            'group_id' => 'sometimes|exists:student_groups,id',
+            'birth_date' => 'required|date',
             'user_id' => 'nullable|exists:users,id',
             'status' => 'nullable|in:active,inactive,graduated,dropped',
         ];
@@ -34,11 +35,11 @@ class StudentRequest extends BaseRequest
         // Jika update, tambahkan unique rule untuk nisn dan email
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
             $studentId = $this->route('student');
-            $rules['nisn'] = 'required|string|max:20|unique:students,nisn,' . $studentId;
-            $rules['email'] = 'required|string|email|max:255|unique:students,email,' . $studentId;
+            $rules['nisn'] = 'nullable|string|max:20|unique:students,nisn,' . $studentId;
+            $rules['email'] = 'required|string|email|max:255|unique:users,email,' . $studentId;
         } else {
-            $rules['nisn'] = 'required|string|max:20|unique:students';
-            $rules['email'] = 'required|string|email|max:255|unique:students';
+            $rules['nisn'] = 'nullable|string|max:20|unique:students';
+            $rules['email'] = 'required|string|email|max:255|unique:users';
         }
 
         return $rules;
@@ -58,6 +59,7 @@ class StudentRequest extends BaseRequest
             'phone' => 'Nomor Telepon',
             'address' => 'Alamat',
             'group_id' => 'Grup',
+            'birth_date' => 'Tanggal Lahir',
             'user_id' => 'User',
             'status' => 'Status',
         ];

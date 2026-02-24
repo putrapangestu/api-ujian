@@ -67,3 +67,4 @@ deploy_dev:
     - docker exec $CONTAINER_NAME php artisan storage:link
     - docker exec $CONTAINER_NAME php artisan migrate --force
     - docker exec $CONTAINER_NAME php artisan optimize
+    - docker exec $CONTAINER_NAME php artisan l5-swagger:generate

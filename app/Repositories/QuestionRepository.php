@@ -40,10 +40,10 @@ class QuestionRepository implements QuestionRepositoryInterface
     /**
      * Get questions by exam ID
      *
-     * @param int $examId
+     * @param string $examId
      * @return Collection
      */
-    public function getByExamId(int $examId)
+    public function getByExamId(string $examId)
     {
         return Question::where('exam_id', $examId)->get();
     }
@@ -51,10 +51,10 @@ class QuestionRepository implements QuestionRepositoryInterface
     /**
      * Get questions by question group ID
      *
-     * @param int $questionGroupId
+     * @param string $questionGroupId
      * @return Collection
      */
-    public function getByQuestionGroupId(int $questionGroupId)
+    public function getByQuestionGroupId(string $questionGroupId)
     {
         return Question::where('question_group_id', $questionGroupId)->get();
     }
@@ -62,10 +62,10 @@ class QuestionRepository implements QuestionRepositoryInterface
     /**
      * Get questions by category ID
      *
-     * @param int $categoryId
+     * @param string $categoryId
      * @return Collection
      */
-    public function getByCategoryId(int $categoryId)
+    public function getByCategoryId(string $categoryId)
     {
         return Question::where('category_id', $categoryId)->get();
     }
@@ -130,10 +130,10 @@ class QuestionRepository implements QuestionRepositoryInterface
     /**
      * Get questions with options
      *
-     * @param int $questionId
+     * @param string $questionId
      * @return Question|null
      */
-    public function getWithOptions(int $questionId): ?Question
+    public function getWithOptions(string $questionId): ?Question
     {
         return Question::with('options')->find($questionId);
     }
@@ -141,10 +141,10 @@ class QuestionRepository implements QuestionRepositoryInterface
     /**
      * Count questions by exam ID
      *
-     * @param int $examId
+     * @param string $examId
      * @return int
      */
-    public function countByExamId(int $examId): int
+    public function countByExamId(string $examId): int
     {
         return Question::where('exam_id', $examId)->count();
     }
@@ -152,10 +152,10 @@ class QuestionRepository implements QuestionRepositoryInterface
     /**
      * Count questions by question group ID
      *
-     * @param int $questionGroupId
+     * @param string $questionGroupId
      * @return int
      */
-    public function countByQuestionGroupId(int $questionGroupId): int
+    public function countByQuestionGroupId(string $questionGroupId): int
     {
         return Question::where('question_group_id', $questionGroupId)->count();
     }

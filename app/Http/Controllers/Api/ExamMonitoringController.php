@@ -84,7 +84,7 @@ class ExamMonitoringController extends Controller
      * Get real-time exam monitoring data
      *
      * @param Request $request
-     * @param int $examId
+     * @param string $examId
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Get(
@@ -109,8 +109,8 @@ class ExamMonitoringController extends Controller
      * Get detailed monitoring for specific student
      *
      * @param Request $request
-     * @param int $studentId
-     * @param int $examId
+     * @param string $studentId
+     * @param string $examId
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Get(
@@ -138,7 +138,7 @@ class ExamMonitoringController extends Controller
      * Get exam summary for monitoring dashboard
      *
      * @param Request $request
-     * @param int $examId
+     * @param string $examId
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Get(
@@ -163,8 +163,8 @@ class ExamMonitoringController extends Controller
      * Get monitoring by question group
      *
      * @param Request $request
-     * @param int $examId
-     * @param int $questionGroupId
+     * @param string $examId
+     * @param string $questionGroupId
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Get(
@@ -192,7 +192,7 @@ class ExamMonitoringController extends Controller
      * Get monitoring by category
      *
      * @param Request $request
-     * @param int $examId
+     * @param string $examId
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Get(

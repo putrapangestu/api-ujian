@@ -11,13 +11,14 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Process Exam Submission Job
- * 
+ *
  * Job ini memproses submit ujian secara asynchronous
  * Untuk menghindari blocking thread utama dan mengurangi beban websocket
- * 
+ *
  * @package App\Jobs
  * @author Development Team
  * @version 1.0.0
@@ -39,10 +40,10 @@ class ProcessExamSubmission implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param int $userExamId
+     * @param string $userExamId
      * @param array $answers
      */
-    public function __construct(int $userExamId, array $answers)
+    public function __construct(string $userExamId, array $answers)
     {
         $this->userExamId = $userExamId;
         $this->answers = $answers;
@@ -58,15 +59,15 @@ class ProcessExamSubmission implements ShouldQueue
         DB::transaction(function () {
             // Get user exam
             $userExam = UserExam::find($this->userExamId);
-            
+
             if (!$userExam) {
-                \Log::error('UserExam not found: ' . $this->userExamId);
+                Log::error('UserExam not found: ' . $this->userExamId);
                 return;
             }
 
             // Check if already completed
             if ($userExam->status === UserExam::STATUS_COMPLETED) {
-                \Log::info('UserExam already completed: ' . $this->userExamId);
+                Log::info('UserExam already completed: ' . $this->userExamId);
                 return;
             }
 
@@ -82,7 +83,7 @@ class ProcessExamSubmission implements ShouldQueue
                 // Get question
                 $question = $userExam->exam->questions()->find($questionId);
                 if (!$question) {
-                    \Log::warning('Question not found: ' . $questionId);
+                    Log::warning('Question not found: ' . $questionId);
                     continue;
                 }
 
@@ -135,7 +136,7 @@ class ProcessExamSubmission implements ShouldQueue
             // Broadcast completion event
             $this->broadcastCompletion($userExam, $totalScore, $correctAnswers);
 
-            \Log::info('Exam submission processed successfully', [
+            Log::info('Exam submission processed successfully', [
                 'user_exam_id' => $this->userExamId,
                 'score' => $totalScore,
                 'correct_answers' => $correctAnswers,
@@ -151,7 +152,7 @@ class ProcessExamSubmission implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        \Log::error('Exam submission job failed', [
+        Log::error('Exam submission job failed', [
             'user_exam_id' => $this->userExamId,
             'error' => $exception->getMessage(),
             'trace' => $exception->getTraceAsString(),
@@ -160,13 +161,13 @@ class ProcessExamSubmission implements ShouldQueue
 
     /**
      * Broadcast completion event
-     * 
+     *
      * @param UserExam $userExam
-     * @param int $totalScore
-     * @param int $correctAnswers
+     * @param string $totalScore
+     * @param string $correctAnswers
      * @return void
      */
-    private function broadcastCompletion(UserExam $userExam, int $totalScore, int $correctAnswers): void
+    private function broadcastCompletion(UserExam $userExam, string $totalScore, string $correctAnswers): void
     {
         // Prepare broadcast data
         $broadcastData = [
@@ -185,6 +186,6 @@ class ProcessExamSubmission implements ShouldQueue
         ];
 
         // Log the broadcast (will be replaced with actual Socket.IO broadcast)
-        \Log::info('Broadcasting exam completion', $broadcastData);
+        Log::info('Broadcasting exam completion', $broadcastData);
     }
 }

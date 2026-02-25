@@ -218,12 +218,12 @@ class StudentGroupService extends BaseService
     /**
      * Roll students to new group
      *
-     * @param int $fromGroupId
-     * @param int $toGroupId
+     * @param string $fromGroupId
+     * @param string $toGroupId
      * @param array $studentIds
      * @return array
      */
-    public function rollStudents(int $fromGroupId, int $toGroupId, array $studentIds): array
+    public function rollStudents(string $fromGroupId, string $toGroupId, array $studentIds): array
     {
         return DB::transaction(function () use ($fromGroupId, $toGroupId, $studentIds) {
             try {

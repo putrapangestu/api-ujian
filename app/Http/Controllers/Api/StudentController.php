@@ -270,7 +270,7 @@ class StudentController extends Controller
      * Export students to Excel file
      *
      * @param Request $request
-     * @param int $groupId
+     * @param string $groupId
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Get(

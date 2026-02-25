@@ -18,8 +18,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @version 1.0.0
  *
  * @property string $id
- * @property int $user_id
- * @property int $exam_id
+ * @property string $user_id
+ * @property string $exam_id
  * @property \Carbon\Carbon|null $start_time
  * @property \Carbon\Carbon|null $end_time
  * @property int|null $score

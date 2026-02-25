@@ -125,11 +125,11 @@ class QuestionService extends BaseService
      * Import questions from file
      *
      * @param \Illuminate\Http\UploadedFile $file
-     * @param int $examId
-     * @param int|null $questionGroupId
+     * @param string $examId
+     * @param string|null $questionGroupId
      * @return array
      */
-    public function importQuestions($file, int $examId, ?int $questionGroupId = null): array
+    public function importQuestions($file, string $examId, ?string $questionGroupId = null): array
     {
         return DB::transaction(function () use ($file, $examId, $questionGroupId) {
             try {

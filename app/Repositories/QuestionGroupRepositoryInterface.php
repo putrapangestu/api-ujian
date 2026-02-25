@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 /**
  * QuestionGroup Repository Interface
- * 
+ *
  * Interface ini mendefinisikan kontrak untuk QuestionGroupRepository
- * 
+ *
  * @package App\Repositories
  * @author Development Team
  * @version 1.0.0
@@ -18,21 +18,21 @@ interface QuestionGroupRepositoryInterface extends BaseRepositoryInterface
 {
     /**
      * Get active question groups
-     * 
+     *
      * @return Collection
      */
     public function getActiveGroups(): Collection;
 
     /**
      * Get question groups with question count
-     * 
+     *
      * @return Collection
      */
     public function getWithQuestionCount(): Collection;
 
     /**
      * Find question group by code
-     * 
+     *
      * @param string $code
      * @return QuestionGroup|null
      */
@@ -40,7 +40,7 @@ interface QuestionGroupRepositoryInterface extends BaseRepositoryInterface
 
     /**
      * Search question groups by name or code
-     * 
+     *
      * @param string $search
      * @param int $limit
      * @return Collection
@@ -49,15 +49,15 @@ interface QuestionGroupRepositoryInterface extends BaseRepositoryInterface
 
     /**
      * Get question groups for exam
-     * 
-     * @param int $examId
+     *
+     * @param string $examId
      * @return Collection
      */
-    public function getForExam(int $examId): Collection;
+    public function getForExam(string $examId): Collection;
 
     /**
      * Import question group from file
-     * 
+     *
      * @param array $data
      * @return array
      */

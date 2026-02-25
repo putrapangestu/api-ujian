@@ -12,9 +12,9 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * SocketIO Service Class
- * 
+ *
  * Service ini menangani integrasi dengan Socket.IO untuk realtime monitoring
- * 
+ *
  * @package App\Services
  * @author Development Team
  * @version 1.0.0
@@ -23,7 +23,7 @@ class SocketIOService extends BaseService
 {
     /**
      * Broadcast exam monitoring data
-     * 
+     *
      * @param ExamMonitoring $monitoring
      * @return array
      */
@@ -31,7 +31,7 @@ class SocketIOService extends BaseService
     {
         try {
             $data = $this->prepareExamMonitoringData($monitoring);
-            
+
             // Log the broadcast (will be replaced with actual Socket.IO broadcast)
             Log::info('Socket.IO Broadcast - Exam Monitoring', [
                 'channel' => 'exam-monitoring',
@@ -49,7 +49,7 @@ class SocketIOService extends BaseService
 
     /**
      * Broadcast exam completion
-     * 
+     *
      * @param UserExam $userExam
      * @return array
      */
@@ -57,7 +57,7 @@ class SocketIOService extends BaseService
     {
         try {
             $data = $this->prepareExamCompletionData($userExam);
-            
+
             // Log the broadcast (will be replaced with actual Socket.IO broadcast)
             Log::info('Socket.IO Broadcast - Exam Completion', [
                 'channel' => 'exam-completion',
@@ -75,17 +75,17 @@ class SocketIOService extends BaseService
 
     /**
      * Broadcast group monitoring data
-     * 
-     * @param int $examId
-     * @param int $questionGroupId
+     *
+     * @param string $examId
+     * @param string $questionGroupId
      * @param array $statistics
      * @return array
      */
-    public function broadcastGroupMonitoring(int $examId, int $questionGroupId, array $statistics): array
+    public function broadcastGroupMonitoring(string $examId, string $questionGroupId, array $statistics): array
     {
         try {
             $data = $this->prepareGroupMonitoringData($examId, $questionGroupId, $statistics);
-            
+
             // Log the broadcast (will be replaced with actual Socket.IO broadcast)
             Log::info('Socket.IO Broadcast - Group Monitoring', [
                 'channel' => 'group-monitoring',
@@ -103,16 +103,16 @@ class SocketIOService extends BaseService
 
     /**
      * Broadcast category monitoring data
-     * 
-     * @param int $examId
+     *
+     * @param string $examId
      * @param array $categories
      * @return array
      */
-    public function broadcastCategoryMonitoring(int $examId, array $categories): array
+    public function broadcastCategoryMonitoring(string $examId, array $categories): array
     {
         try {
             $data = $this->prepareCategoryMonitoringData($examId, $categories);
-            
+
             // Log the broadcast (will be replaced with actual Socket.IO broadcast)
             Log::info('Socket.IO Broadcast - Category Monitoring', [
                 'channel' => 'category-monitoring',
@@ -130,7 +130,7 @@ class SocketIOService extends BaseService
 
     /**
      * Broadcast student rolling event
-     * 
+     *
      * @param UserExam $userExam
      * @param array $rollData
      * @return array
@@ -139,7 +139,7 @@ class SocketIOService extends BaseService
     {
         try {
             $data = $this->prepareStudentRollingData($userExam, $rollData);
-            
+
             // Log the broadcast (will be replaced with actual Socket.IO broadcast)
             Log::info('Socket.IO Broadcast - Student Rolling', [
                 'channel' => 'student-rolling',
@@ -157,12 +157,12 @@ class SocketIOService extends BaseService
 
     /**
      * Broadcast real-time exam statistics
-     * 
-     * @param int $examId
+     *
+     * @param string $examId
      * @param array $statistics
      * @return array
      */
-    public function broadcastExamStatistics(int $examId, array $statistics): array
+    public function broadcastExamStatistics(string $examId, array $statistics): array
     {
         try {
             $data = [
@@ -170,7 +170,7 @@ class SocketIOService extends BaseService
                 'statistics' => $statistics,
                 'timestamp' => now()->toISOString(),
             ];
-            
+
             // Log the broadcast (will be replaced with actual Socket.IO broadcast)
             Log::info('Socket.IO Broadcast - Exam Statistics', [
                 'channel' => 'exam-statistics',
@@ -188,7 +188,7 @@ class SocketIOService extends BaseService
 
     /**
      * Prepare exam monitoring data
-     * 
+     *
      * @param ExamMonitoring $monitoring
      * @return array
      */
@@ -230,7 +230,7 @@ class SocketIOService extends BaseService
 
     /**
      * Prepare exam completion data
-     * 
+     *
      * @param UserExam $userExam
      * @return array
      */
@@ -263,13 +263,13 @@ class SocketIOService extends BaseService
 
     /**
      * Prepare group monitoring data
-     * 
-     * @param int $examId
-     * @param int $questionGroupId
+     *
+     * @param string $examId
+     * @param string $questionGroupId
      * @param array $statistics
      * @return array
      */
-    private function prepareGroupMonitoringData(int $examId, int $questionGroupId, array $statistics): array
+    private function prepareGroupMonitoringData(string $examId, string $questionGroupId, array $statistics): array
     {
         return [
             'exam_id' => $examId,
@@ -286,12 +286,12 @@ class SocketIOService extends BaseService
 
     /**
      * Prepare category monitoring data
-     * 
-     * @param int $examId
+     *
+     * @param string $examId
      * @param array $categories
      * @return array
      */
-    private function prepareCategoryMonitoringData(int $examId, array $categories): array
+    private function prepareCategoryMonitoringData(string $examId, array $categories): array
     {
         return [
             'exam_id' => $examId,
@@ -317,7 +317,7 @@ class SocketIOService extends BaseService
 
     /**
      * Prepare student rolling data
-     * 
+     *
      * @param UserExam $userExam
      * @param array $rollData
      * @return array

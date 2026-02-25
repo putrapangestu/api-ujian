@@ -271,10 +271,10 @@ class StudentService extends BaseService
      * Import students from Excel/CSV file
      *
      * @param \Illuminate\Http\UploadedFile $file
-     * @param int $groupId
+     * @param string $groupId
      * @return array
      */
-    public function importStudents($file, int $groupId): array
+    public function importStudents($file, string $groupId): array
     {
         return DB::transaction(function () use ($file, $groupId) {
             try {
@@ -360,10 +360,10 @@ class StudentService extends BaseService
     /**
      * Export students to Excel
      *
-     * @param int $groupId
+     * @param string $groupId
      * @return array
      */
-    public function exportStudents(int $groupId): array
+    public function exportStudents(string $groupId): array
     {
         try {
             $group = $this->studentGroupRepository->find($groupId);

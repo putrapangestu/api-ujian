@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @version 1.0.0
  *
  * @property string $id
- * @property int $question_id
+ * @property string $question_id
  * @property string $option_text
  * @property boolean $is_correct
  * @property int $score

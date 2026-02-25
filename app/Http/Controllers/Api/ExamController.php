@@ -210,7 +210,7 @@ class ExamController extends Controller
      * Select questions from question banks for exam
      *
      * @param \Illuminate\Http\Request $request
-     * @param int $examId
+     * @param string $examId
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Post(
@@ -325,7 +325,7 @@ class ExamController extends Controller
      * Get exam questions for student with random order
      *
      * @param \Illuminate\Http\Request $request
-     * @param int $examId
+     * @param string $examId
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Post(

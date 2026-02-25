@@ -13,10 +13,10 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * ExamRollingBackgroundService Service Class
- * 
+ *
  * Service ini menangani rolling student yang mengikuti ujian menggunakan background job
  * Membuat user_exam dan user_answer untuk setiap student dengan soal yang random
- * 
+ *
  * @package App\Services
  * @author Development Team
  * @version 1.0.0
@@ -25,12 +25,12 @@ class ExamRollingBackgroundService extends BaseService
 {
     /**
      * Roll student to different group and process exam via background job
-     * 
-     * @param int $userExamId
-     * @param int $newGroupId
+     *
+     * @param string $userExamId
+     * @param string $newGroupId
      * @return array
      */
-    public function rollStudentToGroupWithBackgroundJob(int $userExamId, int $newGroupId): array
+    public function rollStudentToGroupWithBackgroundJob(string $userExamId, string $newGroupId): array
     {
         return DB::transaction(function () use ($userExamId, $newGroupId) {
             try {
@@ -98,7 +98,7 @@ class ExamRollingBackgroundService extends BaseService
 
     /**
      * Roll multiple students to different groups with background jobs
-     * 
+     *
      * @param array $rollData Array of ['user_exam_id' => int, 'new_group_id' => int]
      * @return array
      */
@@ -157,12 +157,12 @@ class ExamRollingBackgroundService extends BaseService
 
     /**
      * Process exam for all students in a group
-     * 
-     * @param int $examId
-     * @param int $groupId
+     *
+     * @param string $examId
+     * @param string $groupId
      * @return array
      */
-    public function processExamForGroup(int $examId, int $groupId): array
+    public function processExamForGroup(string $examId, string $groupId): array
     {
         try {
             $exam = Exam::find($examId);
@@ -241,7 +241,7 @@ class ExamRollingBackgroundService extends BaseService
 
     /**
      * Log rolling action for audit trail
-     * 
+     *
      * @param UserExam $userExam
      * @param StudentGroup|null $oldGroup
      * @param StudentGroup $newGroup

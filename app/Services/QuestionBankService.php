@@ -26,12 +26,12 @@ class QuestionBankService extends BaseService
      * Import question bank from Excel file
      *
      * @param \Illuminate\Http\UploadedFile $file
-     * @param int|null $examId
-     * @param int|null $questionGroupId
-     * @param int|null $categoryId
+     * @param string|null $examId
+     * @param string|null $questionGroupId
+     * @param string|null $categoryId
      * @return array
      */
-    public function importQuestionBank($file, ?int $examId = null, ?int $questionGroupId = null, ?int $categoryId = null): array
+    public function importQuestionBank($file, ?string $examId = null, ?string $questionGroupId = null, ?string $categoryId = null): array
     {
         return DB::transaction(function () use ($file, $examId, $questionGroupId, $categoryId) {
             try {
@@ -116,7 +116,7 @@ class QuestionBankService extends BaseService
      * @param int|null $categoryId
      * @return array
      */
-    private function processQuestionRow(array $row, int $rowNumber, ?int $examId, ?int $questionGroupId, ?int $categoryId): array
+    private function processQuestionRow(array $row, int $rowNumber, ?string $examId, ?string $questionGroupId, ?string $categoryId): array
     {
         // Validasi minimal data
         if (count($row) < 5) {
@@ -223,7 +223,7 @@ class QuestionBankService extends BaseService
      * @param int|null $categoryId
      * @return array
      */
-    public function exportQuestionBank(?int $examId = null, ?int $questionGroupId = null, ?int $categoryId = null): array
+    public function exportQuestionBank(?string $examId = null, ?string $questionGroupId = null, ?string $categoryId = null): array
     {
         try {
             $query = Question::query();

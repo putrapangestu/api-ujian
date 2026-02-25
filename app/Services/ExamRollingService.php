@@ -24,11 +24,11 @@ class ExamRollingService extends BaseService
     /**
      * Roll student to different group during exam
      *
-     * @param int $userExamId
-     * @param int $newGroupId
+     * @param string $userExamId
+     * @param string $newGroupId
      * @return array
      */
-    public function rollStudentToGroup(int $userExamId, int $newGroupId): array
+    public function rollStudentToGroup(string $userExamId, string $newGroupId): array
     {
         return DB::transaction(function () use ($userExamId, $newGroupId) {
             try {
@@ -134,10 +134,10 @@ class ExamRollingService extends BaseService
     /**
      * Get students that can be rolled during exam
      *
-     * @param int $examId
+     * @param string $examId
      * @return array
      */
-    public function getRollableStudents(int $examId): array
+    public function getRollableStudents(string $examId): array
     {
         try {
             // Get all students currently taking the exam
@@ -181,11 +181,11 @@ class ExamRollingService extends BaseService
     /**
      * Validate rolling operation
      *
-     * @param int $userExamId
-     * @param int $newGroupId
+     * @param string $userExamId
+     * @param string $newGroupId
      * @return array
      */
-    public function validateRolling(int $userExamId, int $newGroupId): array
+    public function validateRolling(string $userExamId, string $newGroupId): array
     {
         try {
             $userExam = UserExam::find($userExamId);

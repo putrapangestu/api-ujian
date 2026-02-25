@@ -18,9 +18,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @version 1.0.0
  *
  * @property string $id
- * @property int $exam_id
- * @property int $question_id
- * @property int $question_group_id
+ * @property string $exam_id
+ * @property string $question_id
+ * @property string $question_group_id
  * @property int $question_number Nomor urut soal (1, 2, 3, dst)
  * @property int $question_order Urutan random untuk setiap student
  * @property bool $is_active

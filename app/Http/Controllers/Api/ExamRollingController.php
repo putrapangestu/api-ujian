@@ -132,7 +132,7 @@ class ExamRollingController extends Controller
      * Get students that can be rolled during exam
      *
      * @param Request $request
-     * @param int $examId
+     * @param string $examId
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Get(path: "/exam-rolling/rollable-students/{examId}", summary: "Daftar siswa yang bisa di-rolling", tags: ["Exam Rolling"], responses: [new OA\Response(response: 200, description: "Success")])]
@@ -209,7 +209,7 @@ class ExamRollingController extends Controller
      * Process exam for all students in a group with background jobs
      *
      * @param Request $request
-     * @param int $examId
+     * @param string $examId
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Post(path: "/exam-rolling/process-group/{examId}", summary: "Proses ujian untuk satu grup (jobs background)", tags: ["Exam Rolling"], responses: [new OA\Response(response: 200, description: "Success")])]

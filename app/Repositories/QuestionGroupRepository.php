@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * QuestionGroup Repository Class
- * 
+ *
  * Repository ini menangani semua operasi database terkait QuestionGroup model
- * 
+ *
  * @package App\Repositories
  * @author Development Team
  * @version 1.0.0
@@ -19,7 +19,7 @@ class QuestionGroupRepository extends BaseRepository implements QuestionGroupRep
 {
     /**
      * QuestionGroupRepository constructor
-     * 
+     *
      * @param QuestionGroup $model
      */
     public function __construct(QuestionGroup $model)
@@ -29,7 +29,7 @@ class QuestionGroupRepository extends BaseRepository implements QuestionGroupRep
 
     /**
      * Get active question groups
-     * 
+     *
      * @return Collection
      */
     public function getActiveGroups(): Collection
@@ -39,7 +39,7 @@ class QuestionGroupRepository extends BaseRepository implements QuestionGroupRep
 
     /**
      * Get question groups with question count
-     * 
+     *
      * @return Collection
      */
     public function getWithQuestionCount(): Collection
@@ -49,7 +49,7 @@ class QuestionGroupRepository extends BaseRepository implements QuestionGroupRep
 
     /**
      * Find question group by code
-     * 
+     *
      * @param string $code
      * @return QuestionGroup|null
      */
@@ -60,7 +60,7 @@ class QuestionGroupRepository extends BaseRepository implements QuestionGroupRep
 
     /**
      * Search question groups by name or code
-     * 
+     *
      * @param string $search
      * @param int $limit
      * @return Collection
@@ -79,11 +79,11 @@ class QuestionGroupRepository extends BaseRepository implements QuestionGroupRep
 
     /**
      * Get question groups for exam
-     * 
-     * @param int $examId
+     *
+     * @param string $examId
      * @return Collection
      */
-    public function getForExam(int $examId): Collection
+    public function getForExam(string $examId): Collection
     {
         return $this->model
             ->whereHas('exams', function ($query) use ($examId) {
@@ -97,7 +97,7 @@ class QuestionGroupRepository extends BaseRepository implements QuestionGroupRep
 
     /**
      * Import question group from file
-     * 
+     *
      * @param array $data
      * @return array
      */

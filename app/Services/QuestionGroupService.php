@@ -104,10 +104,10 @@ class QuestionGroupService extends BaseService
     /**
      * Get question group by ID
      *
-     * @param int $id
+     * @param string $id
      * @return array
      */
-    public function getGroupById(int $id): array
+    public function getGroupById(string $id): array
     {
         try {
             $group = $this->questionGroupRepository->find($id, ['questions']);
@@ -147,11 +147,11 @@ class QuestionGroupService extends BaseService
     /**
      * Update question group
      *
-     * @param int $id
+     * @param string $id
      * @param array $data Validated data from QuestionGroupRequest
      * @return array
      */
-    public function updateGroup(int $id, array $data): array
+    public function updateGroup(string $id, array $data): array
     {
         return DB::transaction(function () use ($id, $data) {
             try {
@@ -183,10 +183,10 @@ class QuestionGroupService extends BaseService
     /**
      * Delete question group
      *
-     * @param int $id
+     * @param string $id
      * @return array
      */
-    public function deleteGroup(int $id): array
+    public function deleteGroup(string $id): array
     {
         return DB::transaction(function () use ($id) {
             try {

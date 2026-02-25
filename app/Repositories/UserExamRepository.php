@@ -30,11 +30,11 @@ class UserExamRepository implements UserExamRepositoryInterface
     /**
      * Find user exam by exam ID and student ID
      *
-     * @param int $examId
-     * @param int $studentId
+     * @param string $examId
+     * @param string $studentId
      * @return UserExam|null
      */
-    public function findByExamAndStudent(int $examId, int $studentId): ?UserExam
+    public function findByExamAndStudent(string $examId, string $studentId): ?UserExam
     {
         return UserExam::where('exam_id', $examId)
             ->where('student_id', $studentId)
@@ -44,10 +44,10 @@ class UserExamRepository implements UserExamRepositoryInterface
     /**
      * Find all user exams by exam ID
      *
-     * @param int $examId
+     * @param string $examId
      * @return Collection
      */
-    public function findByExamId(int $examId)
+    public function findByExamId(string $examId): Collection
     {
         return UserExam::where('exam_id', $examId)->get();
     }
@@ -55,10 +55,10 @@ class UserExamRepository implements UserExamRepositoryInterface
     /**
      * Find all user exams by student ID
      *
-     * @param int $studentId
+     * @param string $studentId
      * @return Collection
      */
-    public function findByStudentId(int $studentId)
+    public function findByStudentId(string $studentId): Collection
     {
         return UserExam::where('student_id', $studentId)->get();
     }
@@ -113,10 +113,10 @@ class UserExamRepository implements UserExamRepositoryInterface
     /**
      * Get user exams with answers
      *
-     * @param int $userExamId
+     * @param string $userExamId
      * @return UserExam|null
      */
-    public function getWithAnswers(int $userExamId): ?UserExam
+    public function getWithAnswers(string $userExamId): ?UserExam
     {
         return UserExam::with(['answers', 'answers.question', 'answers.questionOption'])
             ->find($userExamId);
@@ -167,10 +167,10 @@ class UserExamRepository implements UserExamRepositoryInterface
     /**
      * Count user exams by exam ID
      *
-     * @param int $examId
+     * @param string $examId
      * @return int
      */
-    public function countByExamId(int $examId): int
+    public function countByExamId(string $examId): int
     {
         return UserExam::where('exam_id', $examId)->count();
     }
@@ -178,10 +178,10 @@ class UserExamRepository implements UserExamRepositoryInterface
     /**
      * Count user exams by student ID
      *
-     * @param int $studentId
+     * @param string $studentId
      * @return int
      */
-    public function countByStudentId(int $studentId): int
+    public function countByStudentId(string $studentId): int
     {
         return UserExam::where('student_id', $studentId)->count();
     }
@@ -189,10 +189,10 @@ class UserExamRepository implements UserExamRepositoryInterface
     /**
      * Get average score by exam ID
      *
-     * @param int $examId
+     * @param string $examId
      * @return float|null
      */
-    public function getAverageScoreByExamId(int $examId): ?float
+    public function getAverageScoreByExamId(string $examId): ?float
     {
         return UserExam::where('exam_id', $examId)
             ->whereNotNull('score')
@@ -202,10 +202,10 @@ class UserExamRepository implements UserExamRepositoryInterface
     /**
      * Get highest score by exam ID
      *
-     * @param int $examId
+     * @param string $examId
      * @return int|null
      */
-    public function getHighestScoreByExamId(int $examId): ?int
+    public function getHighestScoreByExamId(string $examId): ?int
     {
         return UserExam::where('exam_id', $examId)
             ->whereNotNull('score')
@@ -215,10 +215,10 @@ class UserExamRepository implements UserExamRepositoryInterface
     /**
      * Get lowest score by exam ID
      *
-     * @param int $examId
+     * @param string $examId
      * @return int|null
      */
-    public function getLowestScoreByExamId(int $examId): ?int
+    public function getLowestScoreByExamId(string $examId): ?int
     {
         return UserExam::where('exam_id', $examId)
             ->whereNotNull('score')

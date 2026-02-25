@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Student Repository Interface
- * 
+ *
  * Interface ini mendefinisikan kontrak untuk StudentRepository
- * 
+ *
  * @package App\Repositories
  * @author Development Team
  * @version 1.0.0
@@ -18,7 +18,7 @@ interface StudentRepositoryInterface extends BaseRepositoryInterface
 {
     /**
      * Find student by NISN
-     * 
+     *
      * @param string $nisn
      * @return Student|null
      */
@@ -26,7 +26,7 @@ interface StudentRepositoryInterface extends BaseRepositoryInterface
 
     /**
      * Find student by email
-     * 
+     *
      * @param string $email
      * @return Student|null
      */
@@ -34,22 +34,22 @@ interface StudentRepositoryInterface extends BaseRepositoryInterface
 
     /**
      * Get students by group
-     * 
-     * @param int $groupId
+     *
+     * @param string $groupId
      * @return Collection
      */
-    public function getByGroup(int $groupId): Collection;
+    public function getByGroup(string $groupId): Collection;
 
     /**
      * Get active students
-     * 
+     *
      * @return Collection
      */
     public function getActiveStudents(): Collection;
 
     /**
      * Search students by name or NISN
-     * 
+     *
      * @param string $search
      * @param int $limit
      * @return Collection
@@ -58,7 +58,7 @@ interface StudentRepositoryInterface extends BaseRepositoryInterface
 
     /**
      * Import students from array
-     * 
+     *
      * @param array $students
      * @return array
      */

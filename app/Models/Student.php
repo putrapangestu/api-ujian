@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $email
  * @property string|null $phone
  * @property string|null $address
- * @property int $group_id
+ * @property string $group_id
  * @property int|null $user_id
  * @property string $status
  * @property \Carbon\Carbon $created_at

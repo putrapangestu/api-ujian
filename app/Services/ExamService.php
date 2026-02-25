@@ -194,11 +194,11 @@ class ExamService extends BaseService
     /**
      * Start exam for user
      *
-     * @param int $examId
-     * @param int $userId
+     * @param string $examId
+     * @param string $userId
      * @return array
      */
-    public function startExam(int $examId, int $userId): array
+    public function startExam(string $examId, string $userId): array
     {
         return DB::transaction(function () use ($examId, $userId) {
             try {

@@ -78,10 +78,10 @@ class ExamMonitoringService extends BaseService
     /**
      * Get real-time exam monitoring data
      *
-     * @param int $examId
+     * @param string $examId
      * @return array
      */
-    public function getRealtimeMonitoring(int $examId): array
+    public function getRealtimeMonitoring(string $examId): array
     {
         try {
             // Get active user exams for this exam
@@ -116,11 +116,11 @@ class ExamMonitoringService extends BaseService
     /**
      * Get detailed monitoring for specific student
      *
-     * @param int $studentId
-     * @param int $examId
+     * @param string $studentId
+     * @param string $examId
      * @return array
      */
-    public function getStudentMonitoring(int $studentId, int $examId): array
+    public function getStudentMonitoring(string $studentId, string $examId): array
     {
         try {
             // Get user exam for this student and exam
@@ -156,10 +156,10 @@ class ExamMonitoringService extends BaseService
     /**
      * Get exam summary for monitoring dashboard
      *
-     * @param int $examId
+     * @param string $examId
      * @return array
      */
-    public function getExamSummary(int $examId): array
+    public function getExamSummary(string $examId): array
     {
         try {
             // Get all user exams for this exam
@@ -199,11 +199,11 @@ class ExamMonitoringService extends BaseService
     /**
      * Get exam monitoring by question group
      *
-     * @param int $examId
-     * @param int $questionGroupId
+     * @param string $examId
+     * @param string $questionGroupId
      * @return array
      */
-    public function getMonitoringByQuestionGroup(int $examId, int $questionGroupId): array
+    public function getMonitoringByQuestionGroup(string $examId, string $questionGroupId): array
     {
         try {
             // Get question group
@@ -279,10 +279,10 @@ class ExamMonitoringService extends BaseService
     /**
      * Get detailed monitoring by category
      *
-     * @param int $examId
+     * @param string $examId
      * @return array
      */
-    public function getMonitoringByCategory(int $examId): array
+    public function getMonitoringByCategory(string $examId): array
     {
         try {
             // Get all categories used in this exam

@@ -53,10 +53,10 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
     /**
      * Get students by group
      *
-     * @param int $groupId
+     * @param string $groupId
      * @return Collection
      */
-    public function getByGroup(int $groupId): Collection
+    public function getByGroup(string $groupId): Collection
     {
         return $this->model->where('group_id', $groupId)->get();
     }

@@ -33,26 +33,26 @@ interface QuestionRepositoryInterface
     /**
      * Get questions by exam ID
      *
-     * @param int $examId
+     * @param string $examId
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getByExamId(int $examId);
+    public function getByExamId(string $examId);
 
     /**
      * Get questions by question group ID
      *
-     * @param int $questionGroupId
+     * @param string $questionGroupId
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getByQuestionGroupId(int $questionGroupId);
+    public function getByQuestionGroupId(string $questionGroupId);
 
     /**
      * Get questions by category ID
      *
-     * @param int $categoryId
+     * @param string $categoryId
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getByCategoryId(int $categoryId);
+    public function getByCategoryId(string $categoryId);
 
     /**
      * Get active questions
@@ -89,26 +89,26 @@ interface QuestionRepositoryInterface
     /**
      * Get questions with options
      *
-     * @param int $questionId
+     * @param string $questionId
      * @return Question|null
      */
-    public function getWithOptions(int $questionId): ?Question;
+    public function getWithOptions(string $questionId): ?Question;
 
     /**
      * Count questions by exam ID
      *
-     * @param int $examId
+     * @param string $examId
      * @return int
      */
-    public function countByExamId(int $examId): int;
+    public function countByExamId(string $examId): int;
 
     /**
      * Count questions by question group ID
      *
-     * @param int $questionGroupId
+     * @param string $questionGroupId
      * @return int
      */
-    public function countByQuestionGroupId(int $questionGroupId): int;
+    public function countByQuestionGroupId(string $questionGroupId): int;
 
     /**
      * Get questions with related data

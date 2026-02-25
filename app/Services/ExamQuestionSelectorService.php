@@ -107,11 +107,11 @@ class ExamQuestionSelectorService extends BaseService
     /**
      * Generate random question order for student
      *
-     * @param int $examId
-     * @param int $studentId
+     * @param string $examId
+     * @param string $studentId
      * @return array
      */
-    public function generateRandomQuestionOrder(int $examId, int $studentId): array
+    public function generateRandomQuestionOrder(string $examId, string $studentId): array
     {
         try {
             // Get all questions for this exam
@@ -157,11 +157,11 @@ class ExamQuestionSelectorService extends BaseService
     /**
      * Get exam questions with proper ordering for student
      *
-     * @param int $examId
-     * @param int $studentId
+     * @param string $examId
+     * @param string $studentId
      * @return array
      */
-    public function getExamQuestionsForStudent(int $examId, int $studentId): array
+    public function getExamQuestionsForStudent(string $examId, string $studentId): array
     {
         try {
             // Generate random order for this student if not exists

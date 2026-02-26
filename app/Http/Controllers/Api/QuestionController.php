@@ -48,7 +48,7 @@ class QuestionController extends Controller
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "exam_id", type: "integer"),
+                    new OA\Property(property: "exam_id", type: "integer", nullable: true),
                     new OA\Property(property: "category_id", type: "integer"),
                     new OA\Property(property: "question_group_id", type: "integer"),
                     new OA\Property(property: "question_text", type: "string", maxLength: 1000),
@@ -88,7 +88,7 @@ class QuestionController extends Controller
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "exam_id", type: "integer"),
+                    new OA\Property(property: "exam_id", type: "integer", nullable: true),
                     new OA\Property(property: "category_id", type: "integer"),
                     new OA\Property(property: "question_group_id", type: "integer"),
                     new OA\Property(property: "question_text", type: "string", maxLength: 1000),

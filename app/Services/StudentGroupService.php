@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
+use App\Helpers\ResponseHelper;
+use App\Models\Student;
 use App\Models\StudentGroup;
 use App\Repositories\StudentGroupRepositoryInterface;
-use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -13,21 +14,16 @@ use Illuminate\Support\Facades\DB;
  * Service ini menangani semua operasi terkait grup siswa
  * Menggunakan database transaction untuk operasi yang melibatkan multiple tables
  *
- * @package App\Services
  * @author Development Team
+ *
  * @version 1.0.0
  */
 class StudentGroupService extends BaseService
 {
-    /**
-     * @var StudentGroupRepositoryInterface
-     */
     protected StudentGroupRepositoryInterface $studentGroupRepository;
 
     /**
      * StudentGroupService constructor
-     *
-     * @param StudentGroupRepositoryInterface $studentGroupRepository
      */
     public function __construct(StudentGroupRepositoryInterface $studentGroupRepository)
     {
@@ -36,10 +32,6 @@ class StudentGroupService extends BaseService
 
     /**
      * Get all student groups (paginated)
-     *
-     * @param array $filters
-     * @param int $perPage
-     * @return array
      */
     public function getAllGroups(array $filters = [], int $perPage = 15): array
     {
@@ -63,15 +55,12 @@ class StudentGroupService extends BaseService
             return ResponseHelper::paginate($groups, 'Daftar grup siswa berhasil diambil');
 
         } catch (\Exception $e) {
-            return $this->errorResponse('Gagal mengambil daftar grup siswa: ' . $e->getMessage());
+            return $this->errorResponse('Gagal mengambil daftar grup siswa: '.$e->getMessage());
         }
     }
 
     /**
      * Get all student groups without pagination
-     *
-     * @param array $filters
-     * @return array
      */
     public function getAllGroupsList(array $filters = []): array
     {
@@ -95,37 +84,33 @@ class StudentGroupService extends BaseService
             return $this->successResponse($groups, 'Daftar grup siswa berhasil diambil');
 
         } catch (\Exception $e) {
-            return $this->errorResponse('Gagal mengambil daftar grup siswa: ' . $e->getMessage());
+            return $this->errorResponse('Gagal mengambil daftar grup siswa: '.$e->getMessage());
         }
     }
 
     /**
      * Get student group by ID
-     *
-     * @param string $id
-     * @return array
      */
     public function getGroupById(string $id): array
     {
         try {
             $group = $this->studentGroupRepository->find($id, ['students']);
 
-            if (!$group) {
+            if (! $group) {
                 return $this->errorResponse('Grup siswa tidak ditemukan', null, 404);
             }
 
             return $this->successResponse($group, 'Detail grup siswa berhasil diambil');
 
         } catch (\Exception $e) {
-            return $this->errorResponse('Gagal mengambil detail grup siswa: ' . $e->getMessage());
+            return $this->errorResponse('Gagal mengambil detail grup siswa: '.$e->getMessage());
         }
     }
 
     /**
      * Create new student group
      *
-     * @param array $data Validated data from StudentGroupRequest
-     * @return array
+     * @param  array  $data  Validated data from StudentGroupRequest
      */
     public function createGroup(array $data): array
     {
@@ -137,7 +122,8 @@ class StudentGroupService extends BaseService
 
             } catch (\Exception $e) {
                 DB::rollBack();
-                return $this->errorResponse('Gagal membuat grup siswa: ' . $e->getMessage());
+
+                return $this->errorResponse('Gagal membuat grup siswa: '.$e->getMessage());
             }
         });
     }
@@ -145,9 +131,7 @@ class StudentGroupService extends BaseService
     /**
      * Update student group
      *
-     * @param string $id
-     * @param array $data Validated data from StudentGroupRequest
-     * @return array
+     * @param  array  $data  Validated data from StudentGroupRequest
      */
     public function updateGroup(string $id, array $data): array
     {
@@ -155,14 +139,14 @@ class StudentGroupService extends BaseService
             try {
                 // Check if group exists
                 $group = $this->studentGroupRepository->find($id);
-                if (!$group) {
+                if (! $group) {
                     return $this->errorResponse('Grup siswa tidak ditemukan', null, 404);
                 }
 
                 // Update group
                 $updated = $this->studentGroupRepository->update($id, $data);
 
-                if (!$updated) {
+                if (! $updated) {
                     return $this->errorResponse('Gagal update grup siswa');
                 }
 
@@ -173,16 +157,14 @@ class StudentGroupService extends BaseService
 
             } catch (\Exception $e) {
                 DB::rollBack();
-                return $this->errorResponse('Gagal update grup siswa: ' . $e->getMessage());
+
+                return $this->errorResponse('Gagal update grup siswa: '.$e->getMessage());
             }
         });
     }
 
     /**
      * Delete student group
-     *
-     * @param string $id
-     * @return array
      */
     public function deleteGroup(string $id): array
     {
@@ -190,7 +172,7 @@ class StudentGroupService extends BaseService
             try {
                 // Check if group exists
                 $group = $this->studentGroupRepository->find($id);
-                if (!$group) {
+                if (! $group) {
                     return $this->errorResponse('Grup siswa tidak ditemukan', null, 404);
                 }
 
@@ -202,7 +184,7 @@ class StudentGroupService extends BaseService
                 // Delete group
                 $deleted = $this->studentGroupRepository->delete($id);
 
-                if (!$deleted) {
+                if (! $deleted) {
                     return $this->errorResponse('Gagal menghapus grup siswa');
                 }
 
@@ -210,18 +192,14 @@ class StudentGroupService extends BaseService
 
             } catch (\Exception $e) {
                 DB::rollBack();
-                return $this->errorResponse('Gagal menghapus grup siswa: ' . $e->getMessage());
+
+                return $this->errorResponse('Gagal menghapus grup siswa: '.$e->getMessage());
             }
         });
     }
 
     /**
      * Roll students to new group
-     *
-     * @param string $fromGroupId
-     * @param string $toGroupId
-     * @param array $studentIds
-     * @return array
      */
     public function rollStudents(string $fromGroupId, string $toGroupId, array $studentIds): array
     {
@@ -231,7 +209,7 @@ class StudentGroupService extends BaseService
                 $fromGroup = $this->studentGroupRepository->find($fromGroupId);
                 $toGroup = $this->studentGroupRepository->find($toGroupId);
 
-                if (!$fromGroup || !$toGroup) {
+                if (! $fromGroup || ! $toGroup) {
                     return $this->errorResponse('Grup asal atau tujuan tidak ditemukan', null, 404);
                 }
 
@@ -242,18 +220,177 @@ class StudentGroupService extends BaseService
                 }
 
                 // Update student groups
-                $updatedCount = \App\Models\Student::whereIn('id', $studentIds)
+                $updatedCount = Student::whereIn('id', $studentIds)
                     ->where('group_id', $fromGroupId)
                     ->update(['group_id' => $toGroupId]);
 
                 return $this->successResponse([
                     'updated_count' => $updatedCount,
-                    'total_requested' => count($studentIds)
+                    'total_requested' => count($studentIds),
                 ], 'Siswa berhasil dipindahkan ke grup baru');
 
             } catch (\Exception $e) {
                 DB::rollBack();
-                return $this->errorResponse('Gagal memindahkan siswa: ' . $e->getMessage());
+
+                return $this->errorResponse('Gagal memindahkan siswa: '.$e->getMessage());
+            }
+        });
+    }
+
+    public function rollMultipleStudents(array $rolls): array
+    {
+        return DB::transaction(function () use ($rolls) {
+            try {
+                if (count($rolls) < 1) {
+                    return $this->errorResponse('Data rolling wajib diisi');
+                }
+
+                $normalizedRolls = [];
+                $studentIds = [];
+                $destinationGroupIds = [];
+                $seenStudentIds = [];
+                $errors = [];
+
+                foreach ($rolls as $index => $roll) {
+                    $studentId = $roll['student_id'] ?? null;
+                    $newGroupId = $roll['new_group_id'] ?? null;
+
+                    if (! $studentId || ! $newGroupId) {
+                        $errors[] = 'Item '.($index + 1).': student_id dan new_group_id wajib diisi';
+
+                        continue;
+                    }
+
+                    if (isset($seenStudentIds[$studentId])) {
+                        $errors[] = 'Item '.($index + 1).': student_id duplikat';
+
+                        continue;
+                    }
+
+                    $seenStudentIds[$studentId] = true;
+                    $studentIds[] = $studentId;
+                    $destinationGroupIds[] = $newGroupId;
+                    $normalizedRolls[] = [
+                        'index' => $index,
+                        'student_id' => $studentId,
+                        'new_group_id' => $newGroupId,
+                    ];
+                }
+
+                if (count($normalizedRolls) < 1) {
+                    return $this->successResponse([
+                        'successful_rolls' => [],
+                        'errors' => $errors,
+                        'total_success' => 0,
+                        'total_errors' => count($errors),
+                    ], 'Proses rolling selesai');
+                }
+
+                $students = Student::query()
+                    ->whereIn('id', $studentIds)
+                    ->lockForUpdate()
+                    ->get(['id', 'group_id']);
+
+                $studentsById = $students->keyBy('id');
+                $sourceGroupIds = $students
+                    ->pluck('group_id')
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                $allGroupIds = array_values(array_unique(array_merge($destinationGroupIds, $sourceGroupIds)));
+
+                $groups = StudentGroup::query()
+                    ->whereIn('id', $allGroupIds)
+                    ->lockForUpdate()
+                    ->get(['id', 'max_students']);
+
+                $groupsById = $groups->keyBy('id');
+                $remainingSlots = [];
+
+                foreach ($groups as $group) {
+                    $currentCount = Student::query()
+                        ->where('group_id', $group->id)
+                        ->lockForUpdate()
+                        ->count();
+
+                    $remainingSlots[$group->id] = $group->max_students - $currentCount;
+                }
+
+                $successfulRolls = [];
+                $studentIdsByGroup = [];
+
+                foreach ($normalizedRolls as $roll) {
+                    $itemNumber = $roll['index'] + 1;
+                    $student = $studentsById->get($roll['student_id']);
+                    $newGroupId = $roll['new_group_id'];
+
+                    if (! $student) {
+                        $errors[] = 'Item '.$itemNumber.': siswa tidak ditemukan';
+
+                        continue;
+                    }
+
+                    $newGroup = $groupsById->get($newGroupId);
+                    if (! $newGroup) {
+                        $errors[] = 'Item '.$itemNumber.': grup tujuan tidak ditemukan';
+
+                        continue;
+                    }
+
+                    $oldGroupId = $student->group_id;
+                    if ($oldGroupId === $newGroupId) {
+                        $successfulRolls[] = [
+                            'student_id' => $student->id,
+                            'old_group_id' => $oldGroupId,
+                            'new_group_id' => $newGroupId,
+                            'status' => 'skipped',
+                        ];
+
+                        continue;
+                    }
+
+                    if (($remainingSlots[$newGroupId] ?? 0) <= 0) {
+                        $errors[] = 'Item '.$itemNumber.': grup tujuan sudah penuh';
+
+                        continue;
+                    }
+
+                    $studentIdsByGroup[$newGroupId] = $studentIdsByGroup[$newGroupId] ?? [];
+                    $studentIdsByGroup[$newGroupId][] = $student->id;
+
+                    $remainingSlots[$newGroupId] = $remainingSlots[$newGroupId] - 1;
+                    if ($oldGroupId && array_key_exists($oldGroupId, $remainingSlots)) {
+                        $remainingSlots[$oldGroupId] = $remainingSlots[$oldGroupId] + 1;
+                    }
+
+                    $student->group_id = $newGroupId;
+
+                    $successfulRolls[] = [
+                        'student_id' => $student->id,
+                        'old_group_id' => $oldGroupId,
+                        'new_group_id' => $newGroupId,
+                        'status' => 'moved',
+                    ];
+                }
+
+                foreach ($studentIdsByGroup as $groupId => $ids) {
+                    Student::query()
+                        ->whereIn('id', $ids)
+                        ->update(['group_id' => $groupId]);
+                }
+
+                return $this->successResponse([
+                    'successful_rolls' => $successfulRolls,
+                    'errors' => $errors,
+                    'total_success' => count($successfulRolls),
+                    'total_errors' => count($errors),
+                ], 'Proses rolling selesai');
+            } catch (\Exception $e) {
+                DB::rollBack();
+
+                return $this->errorResponse('Gagal memproses rolling: '.$e->getMessage());
             }
         });
     }

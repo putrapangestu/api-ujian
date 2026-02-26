@@ -14,21 +14,16 @@ use OpenApi\Attributes as OA;
  * Controller ini menangani semua operasi terkait grup siswa
  * Termasuk rolling siswa antar grup
  *
- * @package App\Http\Controllers\Api
  * @author Development Team
+ *
  * @version 1.0.0
  */
 class StudentGroupController extends Controller
 {
-    /**
-     * @var StudentGroupService
-     */
     protected StudentGroupService $studentGroupService;
 
     /**
      * StudentGroupController constructor
-     *
-     * @param StudentGroupService $studentGroupService
      */
     public function __construct(StudentGroupService $studentGroupService)
     {
@@ -38,10 +33,9 @@ class StudentGroupController extends Controller
     /**
      * Get all student groups
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    #[OA\Get(path: "/student-groups", summary: "Daftar grup siswa", tags: ["Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
+    #[OA\Get(path: '/student-groups', summary: 'Daftar grup siswa', tags: ['Student Groups'], responses: [new OA\Response(response: 200, description: 'Success')])]
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'status']);
@@ -58,10 +52,9 @@ class StudentGroupController extends Controller
     /**
      * Get all student groups without pagination
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    #[OA\Get(path: "/student-groups/all", summary: "Daftar semua grup siswa", tags: ["Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
+    #[OA\Get(path: '/student-groups/all', summary: 'Daftar semua grup siswa', tags: ['Student Groups'], responses: [new OA\Response(response: 200, description: 'Success')])]
     public function listAll(Request $request)
     {
         $filters = $request->only(['search', 'status']);
@@ -77,10 +70,10 @@ class StudentGroupController extends Controller
     /**
      * Get student group by ID
      *
-     * @param string $id
+     * @param  string  $id
      * @return \Illuminate\Http\JsonResponse
      */
-    #[OA\Get(path: "/student-groups/{id}", summary: "Detail grup siswa", tags: ["Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
+    #[OA\Get(path: '/student-groups/{id}', summary: 'Detail grup siswa', tags: ['Student Groups'], responses: [new OA\Response(response: 200, description: 'Success')])]
     public function show($id)
     {
         $result = $this->studentGroupService->getGroupById($id);
@@ -95,10 +88,9 @@ class StudentGroupController extends Controller
     /**
      * Create new student group
      *
-     * @param StudentGroupRequest $request
      * @return \Illuminate\Http\JsonResponse
      */
-    #[OA\Post(path: "/admin/student-groups", summary: "Buat grup siswa", tags: ["Admin","Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
+    #[OA\Post(path: '/admin/student-groups', summary: 'Buat grup siswa', tags: ['Admin', 'Student Groups'], responses: [new OA\Response(response: 200, description: 'Success')])]
     public function store(StudentGroupRequest $request)
     {
         $result = $this->studentGroupService->createGroup($request->validatedData());
@@ -113,11 +105,10 @@ class StudentGroupController extends Controller
     /**
      * Update student group
      *
-     * @param StudentGroupRequest $request
-     * @param string $id
+     * @param  string  $id
      * @return \Illuminate\Http\JsonResponse
      */
-    #[OA\Put(path: "/admin/student-groups/{id}", summary: "Perbarui grup siswa", tags: ["Admin","Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
+    #[OA\Put(path: '/admin/student-groups/{id}', summary: 'Perbarui grup siswa', tags: ['Admin', 'Student Groups'], responses: [new OA\Response(response: 200, description: 'Success')])]
     public function update(StudentGroupRequest $request, $id)
     {
         $result = $this->studentGroupService->updateGroup($id, $request->validatedData());
@@ -132,10 +123,10 @@ class StudentGroupController extends Controller
     /**
      * Delete student group
      *
-     * @param string $id
+     * @param  string  $id
      * @return \Illuminate\Http\JsonResponse
      */
-    #[OA\Delete(path: "/admin/student-groups/{id}", summary: "Hapus grup siswa", tags: ["Admin","Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
+    #[OA\Delete(path: '/admin/student-groups/{id}', summary: 'Hapus grup siswa', tags: ['Admin', 'Student Groups'], responses: [new OA\Response(response: 200, description: 'Success')])]
     public function destroy($id)
     {
         $result = $this->studentGroupService->deleteGroup($id);
@@ -150,10 +141,9 @@ class StudentGroupController extends Controller
     /**
      * Roll students to new group
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    #[OA\Post(path: "/student-groups/roll-students", summary: "Rolling siswa antar grup", tags: ["Student Groups"], responses: [new OA\Response(response: 200, description: "Success")])]
+    #[OA\Post(path: '/student-groups/roll-students', summary: 'Rolling siswa antar grup', tags: ['Student Groups'], responses: [new OA\Response(response: 200, description: 'Success')])]
     public function rollStudents(Request $request)
     {
         $request->validate([
@@ -168,6 +158,27 @@ class StudentGroupController extends Controller
             $request->to_group_id,
             $request->student_ids
         );
+
+        if ($result['success']) {
+            return $this->successResponse($result['data'], $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
+
+    #[OA\Post(path: '/student-groups/roll-multiple', summary: 'Rolling banyak siswa ke grup', tags: ['Student Groups'], responses: [new OA\Response(response: 200, description: 'Success')])]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(properties: [
+        new OA\Property(property: 'rolls', type: 'array', items: new OA\Items(type: 'object')),
+    ]))]
+    public function rollMultipleStudents(Request $request)
+    {
+        $request->validate([
+            'rolls' => 'required|array|min:1',
+            'rolls.*.student_id' => 'required|uuid',
+            'rolls.*.new_group_id' => 'required|uuid',
+        ]);
+
+        $result = $this->studentGroupService->rollMultipleStudents($request->rolls);
 
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);

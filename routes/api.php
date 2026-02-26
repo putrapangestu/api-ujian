@@ -1,26 +1,25 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ExamController;
-use App\Http\Controllers\Api\StudentGroupController;
-use App\Http\Controllers\Api\StudentController;
-use App\Http\Controllers\Api\QuestionCategoryController;
-use App\Http\Controllers\Api\QuestionGroupController;
-use App\Http\Controllers\Api\QuestionController;
-use App\Http\Controllers\Api\QuestionBankController;
 use App\Http\Controllers\Api\ExamMonitoringController;
 use App\Http\Controllers\Api\ExamRollingController;
+use App\Http\Controllers\Api\QuestionBankController;
+use App\Http\Controllers\Api\QuestionCategoryController;
+use App\Http\Controllers\Api\QuestionController;
+use App\Http\Controllers\Api\QuestionGroupController;
+use App\Http\Controllers\Api\StudentController;
+use App\Http\Controllers\Api\StudentGroupController;
 use App\Http\Controllers\Api\UserController;
+use Illuminate\Support\Facades\Route;
 
 /**
  * API Routes
  *
  * File ini berisi semua routes untuk API endpoints
  *
- * @package Routes
  * @author Development Team
+ *
  * @version 1.0.0
  */
 
@@ -55,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/all', [StudentGroupController::class, 'listAll'])->name('student-groups.all');
         Route::get('/{id}', [StudentGroupController::class, 'show'])->name('student-groups.show');
         Route::post('/roll-students', [StudentGroupController::class, 'rollStudents'])->name('student-groups.roll');
+        Route::post('/roll-multiple', [StudentGroupController::class, 'rollMultipleStudents'])->name('student-groups.roll-multiple');
     });
 
     // Student routes
@@ -158,7 +158,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/test', function () {
     return response()->json([
         'message' => 'API is working!',
-        'timestamp' => now()->toDateTimeString()
+        'timestamp' => now()->toDateTimeString(),
     ]);
 });
 

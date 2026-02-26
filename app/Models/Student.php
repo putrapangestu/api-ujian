@@ -13,8 +13,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Model ini merepresentasikan tabel students dalam database
  * Digunakan untuk management data siswa
  *
- * @package App\Models
  * @author Development Team
+ *
  * @version 1.0.0
  *
  * @property string $id
@@ -31,14 +31,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Student extends Model
 {
-    use HasFactory, SoftDeletes, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     /**
      * Status constants
      */
     const STATUS_ACTIVE = 'active';
+
     const STATUS_INACTIVE = 'inactive';
+
     const STATUS_GRADUATED = 'graduated';
+
     const STATUS_DROPPED = 'dropped';
 
     /**
@@ -54,7 +57,7 @@ class Student extends Model
         'group_id',
         'user_id',
         'status',
-        'birth_date'
+        'birth_date',
     ];
 
     /**
@@ -65,7 +68,7 @@ class Student extends Model
     protected function casts(): array
     {
         return [
-            'group_id' => 'integer',
+            'birth_date' => 'date',
         ];
     }
 
@@ -101,8 +104,6 @@ class Student extends Model
 
     /**
      * Check if student is active
-     *
-     * @return bool
      */
     public function isActive(): bool
     {
@@ -111,8 +112,6 @@ class Student extends Model
 
     /**
      * Check if student can take exam
-     *
-     * @return bool
      */
     public function canTakeExam(): bool
     {
@@ -131,8 +130,6 @@ class Student extends Model
 
     /**
      * Get average score
-     *
-     * @return float|null
      */
     public function getAverageScore(): ?float
     {

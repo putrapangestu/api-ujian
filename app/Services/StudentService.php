@@ -168,7 +168,7 @@ class StudentService extends BaseService
                 $student = $this->studentRepository->create($data);
 
                 // assign role student
-                $student->assignRole('student');
+                $user->assignRole('student');
 
                 return $this->successResponse($student, 'Siswa berhasil dibuat', 201);
 
@@ -314,6 +314,13 @@ class StudentService extends BaseService
                     $email = trim($row[2]);
                     $phone = trim($row[3] ?? '');
                     $address = trim($row[4] ?? '');
+                    $birthDate = trim($row[5] ?? '');
+
+                    // Validate birth date format
+                    if (!empty($birthDate) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthDate)) {
+                        $errors[] = "Baris $rowNumber: Format tanggal lahir tidak valid (YYYY-MM-DD)";
+                        continue;
+                    }
 
                     if (empty($nisn) || empty($name) || empty($email)) {
                         $errors[] = "Baris $rowNumber: NISN, nama, dan email wajib diisi";
@@ -334,6 +341,7 @@ class StudentService extends BaseService
                         'address' => $address,
                         'group_id' => $groupId,
                         'status' => Student::STATUS_ACTIVE,
+                        'birth_date' => $birthDate,
                     ];
                 }
 

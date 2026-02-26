@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Student;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -121,11 +122,20 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
                         continue;
                     }
 
+                    // Create User
+                    $user = User::create([
+                        'email' => $studentData['email'],
+                        'password' => Hash::make($studentData['birth_date']),
+                        'name' => $studentData['name'],
+                        'role' => 'student'
+                    ]);
+                    $studentData['user_id'] = $user->id;
+
                     // Create student
                     $student = $this->create($studentData);
 
                     // assign role student
-                    $student->assignRole('student');
+                    $user->assignRole('student');
 
                     $imported[] = $student;
 

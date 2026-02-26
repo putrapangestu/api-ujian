@@ -21,7 +21,7 @@ class QuestionRequest extends BaseRequest
     public function rules(): array
     {
         $rules = [
-            'exam_id' => 'required|exists:exams,id',
+            'exam_id' => 'nullable|exists:exams,id',
             'category_id' => 'required|exists:question_categories,id',
             'question_group_id' => 'nullable|exists:question_groups,id',
             'question_text' => 'required|string|max:1000',

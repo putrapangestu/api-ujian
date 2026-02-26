@@ -18,8 +18,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @version 1.0.0
  *
  * @property string $id
- * @property int $exam_id
- * @property int $category_id
+ * @property string $exam_id
+ * @property string $category_id
  * @property int|null $question_group_id
  * @property string $question_text
  * @property string $question_type multiple_choice, essay, true_false

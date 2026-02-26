@@ -134,6 +134,7 @@ class QuestionGroupController extends Controller
                     new OA\Property(property: "description", type: "string"),
                     new OA\Property(property: "code", type: "string", maxLength: 50),
                     new OA\Property(property: "status", type: "string"),
+                    new OA\Property(property: "question_category_id", type: "string"),
                 ]
             )
         ),
@@ -170,6 +171,7 @@ class QuestionGroupController extends Controller
                     new OA\Property(property: "description", type: "string"),
                     new OA\Property(property: "code", type: "string", maxLength: 50),
                     new OA\Property(property: "status", type: "string"),
+                    new OA\Property(property: "question_category_id", type: "string"),
                 ]
             )
         ),

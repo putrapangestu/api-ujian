@@ -56,6 +56,7 @@ class QuestionGroup extends Model
         'code',
         'total_questions',
         'status',
+        'question_category_id',
     ];
 
     /**
@@ -121,5 +122,15 @@ class QuestionGroup extends Model
     {
         $this->total_questions = $this->questions()->count();
         $this->save();
+    }
+
+    /**
+     * Get the category that the question group belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function category()
+    {
+        return $this->belongsTo(QuestionCategory::class);
     }
 }

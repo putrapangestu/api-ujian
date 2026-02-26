@@ -101,4 +101,14 @@ class QuestionCategory extends Model
             $query->where('status', 'active');
         })->count();
     }
+
+    /**
+     * Get question groups in this category
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function questionGroups()
+    {
+        return $this->hasMany(QuestionGroup::class, 'question_category_id');
+    }
 }

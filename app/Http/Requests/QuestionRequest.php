@@ -22,8 +22,8 @@ class QuestionRequest extends BaseRequest
     {
         $rules = [
             'exam_id' => 'nullable|exists:exams,id',
-            'category_id' => 'required|exists:question_categories,id',
-            'question_group_id' => 'nullable|exists:question_groups,id',
+            'question_category_id' => 'nullable|exists:question_categories,id',
+            'question_group_id' => 'required|exists:question_groups,id',
             'question_text' => 'required|string|max:1000',
             'question_type' => 'required|in:multiple_choice,essay,true_false',
             'score' => 'required|integer|min:1|max:100',
@@ -54,7 +54,7 @@ class QuestionRequest extends BaseRequest
     {
         return [
             'exam_id' => 'Ujian',
-            'category_id' => 'Kategori',
+            'question_category_id' => 'Kategori Soal',
             'question_group_id' => 'Grup Soal',
             'question_text' => 'Teks Soal',
             'question_type' => 'Tipe Soal',

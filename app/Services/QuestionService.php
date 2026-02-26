@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Exam;
 use App\Models\Question;
+use App\Models\QuestionGroup;
 use App\Models\QuestionOption;
 use App\Repositories\QuestionRepositoryInterface;
 use Illuminate\Support\Facades\DB;
@@ -45,6 +46,15 @@ class QuestionService extends BaseService
         return DB::transaction(function () use ($data) {
             try {
                 // Create question
+                if (isset($data['question_group_id'])) {
+                    $questionGroup = QuestionGroup::find($data['question_group_id']);
+                    if (!$questionGroup) {
+                        return $this->errorResponse('Grup soal tidak ditemukan', null, 404);
+                    }
+
+                    $data['question_category_id'] = $questionGroup->question_category_id;
+                }
+
                 $question = Question::create($data);
 
                 // Create options for multiple choice questions

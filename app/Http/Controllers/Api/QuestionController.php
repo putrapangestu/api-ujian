@@ -89,8 +89,8 @@ class QuestionController extends Controller
             content: new OA\JsonContent(
                 properties: [
                     new OA\Property(property: "exam_id", type: "integer", nullable: true),
-                    new OA\Property(property: "category_id", type: "integer"),
-                    new OA\Property(property: "question_group_id", type: "integer"),
+                    new OA\Property(property: "question_category_id", type: "string"),
+                    new OA\Property(property: "question_group_id", type: "string"),
                     new OA\Property(property: "question_text", type: "string", maxLength: 1000),
                     new OA\Property(property: "question_type", type: "string", enum: ["multiple_choice","essay","true_false"]),
                     new OA\Property(property: "score", type: "integer", minimum: 1, maximum: 100),

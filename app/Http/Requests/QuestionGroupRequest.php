@@ -25,6 +25,7 @@ class QuestionGroupRequest extends BaseRequest
             'description' => 'nullable|string',
             'code' => 'required|string|max:50',
             'status' => 'nullable|in:active,inactive,draft',
+            'question_category_id' => 'required|uuid|exists:question_categories,id',
         ];
 
         // Jika update, tambahkan unique rule untuk code
@@ -50,6 +51,7 @@ class QuestionGroupRequest extends BaseRequest
             'description' => 'Deskripsi',
             'code' => 'Kode Grup',
             'status' => 'Status',
+            'question_category_id' => 'Kategori Soal',
         ];
     }
 }

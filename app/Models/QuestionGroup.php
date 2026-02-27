@@ -129,7 +129,7 @@ class QuestionGroup extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function category()
+    public function questionCategory()
     {
         return $this->belongsTo(QuestionCategory::class);
     }

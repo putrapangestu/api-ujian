@@ -21,12 +21,15 @@ abstract class BaseService
      * @param string $message Pesan sukses
      * @return array
      */
-    protected function successResponse($data, string $message = 'Success'): array
+    protected function successResponse($data, string $message = 'Success', int $code = 200): array
     {
         return [
             'success' => true,
             'message' => $message,
-            'data' => $data
+            'data' => $data,
+            'errors' => null,
+            'pagination' => null,
+            'code' => $code
         ];
     }
 
@@ -37,12 +40,15 @@ abstract class BaseService
      * @param mixed $errors Detail error tambahan
      * @return array
      */
-    protected function errorResponse(string $message, $errors = null): array
+    protected function errorResponse(string $message, $errors = null, int $code = 400): array
     {
         return [
             'success' => false,
             'message' => $message,
-            'errors' => $errors
+            'data' => null,
+            'errors' => $errors,
+            'pagination' => null,
+            'code' => $code
         ];
     }
 

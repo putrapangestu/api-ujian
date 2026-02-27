@@ -27,6 +27,8 @@ class ResponseHelper
             'success' => true,
             'message' => $message,
             'data' => $data,
+            'errors' => null,
+            'pagination' => null,
             'code' => $code
         ];
     }
@@ -44,7 +46,9 @@ class ResponseHelper
         return [
             'success' => false,
             'message' => $message,
+            'data' => null,
             'errors' => $errors,
+            'pagination' => null,
             'code' => $code
         ];
     }
@@ -56,12 +60,13 @@ class ResponseHelper
      * @param string $message Pesan response
      * @return array
      */
-    public static function paginate($paginator, string $message = 'Success'): array
+    public static function paginate($paginator, string $message = 'Success', int $code = 200): array
     {
         return [
             'success' => true,
             'message' => $message,
             'data' => $paginator->items(),
+            'errors' => null,
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
                 'total_pages' => $paginator->lastPage(),
@@ -69,7 +74,8 @@ class ResponseHelper
                 'total_items' => $paginator->total(),
                 'has_next_page' => $paginator->hasMorePages(),
                 'has_previous_page' => $paginator->currentPage() > 1
-            ]
+            ],
+            'code' => $code
         ];
     }
 }

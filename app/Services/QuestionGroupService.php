@@ -46,7 +46,9 @@ class QuestionGroupService extends BaseService
     public function getAllGroups(array $filters = [], int $perPage = 15): array
     {
         try {
-            $query = QuestionGroup::query()->withCount('questions');
+            $query = QuestionGroup::query()
+            ->with('questionCategory')
+            ->withCount('questions');
 
             if (isset($filters['search'])) {
                 $search = $filters['search'];

@@ -54,7 +54,10 @@ abstract class Controller extends BaseController
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data' => $data
+            'data' => $data,
+            'errors' => null,
+            'pagination' => null,
+            'code' => $code
         ], $code);
     }
 
@@ -71,7 +74,10 @@ abstract class Controller extends BaseController
         return response()->json([
             'success' => false,
             'message' => $message,
-            'errors' => $errors
+            'data' => null,
+            'errors' => $errors,
+            'pagination' => null,
+            'code' => $code
         ], $code);
     }
 }

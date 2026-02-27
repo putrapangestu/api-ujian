@@ -265,7 +265,7 @@ class ExamService extends BaseService
             UserExam::firstOrCreate(
                 [
                     'exam_id' => $exam->id,
-                    'student_id' => $student->id,
+                    'user_id' => $student->user_id,
                 ],
                 [
                     'user_id' => $student->user_id,

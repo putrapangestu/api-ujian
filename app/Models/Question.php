@@ -103,6 +103,16 @@ class Question extends Model
     }
 
     /**
+     * Get the question exam that owns the question
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function questionExam()
+    {
+        return $this->belongsTo(QuestionExam::class);
+    }
+
+    /**
      * Get user answers for this question
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany

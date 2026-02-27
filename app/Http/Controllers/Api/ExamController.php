@@ -396,7 +396,6 @@ class ExamController extends Controller
             new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string")),
             new OA\Parameter(name: "question_group_id", in: "query", schema: new OA\Schema(type: "string")),
             new OA\Parameter(name: "question_category_id", in: "query", schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "category_id", in: "query", schema: new OA\Schema(type: "string")),
             new OA\Parameter(name: "question_type", in: "query", schema: new OA\Schema(type: "string")),
             new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
             new OA\Parameter(name: "per_page", in: "query", schema: new OA\Schema(type: "integer")),
@@ -406,15 +405,10 @@ class ExamController extends Controller
     )]
     public function getExamQuestions(Request $request, $id)
     {
-        $exam = Exam::find($id);
-        if (! $exam) {
-            return $this->errorResponse('Ujian tidak ditemukan', 404);
-        }
-
-        $filters = $request->only(['question_group_id', 'question_category_id', 'category_id', 'search', 'question_type']);
+        $filters = $request->only(['question_group_id', 'question_category_id', 'search', 'question_type']);
         $filters['exam_id'] = $id;
         $perPage = (int) $request->get('per_page', 15);
-        $result = $this->questionService->getAllQuestions($filters, $perPage);
+        $result = $this->questionService->getAllQuestionExams($filters, $perPage);
 
         if ($result['success']) {
             return response()->json($result, 200);

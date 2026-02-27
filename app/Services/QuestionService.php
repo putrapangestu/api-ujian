@@ -74,6 +74,49 @@ class QuestionService extends BaseService
     }
 
     /**
+     * Get all question exams (paginated)
+     */
+    public function getAllQuestionExams(array $filters = [], int $perPage = 15): array
+    {
+        try {
+            $query = Question::query()
+            ->with(['options', 'questionGroup','category', 'questionExam'])
+            ->whereHas('questionExam');
+
+            if (isset($filters['exam_id']) && $filters['exam_id']) {
+                $query->where('exam_id', $filters['exam_id']);
+            }
+
+            if (isset($filters['question_group_id']) && $filters['question_group_id']) {
+                $query->where('question_group_id', $filters['question_group_id']);
+            }
+
+            $categoryId = $filters['question_category_id'] ?? ($filters['category_id'] ?? null);
+            if ($categoryId) {
+                $query->where('category_id', $categoryId);
+            }
+
+            if (isset($filters['search']) && $filters['search']) {
+                $search = $filters['search'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('question_text', 'like', "%{$search}%")
+                        ->orWhere('correct_answer', 'like', "%{$search}%");
+                });
+            }
+
+            if (isset($filters['question_type']) && $filters['question_type']) {
+                $query->where('question_type', $filters['question_type']);
+            }
+
+            $questions = $query->orderByDesc('created_at')->paginate($perPage);
+
+            return ResponseHelper::paginate($questions, 'Daftar soal berhasil diambil');
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengambil daftar soal: '.$e->getMessage());
+        }
+    }
+
+    /**
      * Create new question with options
      *
      * @param  array  $data  Validated data from QuestionRequest

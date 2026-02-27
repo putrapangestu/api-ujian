@@ -34,5 +34,9 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'socket_io' => [
+        'url' => env('SOCKET_IO_URL', 'http://127.0.0.1:3001'),
+        'key' => env('SOCKET_IO_KEY'),
+    ],
 
 ];

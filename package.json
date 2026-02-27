@@ -6,6 +6,9 @@
         "build": "vite build",
         "dev": "vite"
     },
+     "dependencies": {
+        "socket.io": "^4.8.1"
+    },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
         "axios": "^1.11.0",

@@ -5,6 +5,8 @@ namespace App\Jobs;
 use App\Models\UserExam;
 use App\Models\ExamMonitoring;
 use App\Models\UserAnswer;
+use App\Services\ExamMonitoringService;
+use App\Services\SocketIOService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -169,23 +171,14 @@ class ProcessExamSubmission implements ShouldQueue
      */
     private function broadcastCompletion(UserExam $userExam, string $totalScore, string $correctAnswers): void
     {
-        // Prepare broadcast data
-        $broadcastData = [
-            'type' => 'exam_completed',
-            'data' => [
-                'user_exam_id' => $userExam->id,
-                'student_id' => $userExam->student_id,
-                'exam_id' => $userExam->exam_id,
-                'score' => $totalScore,
-                'correct_answers' => $correctAnswers,
-                'total_questions' => $userExam->exam->total_questions,
-                'passed' => $userExam->isPassed(),
-                'completed_at' => $userExam->end_time->toISOString(),
-            ],
-            'timestamp' => now()->toISOString(),
-        ];
+        $socketIOService = app(SocketIOService::class);
+        $socketIOService->broadcastExamCompletion($userExam);
 
-        // Log the broadcast (will be replaced with actual Socket.IO broadcast)
-        Log::info('Broadcasting exam completion', $broadcastData);
+        $monitoringService = app(ExamMonitoringService::class);
+        $categoryResult = $monitoringService->getMonitoringByCategory((string) $userExam->exam_id);
+        if ($categoryResult['success'] ?? false) {
+            $categories = $categoryResult['data']['categories'] ?? [];
+            $socketIOService->broadcastCategoryMonitoring((string) $userExam->exam_id, $categories);
+        }
     }
 }

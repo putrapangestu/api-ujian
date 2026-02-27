@@ -63,9 +63,7 @@ class ServiceProvider extends ServiceProvider
 
         // Bind SocketIO Service
         $this->app->singleton(SocketIOService::class, function ($app) {
-            return new SocketIOService(
-                $app->make(\App\Repositories\StudentRepositoryInterface::class)
-            );
+            return new SocketIOService();
         });
     }
 

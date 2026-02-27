@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\Exam;
 use App\Models\QuestionGroup;
 use App\Models\QuestionCategory;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -32,13 +33,7 @@ class SocketIOService extends BaseService
         try {
             $data = $this->prepareExamMonitoringData($monitoring);
 
-            // Log the broadcast (will be replaced with actual Socket.IO broadcast)
-            Log::info('Socket.IO Broadcast - Exam Monitoring', [
-                'channel' => 'exam-monitoring',
-                'event' => 'exam_action',
-                'data' => $data,
-                'timestamp' => now()->toISOString(),
-            ]);
+            $this->emitEvent('exam-monitoring', 'exam_action', $data, $this->examRoom($monitoring->exam_id));
 
             return $this->successResponse($data, 'Broadcast data prepared');
 
@@ -58,13 +53,7 @@ class SocketIOService extends BaseService
         try {
             $data = $this->prepareExamCompletionData($userExam);
 
-            // Log the broadcast (will be replaced with actual Socket.IO broadcast)
-            Log::info('Socket.IO Broadcast - Exam Completion', [
-                'channel' => 'exam-completion',
-                'event' => 'exam_completed',
-                'data' => $data,
-                'timestamp' => now()->toISOString(),
-            ]);
+            $this->emitEvent('exam-completion', 'exam_completed', $data, $this->examRoom($userExam->exam_id));
 
             return $this->successResponse($data, 'Completion broadcast prepared');
 
@@ -86,13 +75,7 @@ class SocketIOService extends BaseService
         try {
             $data = $this->prepareGroupMonitoringData($examId, $questionGroupId, $statistics);
 
-            // Log the broadcast (will be replaced with actual Socket.IO broadcast)
-            Log::info('Socket.IO Broadcast - Group Monitoring', [
-                'channel' => 'group-monitoring',
-                'event' => 'group_statistics_updated',
-                'data' => $data,
-                'timestamp' => now()->toISOString(),
-            ]);
+            $this->emitEvent('group-monitoring', 'group_statistics_updated', $data, $this->examRoom($examId));
 
             return $this->successResponse($data, 'Group monitoring broadcast prepared');
 
@@ -113,13 +96,7 @@ class SocketIOService extends BaseService
         try {
             $data = $this->prepareCategoryMonitoringData($examId, $categories);
 
-            // Log the broadcast (will be replaced with actual Socket.IO broadcast)
-            Log::info('Socket.IO Broadcast - Category Monitoring', [
-                'channel' => 'category-monitoring',
-                'event' => 'category_statistics_updated',
-                'data' => $data,
-                'timestamp' => now()->toISOString(),
-            ]);
+            $this->emitEvent('category-monitoring', 'category_statistics_updated', $data, $this->examRoom($examId));
 
             return $this->successResponse($data, 'Category monitoring broadcast prepared');
 
@@ -140,13 +117,7 @@ class SocketIOService extends BaseService
         try {
             $data = $this->prepareStudentRollingData($userExam, $rollData);
 
-            // Log the broadcast (will be replaced with actual Socket.IO broadcast)
-            Log::info('Socket.IO Broadcast - Student Rolling', [
-                'channel' => 'student-rolling',
-                'event' => 'student_rolled',
-                'data' => $data,
-                'timestamp' => now()->toISOString(),
-            ]);
+            $this->emitEvent('student-rolling', 'student_rolled', $data, $this->studentRoom($userExam->student_id));
 
             return $this->successResponse($data, 'Student rolling broadcast prepared');
 
@@ -171,18 +142,31 @@ class SocketIOService extends BaseService
                 'timestamp' => now()->toISOString(),
             ];
 
-            // Log the broadcast (will be replaced with actual Socket.IO broadcast)
-            Log::info('Socket.IO Broadcast - Exam Statistics', [
-                'channel' => 'exam-statistics',
-                'event' => 'statistics_updated',
-                'data' => $data,
-                'timestamp' => now()->toISOString(),
-            ]);
+            $this->emitEvent('exam-statistics', 'statistics_updated', $data, $this->examRoom($examId));
 
             return $this->successResponse($data, 'Exam statistics broadcast prepared');
 
         } catch (\Exception $e) {
             return $this->errorResponse('Gagal mempersiapkan data exam statistics: ' . $e->getMessage());
+        }
+    }
+
+    public function broadcastCheatingDetected(ExamMonitoring $monitoring, array $cheating): array
+    {
+        try {
+            $data = [
+                'exam_id' => $monitoring->exam_id,
+                'user_exam_id' => $monitoring->user_exam_id,
+                'student_id' => $monitoring->student_id,
+                'reason' => $cheating,
+                'flagged_at' => now()->toISOString(),
+            ];
+
+            $this->emitEvent('cheating-monitoring', 'cheating_detected', $data, $this->examRoom($monitoring->exam_id));
+
+            return $this->successResponse($data, 'Cheating broadcast prepared');
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mempersiapkan data cheating: ' . $e->getMessage());
         }
     }
 
@@ -313,6 +297,48 @@ class SocketIOService extends BaseService
             }, $categories),
             'timestamp' => now()->toISOString(),
         ];
+    }
+
+    private function emitEvent(string $channel, string $event, array $data, ?string $room = null): bool
+    {
+        $url = config('services.socket_io.url');
+        if (!$url) {
+            return false;
+        }
+
+        $request = Http::timeout(2)->acceptJson();
+        $key = config('services.socket_io.key');
+        if ($key) {
+            $request = $request->withHeaders(['x-socket-key' => $key]);
+        }
+
+        $response = $request->post(rtrim($url, '/') . '/emit', [
+            'channel' => $channel,
+            'event' => $event,
+            'data' => $data,
+            'room' => $room,
+        ]);
+
+        if ($response->failed()) {
+            Log::warning('Socket.IO emit failed', [
+                'channel' => $channel,
+                'event' => $event,
+                'status' => $response->status(),
+            ]);
+            return false;
+        }
+
+        return true;
+    }
+
+    private function examRoom(string $examId): string
+    {
+        return "exam:{$examId}";
+    }
+
+    private function studentRoom(string $studentId): string
+    {
+        return "student:{$studentId}";
     }
 
     /**

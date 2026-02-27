@@ -12,6 +12,20 @@ services:
       - /www/wwwroot/apidev-ujian.hummatech.com/storage:/var/www/html/storage
     network_mode: "host"
 
+  socket-io-ujian:
+    image: node:20-alpine
+    container_name: socket-io-ujian
+    restart: unless-stopped
+    working_dir: /usr/src/app
+    volumes:
+      - .:/usr/src/app
+    env_file:
+      - .env
+    command: sh -c "npm install --omit=dev && node socket-server.js"
+    ports:
+      - "3051:3051"
+    network_mode: "host"
+
   nginx:
     image: nginx:stable-alpine
     container_name: nginx-ujian

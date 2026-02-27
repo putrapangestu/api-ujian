@@ -34,7 +34,7 @@ class QuestionGroupRepository extends BaseRepository implements QuestionGroupRep
      */
     public function getActiveGroups(): Collection
     {
-        return $this->model->where('status', QuestionGroup::STATUS_ACTIVE)->get();
+        return $this->model->with('questionCategory')->where('status', QuestionGroup::STATUS_ACTIVE)->get();
     }
 
     /**
@@ -55,7 +55,7 @@ class QuestionGroupRepository extends BaseRepository implements QuestionGroupRep
      */
     public function findByCode(string $code): ?QuestionGroup
     {
-        return $this->model->where('code', $code)->first();
+        return $this->model->with('questionCategory')->where('code', $code)->first();
     }
 
     /**

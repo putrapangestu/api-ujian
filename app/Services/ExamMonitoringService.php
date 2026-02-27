@@ -8,7 +8,6 @@ use App\Models\QuestionGroup;
 use App\Repositories\StudentRepositoryInterface;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 /**
  * ExamMonitoring Service Class
@@ -26,15 +25,17 @@ class ExamMonitoringService extends BaseService
      * @var StudentRepositoryInterface
      */
     protected StudentRepositoryInterface $studentRepository;
+    protected SocketIOService $socketIOService;
 
     /**
      * ExamMonitoringService constructor
      *
      * @param StudentRepositoryInterface $studentRepository
      */
-    public function __construct(StudentRepositoryInterface $studentRepository)
+    public function __construct(StudentRepositoryInterface $studentRepository, SocketIOService $socketIOService)
     {
         $this->studentRepository = $studentRepository;
+        $this->socketIOService = $socketIOService;
     }
 
     /**
@@ -408,30 +409,43 @@ class ExamMonitoringService extends BaseService
      */
     private function broadcastToSocket(ExamMonitoring $monitoring): void
     {
-        // This will be implemented when Socket.IO is configured
-        // For now, we'll just prepare the data structure
-        $broadcastData = [
-            'type' => 'exam_monitoring',
-            'data' => [
-                'id' => $monitoring->id,
-                'user_exam_id' => $monitoring->user_exam_id,
-                'student_id' => $monitoring->student_id,
-                'exam_id' => $monitoring->exam_id,
-                'action' => $monitoring->action,
-                'question_id' => $monitoring->question_id,
-                'answer' => $monitoring->answer,
-                'time_spent' => $monitoring->time_spent,
-                'created_at' => $monitoring->created_at->toISOString(),
-                'student' => $monitoring->student ? [
-                    'id' => $monitoring->student->id,
-                    'name' => $monitoring->student->name,
-                    'nisn' => $monitoring->student->nisn,
-                ] : null,
-            ],
-            'timestamp' => now()->toISOString(),
-        ];
+        $this->socketIOService->broadcastExamMonitoring($monitoring);
 
-        // Log the broadcast data (will be replaced with actual Socket.IO broadcast)
-        Log::info('Socket.IO Broadcast:', $broadcastData);
+        if ($monitoring->action === ExamMonitoring::ACTION_ANSWER) {
+            $categoryResult = $this->getMonitoringByCategory((string) $monitoring->exam_id);
+            if ($categoryResult['success'] ?? false) {
+                $categories = $categoryResult['data']['categories'] ?? [];
+                $this->socketIOService->broadcastCategoryMonitoring((string) $monitoring->exam_id, $categories);
+            }
+
+            $cheating = $this->detectCheating($monitoring);
+            if ($cheating) {
+                $this->socketIOService->broadcastCheatingDetected($monitoring, $cheating);
+            }
+        }
+    }
+
+    private function detectCheating(ExamMonitoring $monitoring): ?array
+    {
+        if ($monitoring->action !== ExamMonitoring::ACTION_ANSWER) {
+            return null;
+        }
+
+        $fastAnswers = ExamMonitoring::where('user_exam_id', $monitoring->user_exam_id)
+            ->where('action', ExamMonitoring::ACTION_ANSWER)
+            ->where('created_at', '>=', now()->subMinute())
+            ->where('time_spent', '<=', 2)
+            ->count();
+
+        if ($fastAnswers >= 5) {
+            return [
+                'rule' => 'fast_answers',
+                'count' => $fastAnswers,
+                'window_seconds' => 60,
+                'max_time_spent' => 2,
+            ];
+        }
+
+        return null;
     }
 }

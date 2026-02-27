@@ -105,11 +105,11 @@ class Question extends Model
     /**
      * Get the question exam that owns the question
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function questionExam()
+    public function questionExams()
     {
-        return $this->belongsTo(QuestionExam::class);
+        return $this->hasMany(QuestionExam::class);
     }
 
     /**

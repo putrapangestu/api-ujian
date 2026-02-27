@@ -41,7 +41,7 @@ class QuestionController extends Controller
         parameters: [
             new OA\Parameter(name: 'question_group_id', in: 'query', schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'question_category_id', in: 'query', schema: new OA\Schema(type: 'string')),
-            new OA\Parameter(name: 'category_id', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'exam_id', in: 'query', schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'search', in: 'query', schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer')),
             new OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer')),
@@ -50,7 +50,7 @@ class QuestionController extends Controller
     )]
     public function index(Request $request)
     {
-        $filters = $request->only(['question_group_id', 'question_category_id', 'category_id', 'search']);
+        $filters = $request->only(['question_group_id', 'question_category_id', 'exam_id', 'search']);
         $perPage = (int) $request->get('per_page', 15);
         $result = $this->questionService->getAllQuestions($filters, $perPage);
 

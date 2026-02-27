@@ -227,13 +227,13 @@ class ExamController extends Controller
         summary: "Pilih soal dari bank untuk ujian",
         tags: ["Exams","Exam Questions"],
         parameters: [
-            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string"))
         ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "question_banks", type: "array", items: new OA\Items(type: "object"))
+                    new OA\Property(property: "question_banks", type: "array", items: new OA\Items(type: "string"))
                 ]
             )
         ),
@@ -244,7 +244,7 @@ class ExamController extends Controller
         summary: "Pilih soal dari bank untuk ujian",
         tags: ["Exams","Exam Questions"],
         parameters: [
-            new OA\Parameter(name: "examId", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+            new OA\Parameter(name: "examId", in: "path", required: true, schema: new OA\Schema(type: "string"))
         ],
         requestBody: new OA\RequestBody(
             required: true,

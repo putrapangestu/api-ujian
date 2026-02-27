@@ -37,7 +37,6 @@ class ExamQuestionSelectorService extends BaseService
 
                 $selectedQuestionsFromGroup = Question::with('questionCategory','questionGroup')
                     ->whereIn('id', $questionBanks)
-                    ->where('is_active', true)
                     ->whereNull('deleted_at')
                     ->get();
 

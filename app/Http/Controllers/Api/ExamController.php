@@ -250,7 +250,7 @@ class ExamController extends Controller
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "question_banks", type: "array", items: new OA\Items(type: "object"))
+                    new OA\Property(property: "question_banks", type: "array", items: new OA\Items(type: "string"))
                 ]
             )
         ),
@@ -260,12 +260,7 @@ class ExamController extends Controller
     {
         $request->validate([
             'question_banks' => 'required|array|min:1',
-            'question_banks.*.question_group_id' => 'required|integer|exists:question_groups,id',
-            'question_banks.*.question_count' => 'required|integer|min:1',
-            'question_banks.*.start_range' => 'nullable|integer|min:1',
-            'question_banks.*.end_range' => 'nullable|integer|min:1|gte:question_banks.*.start_range',
-            'question_banks.*.random_selection' => 'boolean',
-            'question_banks.*.weight' => 'nullable|integer|min:1|max:10',
+            'question_banks.*' => 'required|exists:questions,id',
         ]);
 
         $result = $this->questionSelectorService->selectQuestionsForExam($exam, $request->question_banks);

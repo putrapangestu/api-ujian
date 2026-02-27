@@ -35,55 +35,72 @@ class ExamQuestionSelectorService extends BaseService
                 $selectedQuestions = [];
                 $questionNumber = 1;
 
-                foreach ($questionBanks as $bankData) {
-                    $questionGroupId = $bankData['question_group_id'];
-                    $questionCount = $bankData['question_count'];
-                    $randomSelection = $bankData['random_selection'] ?? true;
+                $selectedQuestionsFromGroup = Question::with('questionCategory','questionGroup')
+                    ->whereIn('id', $questionBanks)
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at')
+                    ->get();
 
-                    // Get question group
-                    $questionGroup = QuestionGroup::find($questionGroupId);
-                    if (!$questionGroup) {
-                        throw new \Exception("Question group with ID {$questionGroupId} not found");
-                    }
+                // foreach ($questionBanks as $bankData) {
+                //     // $randomSelection = $bankData['random_selection'] ?? true;
 
-                    // Get available questions from this group
-                    $availableQuestions = Question::where('question_group_id', $questionGroupId)
-                        ->where('is_active', true)
-                        ->whereNull('deleted_at')
-                        ->get();
+                //     // Get available questions from this group
+                //     // $availableQuestions = Question::with('questionCategory')
+                //     //     ->where('question_category_id', $exam->question_category_id)
+                //     //     ->where('is_active', true)
+                //     //     ->whereNull('deleted_at')
+                //     //     ->get();
 
-                    if ($availableQuestions->count() < $questionCount) {
-                        throw new \Exception("Not enough questions available in group {$questionGroup->name}. Available: {$availableQuestions->count()}, Required: {$questionCount}");
-                    }
+                //     // Select questions
+                //     // if ($randomSelection) {
+                //     //     $selectedQuestionsFromGroup = $availableQuestions->random($);
+                //     // } else {
+                //     //     $selectedQuestionsFromGroup = $availableQuestions->take($exam->total_questions);
+                //     // }
 
-                    // Select questions
-                    if ($randomSelection) {
-                        $selectedQuestionsFromGroup = $availableQuestions->random($questionCount);
-                    } else {
-                        $selectedQuestionsFromGroup = $availableQuestions->take($questionCount);
-                    }
+                //     // // Create question_exam entries
+                //     // foreach ($selectedQuestionsFromGroup as $question) {
+                //     //     QuestionExam::create([
+                //     //         'exam_id' => $exam->id,
+                //     //         'question_id' => $question->id,
+                //     //         'question_group_id' => $question->question_group_id,
+                //     //         'question_number' => $questionNumber,
+                //     //         'question_order' => $questionNumber, // Will be randomized per student later
+                //     //         'is_active' => true,
+                //     //     ]);
 
-                    // Create question_exam entries
-                    foreach ($selectedQuestionsFromGroup as $question) {
-                        QuestionExam::create([
-                            'exam_id' => $exam->id,
-                            'question_id' => $question->id,
-                            'question_group_id' => $questionGroupId,
-                            'question_number' => $questionNumber,
-                            'question_order' => $questionNumber, // Will be randomized per student later
-                            'is_active' => true,
-                        ]);
+                //     //     $selectedQuestions[] = [
+                //     //         'question_id' => $question->id,
+                //     //         'question_group_id' => $question->question_group_id,
+                //     //         'question_number' => $questionNumber,
+                //     //         'question' => $question->question_text,
+                //     //         'group_name' => $question->questionGroup->name,
+                //     //     ];
 
-                        $selectedQuestions[] = [
-                            'question_id' => $question->id,
-                            'question_group_id' => $questionGroupId,
-                            'question_number' => $questionNumber,
-                            'question' => $question->question_text,
-                            'group_name' => $questionGroup->name,
-                        ];
+                //     //     $questionNumber++;
+                //     // }
+                // }
 
-                        $questionNumber++;
-                    }
+                // Create question_exam entries
+                foreach ($selectedQuestionsFromGroup as $question) {
+                    QuestionExam::create([
+                        'exam_id' => $exam->id,
+                        'question_id' => $question->id,
+                        'question_group_id' => $question->question_group_id,
+                        'question_number' => $questionNumber,
+                        'question_order' => $questionNumber, // Will be randomized per student later
+                        'is_active' => true,
+                    ]);
+
+                    $selectedQuestions[] = [
+                        'question_id' => $question->id,
+                        'question_group_id' => $question->question_group_id,
+                        'question_number' => $questionNumber,
+                        'question' => $question->question_text,
+                        'group_name' => $question->questionGroup->name,
+                    ];
+
+                    $questionNumber++;
                 }
 
                 // Update exam total questions

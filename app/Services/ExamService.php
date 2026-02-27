@@ -271,7 +271,7 @@ class ExamService extends BaseService
             }
 
             $query = UserExam::where('exam_id', $examId)
-                ->with(['user', 'student']);
+                ->with(['user', 'student.group']);
 
             if (isset($filters['status']) && $filters['status']) {
                 $query->where('status', $filters['status']);

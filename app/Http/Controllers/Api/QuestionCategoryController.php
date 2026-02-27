@@ -106,6 +106,8 @@ class QuestionCategoryController extends Controller
                     new OA\Property(property: "description", type: "string"),
                     new OA\Property(property: "code", type: "string", maxLength: 50),
                     new OA\Property(property: "status", type: "string"),
+                    new OA\Property(property: "start_range", type: "integer"),
+                    new OA\Property(property: "end_range", type: "integer"),
                 ]
             )
         ),
@@ -142,6 +144,8 @@ class QuestionCategoryController extends Controller
                     new OA\Property(property: "description", type: "string"),
                     new OA\Property(property: "code", type: "string", maxLength: 50),
                     new OA\Property(property: "status", type: "string"),
+                    new OA\Property(property: "start_range", type: "integer"),
+                    new OA\Property(property: "end_range", type: "integer"),
                 ]
             )
         ),

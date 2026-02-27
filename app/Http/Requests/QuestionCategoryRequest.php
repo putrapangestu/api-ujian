@@ -25,6 +25,8 @@ class QuestionCategoryRequest extends BaseRequest
             'description' => 'nullable|string',
             'code' => 'required|string|max:50',
             'status' => 'nullable|in:active,inactive',
+            'start_range' => 'nullable|integer|min:0',
+            'end_range' => 'nullable|integer|min:0|gt:start_range',
         ];
 
         // Jika update, tambahkan unique rule untuk code
@@ -50,6 +52,8 @@ class QuestionCategoryRequest extends BaseRequest
             'description' => 'Deskripsi',
             'code' => 'Kode Kategori',
             'status' => 'Status',
+            'start_range' => 'Range Awal',
+            'end_range' => 'Range Akhir',
         ];
     }
 }

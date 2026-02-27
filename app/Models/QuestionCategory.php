@@ -46,6 +46,8 @@ class QuestionCategory extends Model
         'description',
         'code',
         'status',
+        'start_range',
+        'end_range',
     ];
 
     /**

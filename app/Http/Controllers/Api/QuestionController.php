@@ -13,21 +13,16 @@ use OpenApi\Attributes as OA;
  *
  * Controller ini menangani semua operasi terkait soal
  *
- * @package App\Http\Controllers\Api
  * @author Development Team
+ *
  * @version 1.0.0
  */
 class QuestionController extends Controller
 {
-    /**
-     * @var QuestionService
-     */
     protected QuestionService $questionService;
 
     /**
      * QuestionController constructor
-     *
-     * @param QuestionService $questionService
      */
     public function __construct(QuestionService $questionService)
     {
@@ -67,29 +62,28 @@ class QuestionController extends Controller
     /**
      * Create new question
      *
-     * @param QuestionRequest $request
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Post(
-        path: "/questions",
-        summary: "Buat soal",
-        tags: ["Questions"],
+        path: '/questions',
+        summary: 'Buat soal',
+        tags: ['Questions'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "exam_id", type: "integer", nullable: true),
-                    new OA\Property(property: "category_id", type: "integer"),
-                    new OA\Property(property: "question_group_id", type: "integer"),
-                    new OA\Property(property: "question_text", type: "string", maxLength: 1000),
-                    new OA\Property(property: "question_type", type: "string", enum: ["multiple_choice","essay","true_false","single_choice"]),
-                    new OA\Property(property: "score", type: "integer", minimum: 1, maximum: 100),
-                    new OA\Property(property: "options", type: "array", items: new OA\Items(type: "object")),
-                    new OA\Property(property: "correct_answer", type: "string"),
+                    new OA\Property(property: 'exam_id', type: 'integer', nullable: true),
+                    new OA\Property(property: 'category_id', type: 'integer'),
+                    new OA\Property(property: 'question_group_id', type: 'integer'),
+                    new OA\Property(property: 'question_text', type: 'string', maxLength: 1000),
+                    new OA\Property(property: 'question_type', type: 'string', enum: ['multiple_choice', 'essay', 'true_false', 'single_choice']),
+                    new OA\Property(property: 'score', type: 'integer', minimum: 1, maximum: 100),
+                    new OA\Property(property: 'options', type: 'array', items: new OA\Items(type: 'object')),
+                    new OA\Property(property: 'correct_answer', type: 'string'),
                 ]
             )
         ),
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function store(QuestionRequest $request)
     {
@@ -105,31 +99,30 @@ class QuestionController extends Controller
     /**
      * Update question
      *
-     * @param QuestionRequest $request
-     * @param string $id
+     * @param  string  $id
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Put(
-        path: "/questions/{id}",
-        summary: "Perbarui soal",
-        tags: ["Questions"],
-        parameters: [new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
+        path: '/questions/{id}',
+        summary: 'Perbarui soal',
+        tags: ['Questions'],
+        parameters: [new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "exam_id", type: "integer", nullable: true),
-                    new OA\Property(property: "question_category_id", type: "string"),
-                    new OA\Property(property: "question_group_id", type: "string"),
-                    new OA\Property(property: "question_text", type: "string", maxLength: 1000),
-                    new OA\Property(property: "question_type", type: "string", enum: ["multiple_choice","essay","true_false","single_choice"]),
-                    new OA\Property(property: "score", type: "integer", minimum: 1, maximum: 100),
-                    new OA\Property(property: "options", type: "array", items: new OA\Items(type: "object")),
-                    new OA\Property(property: "correct_answer", type: "string"),
+                    new OA\Property(property: 'exam_id', type: 'integer', nullable: true),
+                    new OA\Property(property: 'question_category_id', type: 'string'),
+                    new OA\Property(property: 'question_group_id', type: 'string'),
+                    new OA\Property(property: 'question_text', type: 'string', maxLength: 1000),
+                    new OA\Property(property: 'question_type', type: 'string', enum: ['multiple_choice', 'essay', 'true_false', 'single_choice']),
+                    new OA\Property(property: 'score', type: 'integer', minimum: 1, maximum: 100),
+                    new OA\Property(property: 'options', type: 'array', items: new OA\Items(type: 'object')),
+                    new OA\Property(property: 'correct_answer', type: 'string'),
                 ]
             )
         ),
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function update(QuestionRequest $request, $id)
     {
@@ -145,27 +138,26 @@ class QuestionController extends Controller
     /**
      * Import questions from Excel file
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Post(
-        path: "/questions/import",
-        summary: "Import soal",
-        tags: ["Questions"],
+        path: '/questions/import',
+        summary: 'Import soal',
+        tags: ['Questions'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\MediaType(
-                mediaType: "multipart/form-data",
+                mediaType: 'multipart/form-data',
                 schema: new OA\Schema(
                     properties: [
-                        new OA\Property(property: "file", type: "string", format: "binary"),
-                        new OA\Property(property: "exam_id", type: "integer"),
-                        new OA\Property(property: "question_group_id", type: "integer"),
+                        new OA\Property(property: 'file', type: 'string', format: 'binary'),
+                        new OA\Property(property: 'exam_id', type: 'integer'),
+                        new OA\Property(property: 'question_group_id', type: 'integer'),
                     ]
                 )
             )
         ),
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function import(Request $request)
     {

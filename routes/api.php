@@ -83,6 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Question routes
     Route::prefix('questions')->group(function () {
+        Route::get('/', [QuestionController::class, 'index'])->name('questions.index');
         Route::post('/', [QuestionController::class, 'store'])->name('questions.store');
         Route::put('/{id}', [QuestionController::class, 'update'])->name('questions.update');
         Route::post('/import', [QuestionController::class, 'import'])->name('questions.import');

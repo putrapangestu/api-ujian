@@ -15,21 +15,16 @@ use Illuminate\Support\Facades\DB;
  *
  * Service ini menangani semua operasi terkait soal dan opsi jawaban
  *
- * @package App\Services
  * @author Development Team
+ *
  * @version 1.0.0
  */
 class QuestionService extends BaseService
 {
-    /**
-     * @var QuestionRepositoryInterface
-     */
     protected QuestionRepositoryInterface $questionRepository;
 
     /**
      * QuestionService constructor
-     *
-     * @param QuestionRepositoryInterface $questionRepository
      */
     public function __construct(QuestionRepositoryInterface $questionRepository)
     {
@@ -72,8 +67,7 @@ class QuestionService extends BaseService
     /**
      * Create new question with options
      *
-     * @param array $data Validated data from QuestionRequest
-     * @return array
+     * @param  array  $data  Validated data from QuestionRequest
      */
     public function createQuestion(array $data): array
     {
@@ -82,7 +76,7 @@ class QuestionService extends BaseService
                 // Create question
                 if (isset($data['question_group_id'])) {
                     $questionGroup = QuestionGroup::find($data['question_group_id']);
-                    if (!$questionGroup) {
+                    if (! $questionGroup) {
                         return $this->errorResponse('Grup soal tidak ditemukan', null, 404);
                     }
 
@@ -111,7 +105,8 @@ class QuestionService extends BaseService
 
             } catch (\Exception $e) {
                 DB::rollBack();
-                return $this->errorResponse('Gagal membuat soal: ' . $e->getMessage());
+
+                return $this->errorResponse('Gagal membuat soal: '.$e->getMessage());
             }
         });
     }
@@ -119,9 +114,7 @@ class QuestionService extends BaseService
     /**
      * Update question with options
      *
-     * @param string $id
-     * @param array $data Validated data from QuestionRequest
-     * @return array
+     * @param  array  $data  Validated data from QuestionRequest
      */
     public function updateQuestion(string $id, array $data): array
     {
@@ -129,7 +122,7 @@ class QuestionService extends BaseService
             try {
                 // Find question
                 $question = Question::find($id);
-                if (!$question) {
+                if (! $question) {
                     return $this->errorResponse('Soal tidak ditemukan', null, 404);
                 }
 
@@ -160,7 +153,8 @@ class QuestionService extends BaseService
 
             } catch (\Exception $e) {
                 DB::rollBack();
-                return $this->errorResponse('Gagal update soal: ' . $e->getMessage());
+
+                return $this->errorResponse('Gagal update soal: '.$e->getMessage());
             }
         });
     }
@@ -168,10 +162,7 @@ class QuestionService extends BaseService
     /**
      * Import questions from file
      *
-     * @param \Illuminate\Http\UploadedFile $file
-     * @param string $examId
-     * @param string|null $questionGroupId
-     * @return array
+     * @param  \Illuminate\Http\UploadedFile  $file
      */
     public function importQuestions($file, string $examId, ?string $questionGroupId = null): array
     {
@@ -179,13 +170,13 @@ class QuestionService extends BaseService
             try {
                 // Validate exam
                 $exam = Exam::find($examId);
-                if (!$exam) {
+                if (! $exam) {
                     return $this->errorResponse('Ujian tidak ditemukan', null, 404);
                 }
 
                 // Process file
                 $filePath = $file->store('temp');
-                $fileFullPath = storage_path('app/' . $filePath);
+                $fileFullPath = storage_path('app/'.$filePath);
 
                 // Read Excel file
                 $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($fileFullPath);
@@ -205,6 +196,7 @@ class QuestionService extends BaseService
                     // Validasi row data
                     if (count($row) < 6) {
                         $errors[] = "Baris $rowNumber: Data tidak lengkap";
+
                         continue;
                     }
 
@@ -217,18 +209,20 @@ class QuestionService extends BaseService
 
                     if (empty($questionText) || empty($questionType)) {
                         $errors[] = "Baris $rowNumber: Teks soal dan tipe soal wajib diisi";
+
                         continue;
                     }
 
                     // Validasi tipe soal
-                    if (!in_array($questionType, ['multiple_choice', 'essay', 'true_false', 'single_choice'])) {
+                    if (! in_array($questionType, ['multiple_choice', 'essay', 'true_false', 'single_choice'])) {
                         $errors[] = "Baris $rowNumber: Tipe soal tidak valid";
+
                         continue;
                     }
 
                     // Parse options untuk multiple choice
                     $optionsData = [];
-                    if ($questionType === 'multiple_choice' && !empty($options)) {
+                    if ($questionType === 'multiple_choice' && ! empty($options)) {
                         $optionTexts = explode('|', $options);
                         foreach ($optionTexts as $index => $optionText) {
                             $optionsData[] = [
@@ -256,7 +250,7 @@ class QuestionService extends BaseService
                     if ($result['success']) {
                         $questions[] = $result['data'];
                     } else {
-                        $errors[] = "Baris $rowNumber: " . $result['message'];
+                        $errors[] = "Baris $rowNumber: ".$result['message'];
                     }
                 }
 
@@ -267,12 +261,13 @@ class QuestionService extends BaseService
                     'imported' => $questions,
                     'errors' => $errors,
                     'total_imported' => count($questions),
-                    'total_errors' => count($errors)
+                    'total_errors' => count($errors),
                 ], 'Import soal selesai');
 
             } catch (\Exception $e) {
                 DB::rollBack();
-                return $this->errorResponse('Gagal import soal: ' . $e->getMessage());
+
+                return $this->errorResponse('Gagal import soal: '.$e->getMessage());
             }
         });
     }

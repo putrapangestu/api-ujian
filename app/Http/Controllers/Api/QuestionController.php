@@ -41,6 +41,8 @@ class QuestionController extends Controller
         parameters: [
             new OA\Parameter(name: 'question_group_id', in: 'query', schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'question_category_id', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'category_id', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'search', in: 'query', schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer')),
             new OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer')),
         ],

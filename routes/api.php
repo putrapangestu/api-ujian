@@ -121,9 +121,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Exam Question Selection routes
     Route::prefix('exam-questions')->group(function () {
-        Route::post('/{examId}/select-from-banks', [ExamController::class, 'selectQuestionsFromBanks'])->name('exam-questions.select-from-banks');
+        Route::post('/{exam}/select-from-banks', [ExamController::class, 'selectQuestionsFromBanks'])->name('exam-questions.select-from-banks');
         Route::post('/validate-banks', [ExamController::class, 'validateQuestionBankSelection'])->name('exam-questions.validate-banks');
-        Route::post('/{examId}/for-student', [ExamController::class, 'getExamQuestionsForStudent'])->name('exam-questions.for-student');
+        Route::post('/{exam}/for-student', [ExamController::class, 'getExamQuestionsForStudent'])->name('exam-questions.for-student');
     });
 
     // Admin routes

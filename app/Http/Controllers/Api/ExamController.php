@@ -240,7 +240,7 @@ class ExamController extends Controller
         responses: [new OA\Response(response: 200, description: "Success")]
     )]
     #[OA\Post(
-        path: "/exam-questions/{examId}/select-from-banks",
+        path: "/exam-questions/{exam}/select-from-banks",
         summary: "Pilih soal dari bank untuk ujian",
         tags: ["Exams","Exam Questions"],
         parameters: [

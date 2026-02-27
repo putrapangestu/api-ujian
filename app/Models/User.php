@@ -116,4 +116,14 @@ class User extends Authenticatable implements MustVerifyEmail
             ? asset('storage/' . $this->avatar)
             : asset('images/default-avatar.png');
     }
+
+    /**
+     * Get user student relationship
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function student()
+    {
+        return $this->hasOne(Student::class);
+    }
 }

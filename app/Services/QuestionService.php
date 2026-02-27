@@ -80,7 +80,7 @@ class QuestionService extends BaseService
     {
         try {
             $query = Question::query()
-            ->with(['options', 'questionGroup','category', 'questionExam']);
+            ->with(['options', 'questionGroup','category', 'questionExams']);
 
             if (isset($filters['exam_id']) && $filters['exam_id']) {
                 $query->whereRelation('questionExams','exam_id', $filters['exam_id'])->whereHas('questionExams');

@@ -4,9 +4,9 @@ namespace App\Http\Requests;
 
 /**
  * Exam Request Class
- * 
+ *
  * Request ini digunakan untuk validasi data ujian
- * 
+ *
  * @package App\Http\Requests
  * @author Development Team
  * @version 1.0.0
@@ -30,6 +30,8 @@ class ExamRequest extends BaseRequest
             'end_date' => 'nullable|date|after:start_date',
             'question_groups' => 'nullable|array',
             'question_groups.*' => 'exists:question_groups,id',
+            'student_groups' => 'nullable|array',
+            'student_groups.*' => 'exists:student_groups,id',
         ];
 
         // Jika update, validasi tanggal bisa lebih fleksibel
@@ -57,6 +59,7 @@ class ExamRequest extends BaseRequest
             'start_date' => 'Tanggal Mulai',
             'end_date' => 'Tanggal Berakhir',
             'question_groups' => 'Grup Soal',
+            'student_groups' => 'Grup Siswa',
         ];
     }
 

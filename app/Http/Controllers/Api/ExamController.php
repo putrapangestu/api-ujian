@@ -122,6 +122,7 @@ class ExamController extends Controller
                     new OA\Property(property: "start_date", type: "string", format: "date-time"),
                     new OA\Property(property: "end_date", type: "string", format: "date-time"),
                     new OA\Property(property: "question_groups", type: "array", items: new OA\Items(type: "string")),
+                    new OA\Property(property: "student_groups", type: "array", items: new OA\Items(type: "string")),
                 ]
             )
         ),
@@ -164,6 +165,7 @@ class ExamController extends Controller
                     new OA\Property(property: "start_date", type: "string", format: "date-time"),
                     new OA\Property(property: "end_date", type: "string", format: "date-time"),
                     new OA\Property(property: "question_groups", type: "array", items: new OA\Items(type: "integer")),
+                    new OA\Property(property: "student_groups", type: "array", items: new OA\Items(type: "string")),
                 ]
             )
         ),

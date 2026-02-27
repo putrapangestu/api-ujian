@@ -48,6 +48,7 @@ class UserExam extends Model
     protected $fillable = [
         'user_id',
         'exam_id',
+        'student_id',
         'start_time',
         'end_time',
         'score',
@@ -86,6 +87,11 @@ class UserExam extends Model
     public function exam()
     {
         return $this->belongsTo(Exam::class);
+    }
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class, 'student_id');
     }
 
     /**

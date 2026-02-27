@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Exam;
+use App\Models\Student;
 use App\Models\UserExam;
 use App\Repositories\ExamRepositoryInterface;
 use App\Helpers\ResponseHelper;
@@ -78,7 +79,7 @@ class ExamService extends BaseService
     public function getExamById(string $id): array
     {
         try {
-            $exam = $this->examRepository->find($id, ['questions']);
+            $exam = $this->examRepository->find($id, ['questions','questionGroups']);
 
             if (!$exam) {
                 return $this->errorResponse('Ujian tidak ditemukan', null, 404);
@@ -109,7 +110,12 @@ class ExamService extends BaseService
                     $exam->questionGroups()->attach($data['question_groups']);
                 }
 
-                return $this->successResponse($exam->load('questionGroups'), 'Ujian berhasil dibuat', 201);
+                // Attach student groups if provided
+                if (isset($data['student_groups']) && is_array($data['student_groups'])) {
+                    $this->createUserExamsForGroups($exam, $data['student_groups']);
+                }
+
+                return $this->successResponse($exam->load(['questionGroups']), 'Ujian berhasil dibuat', 201);
 
             } catch (\Exception $e) {
                 DB::rollBack();
@@ -145,6 +151,10 @@ class ExamService extends BaseService
                 // Update question groups if provided
                 if (isset($data['question_groups']) && is_array($data['question_groups'])) {
                     $exam->questionGroups()->sync($data['question_groups']);
+                }
+
+                if (isset($data['student_groups']) && is_array($data['student_groups'])) {
+                    $this->createUserExamsForGroups($exam, $data['student_groups']);
                 }
 
                 // Get updated exam with relationships
@@ -242,5 +252,29 @@ class ExamService extends BaseService
                 return $this->errorResponse('Gagal memulai ujian: ' . $e->getMessage());
             }
         });
+    }
+
+    private function createUserExamsForGroups(Exam $exam, array $groupIds): void
+    {
+        $students = Student::whereIn('group_id', $groupIds)
+            ->where('status', Student::STATUS_ACTIVE)
+            ->whereNotNull('user_id')
+            ->get();
+
+        foreach ($students as $student) {
+            UserExam::firstOrCreate(
+                [
+                    'exam_id' => $exam->id,
+                    'student_id' => $student->id,
+                ],
+                [
+                    'user_id' => $student->user_id,
+                    'status' => UserExam::STATUS_PENDING,
+                    'score' => 0,
+                    'start_time' => null,
+                    'end_time' => null,
+                ]
+            );
+        }
     }
 }

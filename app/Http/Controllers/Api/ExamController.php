@@ -7,6 +7,7 @@ use App\Http\Requests\ExamRequest;
 use App\Models\Exam;
 use App\Services\ExamService;
 use App\Services\ExamQuestionSelectorService;
+use App\Services\QuestionService;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
@@ -31,6 +32,7 @@ class ExamController extends Controller
      * @var ExamQuestionSelectorService
      */
     protected ExamQuestionSelectorService $questionSelectorService;
+    protected QuestionService $questionService;
 
     /**
      * ExamController constructor
@@ -38,10 +40,15 @@ class ExamController extends Controller
      * @param ExamService $examService
      * @param ExamQuestionSelectorService $questionSelectorService
      */
-    public function __construct(ExamService $examService, ExamQuestionSelectorService $questionSelectorService)
+    public function __construct(
+        ExamService $examService,
+        ExamQuestionSelectorService $questionSelectorService,
+        QuestionService $questionService
+    )
     {
         $this->examService = $examService;
         $this->questionSelectorService = $questionSelectorService;
+        $this->questionService = $questionService;
     }
 
     /**
@@ -377,6 +384,82 @@ class ExamController extends Controller
         }
 
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
+
+    /**
+     * Get exam questions with filters
+     *
+     * @param Request $request
+     * @param string $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Get(
+        path: "/exams/{id}/questions",
+        summary: "Daftar soal ujian",
+        tags: ["Exams","Exam Questions"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "question_group_id", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "question_category_id", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "category_id", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "question_type", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "per_page", in: "query", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "page", in: "query", schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    public function getExamQuestions(Request $request, $id)
+    {
+        $exam = Exam::find($id);
+        if (! $exam) {
+            return $this->errorResponse('Ujian tidak ditemukan', 404);
+        }
+
+        $filters = $request->only(['question_group_id', 'question_category_id', 'category_id', 'search', 'question_type']);
+        $filters['exam_id'] = $id;
+        $perPage = (int) $request->get('per_page', 15);
+        $result = $this->questionService->getAllQuestions($filters, $perPage);
+
+        if ($result['success']) {
+            return response()->json($result, 200);
+        }
+
+        return response()->json($result, 400);
+    }
+
+    /**
+     * Get user exams by exam
+     *
+     * @param Request $request
+     * @param string $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Get(
+        path: "/exams/{id}/user-exams",
+        summary: "Daftar user exam berdasarkan ujian",
+        tags: ["Exams"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "status", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "student_id", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "user_id", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "per_page", in: "query", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "page", in: "query", schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    public function getUserExamsByExam(Request $request, $id)
+    {
+        $filters = $request->only(['status', 'student_id', 'user_id']);
+        $perPage = (int) $request->get('per_page', 15);
+        $result = $this->examService->getUserExamsByExam($id, $filters, $perPage);
+
+        if ($result['success']) {
+            return response()->json($result, 200);
+        }
+
+        return response()->json($result, 400);
     }
 
     /**

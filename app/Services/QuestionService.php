@@ -37,7 +37,12 @@ class QuestionService extends BaseService
     public function getAllQuestions(array $filters = [], int $perPage = 15): array
     {
         try {
-            $query = Question::query()->with(['options']);
+            $query = Question::query()
+            ->with(['options', 'questionGroup','category']);
+
+            if (isset($filters['exam_id']) && $filters['exam_id']) {
+                $query->where('exam_id', $filters['exam_id']);
+            }
 
             if (isset($filters['question_group_id']) && $filters['question_group_id']) {
                 $query->where('question_group_id', $filters['question_group_id']);
@@ -54,6 +59,10 @@ class QuestionService extends BaseService
                     $q->where('question_text', 'like', "%{$search}%")
                         ->orWhere('correct_answer', 'like', "%{$search}%");
                 });
+            }
+
+            if (isset($filters['question_type']) && $filters['question_type']) {
+                $query->where('question_type', $filters['question_type']);
             }
 
             $questions = $query->orderByDesc('created_at')->paginate($perPage);

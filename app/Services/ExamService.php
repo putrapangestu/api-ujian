@@ -254,6 +254,45 @@ class ExamService extends BaseService
         });
     }
 
+    /**
+     * Get user exams by exam ID
+     *
+     * @param string $examId
+     * @param array $filters
+     * @param int $perPage
+     * @return array
+     */
+    public function getUserExamsByExam(string $examId, array $filters = [], int $perPage = 15): array
+    {
+        try {
+            $exam = $this->examRepository->find($examId);
+            if (! $exam) {
+                return $this->errorResponse('Ujian tidak ditemukan', null, 404);
+            }
+
+            $query = UserExam::where('exam_id', $examId)
+                ->with(['user', 'student']);
+
+            if (isset($filters['status']) && $filters['status']) {
+                $query->where('status', $filters['status']);
+            }
+
+            if (isset($filters['student_id']) && $filters['student_id']) {
+                $query->where('student_id', $filters['student_id']);
+            }
+
+            if (isset($filters['user_id']) && $filters['user_id']) {
+                $query->where('user_id', $filters['user_id']);
+            }
+
+            $userExams = $query->orderByDesc('created_at')->paginate($perPage);
+
+            return ResponseHelper::paginate($userExams, 'Daftar user exam berhasil diambil');
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengambil daftar user exam: ' . $e->getMessage());
+        }
+    }
+
     private function createUserExamsForGroups(Exam $exam, array $groupIds): void
     {
         $students = Student::whereIn('group_id', $groupIds)

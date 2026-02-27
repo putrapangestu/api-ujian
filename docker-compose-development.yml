@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
     working_dir: /usr/src/app
     volumes:
-      - /www/wwwroot/apidev-ujian.hummatech.com/socket-io:/usr/src/app:ro
+      - /www/wwwroot/apidev-ujian.hummatech.com/socket-io:/usr/src/app
       - socket-io-node-modules:/usr/src/app/node_modules
     env_file:
       - .env

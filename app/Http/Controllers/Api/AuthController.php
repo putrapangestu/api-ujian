@@ -14,21 +14,16 @@ use OpenApi\Attributes as OA;
  *
  * Controller ini menangani semua operasi authentication
  *
- * @package App\Http\Controllers\Api
  * @author Development Team
+ *
  * @version 1.0.0
  */
 class AuthController extends Controller
 {
-    /**
-     * @var AuthService
-     */
     protected AuthService $authService;
 
     /**
      * AuthController constructor
-     *
-     * @param AuthService $authService
      */
     public function __construct(AuthService $authService)
     {
@@ -36,21 +31,22 @@ class AuthController extends Controller
     }
 
     #[OA\Post(
-        path: "/auth/register",
-        summary: "Register user baru",
-        tags: ["Auth"],
+        path: '/auth/register',
+        summary: 'Register user baru',
+        tags: ['Auth'],
+        security: [],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "name", type: "string", maxLength: 255),
-                    new OA\Property(property: "email", type: "string", format: "email", maxLength: 255),
-                    new OA\Property(property: "password", type: "string", minLength: 8),
-                    new OA\Property(property: "password_confirmation", type: "string", minLength: 8),
+                    new OA\Property(property: 'name', type: 'string', maxLength: 255),
+                    new OA\Property(property: 'email', type: 'string', format: 'email', maxLength: 255),
+                    new OA\Property(property: 'password', type: 'string', minLength: 8),
+                    new OA\Property(property: 'password_confirmation', type: 'string', minLength: 8),
                 ]
             )
         ),
-        responses: [new OA\Response(response: 201, description: "Created")]
+        responses: [new OA\Response(response: 201, description: 'Created')]
     )]
     public function register(RegisterRequest $request)
     {
@@ -64,19 +60,20 @@ class AuthController extends Controller
     }
 
     #[OA\Post(
-        path: "/auth/login",
-        summary: "Login user",
-        tags: ["Auth"],
+        path: '/auth/login',
+        summary: 'Login user',
+        tags: ['Auth'],
+        security: [],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "email", type: "string", format: "email", maxLength: 255),
-                    new OA\Property(property: "password", type: "string", minLength: 6),
+                    new OA\Property(property: 'email', type: 'string', format: 'email', maxLength: 255),
+                    new OA\Property(property: 'password', type: 'string', minLength: 6),
                 ]
             )
         ),
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function login(LoginRequest $request)
     {
@@ -90,10 +87,10 @@ class AuthController extends Controller
     }
 
     #[OA\Post(
-        path: "/auth/logout",
-        summary: "Logout user",
-        tags: ["Auth"],
-        responses: [new OA\Response(response: 200, description: "Success")]
+        path: '/auth/logout',
+        summary: 'Logout user',
+        tags: ['Auth'],
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function logout(Request $request)
     {
@@ -107,10 +104,10 @@ class AuthController extends Controller
     }
 
     #[OA\Get(
-        path: "/auth/me",
-        summary: "Profil user saat ini",
-        tags: ["Auth"],
-        responses: [new OA\Response(response: 200, description: "Success")]
+        path: '/auth/me',
+        summary: 'Profil user saat ini',
+        tags: ['Auth'],
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function profile(Request $request)
     {
@@ -124,14 +121,14 @@ class AuthController extends Controller
     }
 
     #[OA\Put(
-        path: "/auth/profile",
-        summary: "Update profil user",
-        tags: ["Auth"],
+        path: '/auth/profile',
+        summary: 'Update profil user',
+        tags: ['Auth'],
         requestBody: new OA\RequestBody(
             required: true,
-            content: new OA\JsonContent()
+            content: new OA\JsonContent
         ),
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function updateProfile(Request $request)
     {

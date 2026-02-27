@@ -91,6 +91,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Question Bank routes
     Route::prefix('question-bank')->group(function () {
         Route::post('/import', [QuestionBankController::class, 'import'])->name('question-bank.import');
+        Route::post('/import-moodle', [QuestionBankController::class, 'importMoodleXml'])->name('question-bank.import-moodle');
         Route::get('/export', [QuestionBankController::class, 'export'])->name('question-bank.export');
     });
 

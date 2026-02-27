@@ -25,12 +25,12 @@ class QuestionRequest extends BaseRequest
             'question_category_id' => 'nullable|exists:question_categories,id',
             'question_group_id' => 'required|exists:question_groups,id',
             'question_text' => 'required|string|max:1000',
-            'question_type' => 'required|in:multiple_choice,essay,true_false',
+            'question_type' => 'required|in:multiple_choice,essay,true_false,single_choice',
             'score' => 'required|integer|min:1|max:100',
         ];
 
         // Validasi tambahan berdasarkan tipe soal
-        if ($this->question_type === 'multiple_choice') {
+        if ($this->question_type === 'multiple_choice' || $this->question_type === 'single_choice') {
             $rules['options'] = 'required|array|min:2';
             $rules['options.*.text'] = 'required|string|max:255';
             $rules['options.*.is_correct'] = 'required|boolean';

@@ -143,6 +143,16 @@ class Question extends Model
     }
 
     /**
+     * Check if question is single choice
+     *
+     * @return bool
+     */
+    public function isSingleChoice(): bool
+    {
+        return $this->question_type === 'single_choice';
+    }
+
+    /**
      * Check if given answer is correct
      *
      * @param string $answer

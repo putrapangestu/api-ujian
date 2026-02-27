@@ -187,7 +187,7 @@ class QuestionService extends BaseService
                     }
 
                     // Validasi tipe soal
-                    if (!in_array($questionType, ['multiple_choice', 'essay', 'true_false'])) {
+                    if (!in_array($questionType, ['multiple_choice', 'essay', 'true_false', 'single_choice'])) {
                         $errors[] = "Baris $rowNumber: Tipe soal tidak valid";
                         continue;
                     }

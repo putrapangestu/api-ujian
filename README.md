@@ -251,7 +251,7 @@ curl -X POST http://localhost:8000/api/admin/exams \
 - `id` - Primary key
 - `exam_id` - Foreign key to exams
 - `question_text` - Question content
-- `question_type` - Type (multiple_choice/essay/true_false)
+- `question_type` - Type (multiple_choice/essay/true_false/single_choice)
 - `options` - JSON array of options
 - `correct_answer` - Correct answer
 - `score` - Question score value

@@ -35,6 +35,36 @@ class QuestionController extends Controller
     }
 
     /**
+     * Get all questions (paginated)
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Get(
+        path: '/questions',
+        summary: 'Daftar soal',
+        tags: ['Questions'],
+        parameters: [
+            new OA\Parameter(name: 'question_group_id', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'question_category_id', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer')),
+        ],
+        responses: [new OA\Response(response: 200, description: 'Success')]
+    )]
+    public function index(Request $request)
+    {
+        $filters = $request->only(['question_group_id', 'question_category_id', 'category_id', 'search']);
+        $perPage = (int) $request->get('per_page', 15);
+        $result = $this->questionService->getAllQuestions($filters, $perPage);
+
+        if ($result['success']) {
+            return response()->json($result, 200);
+        }
+
+        return response()->json($result, 400);
+    }
+
+    /**
      * Create new question
      *
      * @param QuestionRequest $request

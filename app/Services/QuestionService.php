@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\ResponseHelper;
 use App\Models\Exam;
 use App\Models\Question;
 use App\Models\QuestionGroup;
@@ -33,6 +34,39 @@ class QuestionService extends BaseService
     public function __construct(QuestionRepositoryInterface $questionRepository)
     {
         $this->questionRepository = $questionRepository;
+    }
+
+    /**
+     * Get all questions (paginated)
+     */
+    public function getAllQuestions(array $filters = [], int $perPage = 15): array
+    {
+        try {
+            $query = Question::query()->with(['options']);
+
+            if (isset($filters['question_group_id']) && $filters['question_group_id']) {
+                $query->where('question_group_id', $filters['question_group_id']);
+            }
+
+            $categoryId = $filters['question_category_id'] ?? ($filters['category_id'] ?? null);
+            if ($categoryId) {
+                $query->where('category_id', $categoryId);
+            }
+
+            if (isset($filters['search']) && $filters['search']) {
+                $search = $filters['search'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('question_text', 'like', "%{$search}%")
+                        ->orWhere('correct_answer', 'like', "%{$search}%");
+                });
+            }
+
+            $questions = $query->orderByDesc('created_at')->paginate($perPage);
+
+            return ResponseHelper::paginate($questions, 'Daftar soal berhasil diambil');
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengambil daftar soal: '.$e->getMessage());
+        }
     }
 
     /**

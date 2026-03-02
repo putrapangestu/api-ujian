@@ -3,7 +3,7 @@ info:
   title: API Ujian CPNS
   description: |
     API Ujian CPNS adalah sistem manajemen ujian online yang komprehensif untuk seleksi CPNS.
-    
+
     Fitur utama:
     - Manajemen siswa dan grup
     - Bank soal dengan kategori
@@ -13,13 +13,13 @@ info:
     - Real-time monitoring dengan Socket.IO
     - Import/export data
     - Soft delete untuk semua data
-    
+
     ## Autentikasi
     API ini menggunakan Bearer Token untuk autentikasi. Tambahkan header:
     ```
     Authorization: Bearer YOUR_TOKEN
     ```
-    
+
     ## Response Format
     Semua response mengikuti format standar:
     ```json
@@ -202,6 +202,92 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExamListResponse'
+
+  /exams/history:
+    get:
+      tags:
+        - Exams
+      summary: Get student exam history
+      description: Retrieve exam history for current authenticated student
+      operationId: getStudentExamHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by user exam status
+          required: false
+          schema:
+            type: string
+            enum: [pending, in_progress, completed, expired]
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            example: 1
+        - name: per_page
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            example: 10
+      responses:
+        '200':
+          description: Exam history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamHistoryListResponse'
+
+  /exams/history/{userExamId}:
+    get:
+      tags:
+        - Exams
+      summary: Get student exam history detail
+      description: Retrieve detailed exam history for a specific user exam
+      operationId: getStudentExamHistoryDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userExamId
+          in: path
+          description: ID of the user exam
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Exam history detail retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamHistoryDetailResponse'
+        '404':
+          description: Exam history not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /exams/today:
+    get:
+      tags:
+        - Exams
+      summary: Get today's exams and overall summary
+      description: Retrieve today's exams for current authenticated student and overall summary
+      operationId: getStudentTodayExams
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Today's exams retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodayExamsResponse'
 
   /exams/{id}:
     get:
@@ -502,6 +588,188 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Exam'
+
+    PaginationMeta:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          example: 1
+        total_pages:
+          type: integer
+          example: 3
+        per_page:
+          type: integer
+          example: 10
+        total_items:
+          type: integer
+          example: 25
+        has_next_page:
+          type: boolean
+          example: true
+        has_previous_page:
+          type: boolean
+          example: false
+
+    UserExamHistoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "e7c2a7a2-0aa7-4c50-8c6f-3b7f3edb2d21"
+        user_id:
+          type: string
+          example: "a2e0c2f3-2c33-4d6d-8e74-4d6a9a1a1b3c"
+        exam_id:
+          type: string
+          example: "b5a5c62c-f1a6-4c01-bc6a-2c6b7c8d9e10"
+        start_time:
+          type: string
+          format: date-time
+          nullable: true
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+        score:
+          type: integer
+          nullable: true
+          example: 85
+        status:
+          type: string
+          enum: [pending, in_progress, completed, expired]
+          example: completed
+        user_answers_count:
+          type: integer
+          example: 100
+        exam:
+          $ref: '#/components/schemas/Exam'
+
+    ExamHistoryListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserExamHistoryItem'
+            pagination:
+              $ref: '#/components/schemas/PaginationMeta'
+
+    UserAnswerHistoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+        question_id:
+          type: string
+        question_option_id:
+          type: string
+          nullable: true
+        answer:
+          type: string
+          nullable: true
+        is_correct:
+          type: boolean
+        score:
+          type: integer
+        time_spent:
+          type: integer
+        question_order:
+          type: integer
+        question_number:
+          type: integer
+        question:
+          type: object
+          properties:
+            id:
+              type: string
+            question_text:
+              type: string
+            question_type:
+              type: string
+              enum: [multiple_choice, essay, true_false, single_choice]
+        questionOption:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            option_text:
+              type: string
+
+    ExamHistoryDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user_exam:
+                  allOf:
+                    - $ref: '#/components/schemas/UserExamHistoryItem'
+                    - type: object
+                      properties:
+                        userAnswers:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/UserAnswerHistoryItem'
+                summary:
+                  type: object
+                  properties:
+                    total_questions:
+                      type: integer
+                    answered_questions:
+                      type: integer
+                    correct_answers:
+                      type: integer
+                    total_score:
+                      type: integer
+
+    StatusSummary:
+      type: object
+      properties:
+        pending:
+          type: integer
+          example: 3
+        in_progress:
+          type: integer
+          example: 1
+        completed:
+          type: integer
+          example: 10
+        expired:
+          type: integer
+          example: 0
+
+    TodayExamsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                today:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/UserExamHistoryItem'
+                today_summary:
+                  $ref: '#/components/schemas/StatusSummary'
+                overall_summary:
+                  type: object
+                  properties:
+                    by_status:
+                      $ref: '#/components/schemas/StatusSummary'
+                    average_score:
+                      type: number
+                      nullable: true
+                      example: 78.5
+                server_time:
+                  type: string
+                  format: date-time
 
     # Question Bank Schemas
     QuestionBankSelectionRequest:

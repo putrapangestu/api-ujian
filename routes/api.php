@@ -41,6 +41,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Exam routes
     Route::prefix('exams')->group(function () {
         Route::get('/', [ExamController::class, 'index'])->name('exams.index');
+        Route::get('/history', [ExamController::class, 'history'])->name('exams.history');
+        Route::get('/history/{userExamId}', [ExamController::class, 'historyDetail'])->name('exams.history-detail');
+        Route::get('/today', [ExamController::class, 'today'])->name('exams.today');
         Route::get('/{id}', [ExamController::class, 'show'])->name('exams.show');
         Route::get('/{id}/questions', [ExamController::class, 'getExamQuestions'])->name('exams.questions');
         Route::get('/{id}/user-exams', [ExamController::class, 'getUserExamsByExam'])->name('exams.user-exams');

@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExamRequest;
 use App\Models\Exam;
-use App\Services\ExamService;
 use App\Services\ExamQuestionSelectorService;
+use App\Services\ExamService;
 use App\Services\QuestionService;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -17,35 +17,26 @@ use OpenApi\Attributes as OA;
  * Controller ini menangani semua operasi terkait ujian
  *
  *
- * @package App\Http\Controllers\Api
  * @author Development Team
+ *
  * @version 1.0.0
  */
 class ExamController extends Controller
 {
-    /**
-     * @var ExamService
-     */
     protected ExamService $examService;
 
-    /**
-     * @var ExamQuestionSelectorService
-     */
     protected ExamQuestionSelectorService $questionSelectorService;
+
     protected QuestionService $questionService;
 
     /**
      * ExamController constructor
-     *
-     * @param ExamService $examService
-     * @param ExamQuestionSelectorService $questionSelectorService
      */
     public function __construct(
         ExamService $examService,
         ExamQuestionSelectorService $questionSelectorService,
         QuestionService $questionService
-    )
-    {
+    ) {
         $this->examService = $examService;
         $this->questionSelectorService = $questionSelectorService;
         $this->questionService = $questionService;
@@ -54,19 +45,18 @@ class ExamController extends Controller
     /**
      * Get all exams
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Get(
-        path: "/exams",
-        summary: "Daftar ujian",
-        tags: ["Exams"],
+        path: '/exams',
+        summary: 'Daftar ujian',
+        tags: ['Exams'],
         parameters: [
-            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "status", in: "query", schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "per_page", in: "query", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: 'search', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'status', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer')),
         ],
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function index(Request $request)
     {
@@ -84,17 +74,17 @@ class ExamController extends Controller
     /**
      * Get exam by ID
      *
-     * @param string $id
+     * @param  string  $id
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Get(
-        path: "/exams/{id}",
-        summary: "Detail ujian",
-        tags: ["Exams"],
+        path: '/exams/{id}',
+        summary: 'Detail ujian',
+        tags: ['Exams'],
         parameters: [
-            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string"))
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
         ],
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function show($id)
     {
@@ -107,33 +97,88 @@ class ExamController extends Controller
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
     }
 
+    #[OA\Get(
+        path: '/exams/history',
+        summary: 'Riwayat ujian siswa',
+        tags: ['Exams'],
+        parameters: [
+            new OA\Parameter(name: 'status', in: 'query', schema: new OA\Schema(type: 'string', enum: ['pending', 'in_progress', 'completed', 'expired'])),
+            new OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer')),
+        ],
+        responses: [new OA\Response(response: 200, description: 'Success')]
+    )]
+    public function history(Request $request)
+    {
+        $filters = $request->only(['status']);
+        $perPage = (int) $request->get('per_page', 15);
+        $userId = $request->user()->id;
+
+        $result = $this->examService->getExamHistoryForUser($userId, $filters, $perPage);
+        $status = $result['code'] ?? ($result['success'] ? 200 : 400);
+
+        return response()->json($result, $status);
+    }
+
+    #[OA\Get(
+        path: '/exams/history/{userExamId}',
+        summary: 'Detail riwayat ujian siswa',
+        tags: ['Exams'],
+        parameters: [
+            new OA\Parameter(name: 'userExamId', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
+        ],
+        responses: [new OA\Response(response: 200, description: 'Success')]
+    )]
+    public function historyDetail(Request $request, $userExamId)
+    {
+        $userId = $request->user()->id;
+        $result = $this->examService->getExamHistoryDetailForUser($userId, $userExamId);
+        $status = $result['code'] ?? ($result['success'] ? 200 : 400);
+
+        return response()->json($result, $status);
+    }
+
+    #[OA\Get(
+        path: '/exams/today',
+        summary: 'Ujian hari ini siswa dan ringkasan',
+        tags: ['Exams'],
+        responses: [new OA\Response(response: 200, description: 'Success')]
+    )]
+    public function today(Request $request)
+    {
+        $userId = $request->user()->id;
+        $result = $this->examService->getTodayExamsForUser($userId);
+        $status = $result['code'] ?? ($result['success'] ? 200 : 400);
+
+        return response()->json($result, $status);
+    }
+
     /**
      * Create new exam
      *
-     * @param ExamRequest $request
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Post(
-        path: "/admin/exams",
-        summary: "Buat ujian",
-        tags: ["Admin","Exams"],
+        path: '/admin/exams',
+        summary: 'Buat ujian',
+        tags: ['Admin', 'Exams'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "title", type: "string", maxLength: 255),
-                    new OA\Property(property: "description", type: "string"),
-                    new OA\Property(property: "duration", type: "integer", minimum: 1, maximum: 300),
-                    new OA\Property(property: "total_questions", type: "integer", minimum: 1, maximum: 200),
-                    new OA\Property(property: "passing_score", type: "integer", minimum: 0, maximum: 100),
-                    new OA\Property(property: "start_date", type: "string", format: "date-time"),
-                    new OA\Property(property: "end_date", type: "string", format: "date-time"),
-                    new OA\Property(property: "question_groups", type: "array", items: new OA\Items(type: "string")),
-                    new OA\Property(property: "student_groups", type: "array", items: new OA\Items(type: "string")),
+                    new OA\Property(property: 'title', type: 'string', maxLength: 255),
+                    new OA\Property(property: 'description', type: 'string'),
+                    new OA\Property(property: 'duration', type: 'integer', minimum: 1, maximum: 300),
+                    new OA\Property(property: 'total_questions', type: 'integer', minimum: 1, maximum: 200),
+                    new OA\Property(property: 'passing_score', type: 'integer', minimum: 0, maximum: 100),
+                    new OA\Property(property: 'start_date', type: 'string', format: 'date-time'),
+                    new OA\Property(property: 'end_date', type: 'string', format: 'date-time'),
+                    new OA\Property(property: 'question_groups', type: 'array', items: new OA\Items(type: 'string')),
+                    new OA\Property(property: 'student_groups', type: 'array', items: new OA\Items(type: 'string')),
                 ]
             )
         ),
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function store(ExamRequest $request)
     {
@@ -149,34 +194,33 @@ class ExamController extends Controller
     /**
      * Update exam
      *
-     * @param ExamRequest $request
-     * @param string $id
+     * @param  string  $id
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Put(
-        path: "/admin/exams/{id}",
-        summary: "Perbarui ujian",
-        tags: ["Admin","Exams"],
+        path: '/admin/exams/{id}',
+        summary: 'Perbarui ujian',
+        tags: ['Admin', 'Exams'],
         parameters: [
-            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string"))
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
         ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "title", type: "string", maxLength: 255),
-                    new OA\Property(property: "description", type: "string"),
-                    new OA\Property(property: "duration", type: "integer", minimum: 1, maximum: 300),
-                    new OA\Property(property: "total_questions", type: "integer", minimum: 1, maximum: 200),
-                    new OA\Property(property: "passing_score", type: "integer", minimum: 0, maximum: 100),
-                    new OA\Property(property: "start_date", type: "string", format: "date-time"),
-                    new OA\Property(property: "end_date", type: "string", format: "date-time"),
-                    new OA\Property(property: "question_groups", type: "array", items: new OA\Items(type: "integer")),
-                    new OA\Property(property: "student_groups", type: "array", items: new OA\Items(type: "string")),
+                    new OA\Property(property: 'title', type: 'string', maxLength: 255),
+                    new OA\Property(property: 'description', type: 'string'),
+                    new OA\Property(property: 'duration', type: 'integer', minimum: 1, maximum: 300),
+                    new OA\Property(property: 'total_questions', type: 'integer', minimum: 1, maximum: 200),
+                    new OA\Property(property: 'passing_score', type: 'integer', minimum: 0, maximum: 100),
+                    new OA\Property(property: 'start_date', type: 'string', format: 'date-time'),
+                    new OA\Property(property: 'end_date', type: 'string', format: 'date-time'),
+                    new OA\Property(property: 'question_groups', type: 'array', items: new OA\Items(type: 'integer')),
+                    new OA\Property(property: 'student_groups', type: 'array', items: new OA\Items(type: 'string')),
                 ]
             )
         ),
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function update(ExamRequest $request, $id)
     {
@@ -192,17 +236,17 @@ class ExamController extends Controller
     /**
      * Delete exam
      *
-     * @param string $id
+     * @param  string  $id
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Delete(
-        path: "/admin/exams/{id}",
-        summary: "Hapus ujian",
-        tags: ["Admin","Exams"],
+        path: '/admin/exams/{id}',
+        summary: 'Hapus ujian',
+        tags: ['Admin', 'Exams'],
         parameters: [
-            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
         ],
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function destroy($id)
     {
@@ -218,43 +262,42 @@ class ExamController extends Controller
     /**
      * Select questions from question banks for exam
      *
-     * @param \Illuminate\Http\Request $request
-     * @param string $examId
+     * @param  string  $examId
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Post(
-        path: "/exams/{id}/select-questions",
-        summary: "Pilih soal dari bank untuk ujian",
-        tags: ["Exams","Exam Questions"],
+        path: '/exams/{id}/select-questions',
+        summary: 'Pilih soal dari bank untuk ujian',
+        tags: ['Exams', 'Exam Questions'],
         parameters: [
-            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string"))
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
         ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "question_banks", type: "array", items: new OA\Items(type: "string"))
+                    new OA\Property(property: 'question_banks', type: 'array', items: new OA\Items(type: 'string')),
                 ]
             )
         ),
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     #[OA\Post(
-        path: "/exam-questions/{exam}/select-from-banks",
-        summary: "Pilih soal dari bank untuk ujian",
-        tags: ["Exams","Exam Questions"],
+        path: '/exam-questions/{exam}/select-from-banks',
+        summary: 'Pilih soal dari bank untuk ujian',
+        tags: ['Exams', 'Exam Questions'],
         parameters: [
-            new OA\Parameter(name: "examId", in: "path", required: true, schema: new OA\Schema(type: "string"))
+            new OA\Parameter(name: 'examId', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
         ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "question_banks", type: "array", items: new OA\Items(type: "string"))
+                    new OA\Property(property: 'question_banks', type: 'array', items: new OA\Items(type: 'string')),
                 ]
             )
         ),
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function selectQuestionsFromBanks(Request $request, Exam $exam)
     {
@@ -275,36 +318,35 @@ class ExamController extends Controller
     /**
      * Validate question bank selection
      *
-     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Post(
-        path: "/exams/validate-question-banks",
-        summary: "Validasi pilihan bank soal",
-        tags: ["Exams","Exam Questions"],
+        path: '/exams/validate-question-banks',
+        summary: 'Validasi pilihan bank soal',
+        tags: ['Exams', 'Exam Questions'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "question_banks", type: "array", items: new OA\Items(type: "object"))
+                    new OA\Property(property: 'question_banks', type: 'array', items: new OA\Items(type: 'object')),
                 ]
             )
         ),
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     #[OA\Post(
-        path: "/exam-questions/validate-banks",
-        summary: "Validasi pilihan bank soal",
-        tags: ["Exams","Exam Questions"],
+        path: '/exam-questions/validate-banks',
+        summary: 'Validasi pilihan bank soal',
+        tags: ['Exams', 'Exam Questions'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "question_banks", type: "array", items: new OA\Items(type: "object"))
+                    new OA\Property(property: 'question_banks', type: 'array', items: new OA\Items(type: 'object')),
                 ]
             )
         ),
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function validateQuestionBankSelection(Request $request)
     {
@@ -328,43 +370,42 @@ class ExamController extends Controller
     /**
      * Get exam questions for student with random order
      *
-     * @param \Illuminate\Http\Request $request
-     * @param string $examId
+     * @param  string  $examId
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Post(
-        path: "/exams/{id}/questions-for-student",
-        summary: "Ambil soal ujian untuk siswa",
-        tags: ["Exams","Exam Questions"],
+        path: '/exams/{id}/questions-for-student',
+        summary: 'Ambil soal ujian untuk siswa',
+        tags: ['Exams', 'Exam Questions'],
         parameters: [
-            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
         ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "student_id", type: "integer"),
+                    new OA\Property(property: 'student_id', type: 'integer'),
                 ]
             )
         ),
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     #[OA\Post(
-        path: "/exam-questions/{examId}/for-student",
-        summary: "Ambil soal ujian untuk siswa",
-        tags: ["Exams","Exam Questions"],
+        path: '/exam-questions/{examId}/for-student',
+        summary: 'Ambil soal ujian untuk siswa',
+        tags: ['Exams', 'Exam Questions'],
         parameters: [
-            new OA\Parameter(name: "examId", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+            new OA\Parameter(name: 'examId', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
         ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "student_id", type: "integer"),
+                    new OA\Property(property: 'student_id', type: 'integer'),
                 ]
             )
         ),
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function getExamQuestionsForStudent(Request $request, $examId)
     {
@@ -384,24 +425,23 @@ class ExamController extends Controller
     /**
      * Get exam questions with filters
      *
-     * @param Request $request
-     * @param string $id
+     * @param  string  $id
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Get(
-        path: "/exams/{id}/questions",
-        summary: "Daftar soal ujian",
-        tags: ["Exams","Exam Questions"],
+        path: '/exams/{id}/questions',
+        summary: 'Daftar soal ujian',
+        tags: ['Exams', 'Exam Questions'],
         parameters: [
-            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "question_group_id", in: "query", schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "question_category_id", in: "query", schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "question_type", in: "query", schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "per_page", in: "query", schema: new OA\Schema(type: "integer")),
-            new OA\Parameter(name: "page", in: "query", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'question_group_id', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'question_category_id', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'question_type', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'search', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer')),
         ],
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function getExamQuestions(Request $request, $id)
     {
@@ -420,23 +460,22 @@ class ExamController extends Controller
     /**
      * Get user exams by exam
      *
-     * @param Request $request
-     * @param string $id
+     * @param  string  $id
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Get(
-        path: "/exams/{id}/user-exams",
-        summary: "Daftar user exam berdasarkan ujian",
-        tags: ["Exams"],
+        path: '/exams/{id}/user-exams',
+        summary: 'Daftar user exam berdasarkan ujian',
+        tags: ['Exams'],
         parameters: [
-            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "status", in: "query", schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "student_id", in: "query", schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "user_id", in: "query", schema: new OA\Schema(type: "string")),
-            new OA\Parameter(name: "per_page", in: "query", schema: new OA\Schema(type: "integer")),
-            new OA\Parameter(name: "page", in: "query", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'status', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'student_id', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'user_id', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer')),
         ],
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function getUserExamsByExam(Request $request, $id)
     {
@@ -454,18 +493,17 @@ class ExamController extends Controller
     /**
      * Start exam for authenticated user
      *
-     * @param Request $request
-     * @param string $id
+     * @param  string  $id
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Post(
-        path: "/exams/{id}/start",
-        summary: "Mulai ujian untuk user terautentikasi",
-        tags: ["Exams"],
+        path: '/exams/{id}/start',
+        summary: 'Mulai ujian untuk user terautentikasi',
+        tags: ['Exams'],
         parameters: [
-            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
         ],
-        responses: [new OA\Response(response: 200, description: "Success")]
+        responses: [new OA\Response(response: 200, description: 'Success')]
     )]
     public function startExam(Request $request, $id)
     {

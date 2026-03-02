@@ -27,7 +27,7 @@ class ExamRequest extends BaseRequest
             'total_questions' => 'required|integer|min:1|max:200',
             'passing_score' => 'required|integer|min:0|max:100',
             'start_date' => 'nullable|date|after_or_equal:now',
-            'end_date' => 'nullable|date|after:start_date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
             'question_groups' => 'nullable|array',
             'question_groups.*' => 'exists:question_groups,id',
             'student_groups' => 'nullable|array',

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use Carbon\Carbon;
+
 /**
  * Exam Request Class
  *
@@ -79,5 +81,20 @@ class ExamRequest extends BaseRequest
                 }
             }
         });
+    }
+
+    public function prepareForValidation()
+    {
+        if(!$this->start_date) {
+            $this->merge([
+                'start_date' => Carbon::createFromFormat('Y-m-d H:i:s', $this->start_date),
+            ]);
+        }
+
+        if(!$this->end_date) {
+            $this->merge([
+                'end_date' => Carbon::createFromFormat('Y-m-d H:i:s', $this->end_date),
+            ]);
+        }
     }
 }

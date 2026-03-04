@@ -87,20 +87,38 @@ class ResponseHelper
 
     public static function formatDateTimes($data)
     {
+        if (is_string($data)) {
+            $pattern = '/^\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?)?$/';
+            if (preg_match($pattern, $data)) {
+                try {
+                    $carbon = Carbon::parse($data);
+                    return str_contains($data, 'T') || str_contains($data, ' ')
+                        ? $carbon->format('Y-m-d H:i:s')
+                        : $carbon->format('Y-m-d');
+                } catch (\Exception $e) {
+                    return $data;
+                }
+            }
+        }
+
         if ($data instanceof CarbonInterface || $data instanceof DateTimeInterface) {
             return Carbon::instance($data)->format('Y-m-d H:i:s');
         }
 
         if ($data instanceof Model) {
             $array = $data->toArray();
+            $casts = $data->getCasts();
             $dateKeys = array_unique(array_merge($data->getDates(), array_keys(array_filter(
-                $data->getCasts(),
+                $casts,
                 fn ($cast) => in_array($cast, ['date', 'datetime', 'immutable_date', 'immutable_datetime'], true)
             ))));
 
             foreach ($dateKeys as $key) {
                 if ($data->{$key} instanceof DateTimeInterface) {
-                    $array[$key] = Carbon::instance($data->{$key})->format('Y-m-d H:i:s');
+                    $cast = $casts[$key] ?? null;
+                    $array[$key] = in_array($cast, ['date', 'immutable_date'], true)
+                        ? Carbon::instance($data->{$key})->format('Y-m-d')
+                        : Carbon::instance($data->{$key})->format('Y-m-d H:i:s');
                 }
             }
 

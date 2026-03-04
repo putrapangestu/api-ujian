@@ -239,13 +239,32 @@ class ExamService extends BaseService
                     return $this->errorResponse('Anda sudah pernah mengikuti ujian ini');
                 }
 
+                // $exam->load(['']);
+
                 // Create user exam
-                $userExam = UserExam::create([
-                    'user_id' => $userId,
-                    'exam_id' => $examId,
-                    'start_time' => Carbon::now(),
-                    'status' => UserExam::STATUS_IN_PROGRESS,
-                ]);
+                $userExam = UserExam::where('user_id', $userId)
+                    ->where('exam_id', $examId)
+                    ->first();
+
+                if($userExam->status == UserExam::STATUS_IN_PROGRESS) {
+                    return $this->errorResponse('Kamu sudah mengikuti ujian ini');
+                } else if($userExam->status == UserExam::STATUS_COMPLETED) {
+                    return $this->errorResponse('Kamu sudah selesai mengikuti ujian ini');
+                }
+
+                if($userExam) {
+                    $userExam->update([
+                        'start_time' => Carbon::now(),
+                        'status' => UserExam::STATUS_IN_PROGRESS,
+                    ]);
+                } else {
+                    $userExam = UserExam::create([
+                        'user_id' => $userId,
+                        'exam_id' => $examId,
+                        'start_time' => Carbon::now(),
+                        'status' => UserExam::STATUS_IN_PROGRESS,
+                    ]);
+                }
 
                 return $this->successResponse([
                     'user_exam' => $userExam,

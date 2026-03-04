@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Helpers\ResponseHelper;
+
 /**
  * Base Service Class
  * 
@@ -26,7 +28,7 @@ abstract class BaseService
         return [
             'success' => true,
             'message' => $message,
-            'data' => $data,
+            'data' => ResponseHelper::formatDateTimes($data),
             'errors' => null,
             'pagination' => null,
             'code' => $code

@@ -239,8 +239,6 @@ class ExamService extends BaseService
                     return $this->errorResponse('Anda sudah pernah mengikuti ujian ini');
                 }
 
-                // $exam->load(['']);
-
                 // Create user exam
                 $userExam = UserExam::where('user_id', $userId)
                     ->where('exam_id', $examId)
@@ -265,6 +263,12 @@ class ExamService extends BaseService
                         'status' => UserExam::STATUS_IN_PROGRESS,
                     ]);
                 }
+
+                // set load
+                $userExam->load([
+                    'questionExams.question.options',
+                    'questionExams.questionGroup.questionCategory'
+                ]);
 
                 return $this->successResponse([
                     'user_exam' => $userExam,

@@ -84,6 +84,16 @@ class Exam extends Model
     }
 
     /**
+     * Get users who have taken this exam
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     */
+    public function questionExams()
+    {
+        return $this->hasMany(QuestionExam::class);
+    }
+
+    /**
      * Get question groups for this exam
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany

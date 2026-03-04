@@ -3,7 +3,7 @@ info:
   title: API Ujian CPNS
   description: |
     API Ujian CPNS adalah sistem manajemen ujian online yang komprehensif untuk seleksi CPNS.
-
+    
     Fitur utama:
     - Manajemen siswa dan grup
     - Bank soal dengan kategori
@@ -13,13 +13,13 @@ info:
     - Real-time monitoring dengan Socket.IO
     - Import/export data
     - Soft delete untuk semua data
-
+    
     ## Autentikasi
     API ini menggunakan Bearer Token untuk autentikasi. Tambahkan header:
     ```
     Authorization: Bearer YOUR_TOKEN
     ```
-
+    
     ## Response Format
     Semua response mengikuti format standar:
     ```json

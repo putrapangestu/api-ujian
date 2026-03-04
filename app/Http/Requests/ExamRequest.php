@@ -24,7 +24,7 @@ class ExamRequest extends BaseRequest
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'duration' => 'required|integer|min:1|max:300',
-            'total_questions' => 'required|integer|min:1|max:200',
+            'total_questions' => 'nullable',
             'passing_score' => 'required|integer|min:0|max:100',
             'start_date' => 'nullable|date|after_or_equal:now',
             'end_date' => 'nullable|date|after_or_equal:start_date',

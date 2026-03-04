@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use App\Helpers\ResponseHelper;
 use App\Models\Exam;
 use App\Models\Student;
 use App\Models\UserExam;
 use App\Repositories\ExamRepositoryInterface;
+use App\Helpers\ResponseHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -16,16 +16,21 @@ use Illuminate\Support\Facades\DB;
  * Service ini menangani semua operasi terkait ujian
  * Menggunakan database transaction untuk operasi yang melibatkan multiple tables
  *
+ * @package App\Services
  * @author Development Team
- *
  * @version 1.0.0
  */
 class ExamService extends BaseService
 {
+    /**
+     * @var ExamRepositoryInterface
+     */
     protected ExamRepositoryInterface $examRepository;
 
     /**
      * ExamService constructor
+     *
+     * @param ExamRepositoryInterface $examRepository
      */
     public function __construct(ExamRepositoryInterface $examRepository)
     {
@@ -34,6 +39,10 @@ class ExamService extends BaseService
 
     /**
      * Get all exams
+     *
+     * @param array $filters
+     * @param int $perPage
+     * @return array
      */
     public function getAllExams(array $filters = [], int $perPage = 15): array
     {
@@ -57,38 +66,45 @@ class ExamService extends BaseService
             return ResponseHelper::paginate($exams, 'Daftar ujian berhasil diambil');
 
         } catch (\Exception $e) {
-            return $this->errorResponse('Gagal mengambil daftar ujian: '.$e->getMessage());
+            return $this->errorResponse('Gagal mengambil daftar ujian: ' . $e->getMessage());
         }
     }
 
     /**
      * Get exam by ID
+     *
+     * @param string $id
+     * @return array
      */
     public function getExamById(string $id): array
     {
         try {
-            $exam = $this->examRepository->find($id, ['questions', 'questionGroups']);
+            $exam = $this->examRepository->find($id, ['questions','questionGroups']);
 
-            if (! $exam) {
+            if (!$exam) {
                 return $this->errorResponse('Ujian tidak ditemukan', null, 404);
             }
 
             return $this->successResponse($exam, 'Detail ujian berhasil diambil');
 
         } catch (\Exception $e) {
-            return $this->errorResponse('Gagal mengambil detail ujian: '.$e->getMessage());
+            return $this->errorResponse('Gagal mengambil detail ujian: ' . $e->getMessage());
         }
     }
 
     /**
      * Create new exam
      *
-     * @param  array  $data  Validated data from request
+     * @param array $data Validated data from request
+     * @return array
      */
     public function createExam(array $data): array
     {
         return DB::transaction(function () use ($data) {
             try {
+                // set total question
+                if(!isset($data["total_questions"])) $data["total_questions"] = 0;
+
                 // Create exam
                 $exam = $this->examRepository->create($data);
 
@@ -106,8 +122,7 @@ class ExamService extends BaseService
 
             } catch (\Exception $e) {
                 DB::rollBack();
-
-                return $this->errorResponse('Gagal membuat ujian: '.$e->getMessage());
+                return $this->errorResponse('Gagal membuat ujian: ' . $e->getMessage());
             }
         });
     }
@@ -115,7 +130,9 @@ class ExamService extends BaseService
     /**
      * Update exam
      *
-     * @param  array  $data  Validated data from request
+     * @param string $id
+     * @param array $data Validated data from request
+     * @return array
      */
     public function updateExam(string $id, array $data): array
     {
@@ -123,14 +140,17 @@ class ExamService extends BaseService
             try {
                 // Check if exam exists
                 $exam = $this->examRepository->find($id);
-                if (! $exam) {
+                if (!$exam) {
                     return $this->errorResponse('Ujian tidak ditemukan', null, 404);
                 }
+
+                // set total questions
+                if(!isset($data["total_questions"])) $data["total_questions"] = $exam->total_questions;
 
                 // Update exam
                 $updated = $this->examRepository->update($id, $data);
 
-                if (! $updated) {
+                if (!$updated) {
                     return $this->errorResponse('Gagal update ujian');
                 }
 
@@ -150,14 +170,16 @@ class ExamService extends BaseService
 
             } catch (\Exception $e) {
                 DB::rollBack();
-
-                return $this->errorResponse('Gagal update ujian: '.$e->getMessage());
+                return $this->errorResponse('Gagal update ujian: ' . $e->getMessage());
             }
         });
     }
 
     /**
      * Delete exam
+     *
+     * @param string $id
+     * @return array
      */
     public function deleteExam(string $id): array
     {
@@ -165,14 +187,14 @@ class ExamService extends BaseService
             try {
                 // Check if exam exists
                 $exam = $this->examRepository->find($id);
-                if (! $exam) {
+                if (!$exam) {
                     return $this->errorResponse('Ujian tidak ditemukan', null, 404);
                 }
 
                 // Delete exam
                 $deleted = $this->examRepository->delete($id);
 
-                if (! $deleted) {
+                if (!$deleted) {
                     return $this->errorResponse('Gagal menghapus ujian');
                 }
 
@@ -180,14 +202,17 @@ class ExamService extends BaseService
 
             } catch (\Exception $e) {
                 DB::rollBack();
-
-                return $this->errorResponse('Gagal menghapus ujian: '.$e->getMessage());
+                return $this->errorResponse('Gagal menghapus ujian: ' . $e->getMessage());
             }
         });
     }
 
     /**
      * Start exam for user
+     *
+     * @param string $examId
+     * @param string $userId
+     * @return array
      */
     public function startExam(string $examId, string $userId): array
     {
@@ -195,12 +220,12 @@ class ExamService extends BaseService
             try {
                 // Check if exam exists
                 $exam = $this->examRepository->find($examId);
-                if (! $exam) {
+                if (!$exam) {
                     return $this->errorResponse('Ujian tidak ditemukan', null, 404);
                 }
 
                 // Check if exam is available
-                if (! $exam->isAvailable()) {
+                if (!$exam->isAvailable()) {
                     return $this->errorResponse('Ujian tidak tersedia saat ini');
                 }
 
@@ -225,19 +250,23 @@ class ExamService extends BaseService
                 return $this->successResponse([
                     'user_exam' => $userExam,
                     'exam' => $exam,
-                    'end_time' => Carbon::now()->addMinutes($exam->duration),
+                    'end_time' => Carbon::now()->addMinutes($exam->duration)
                 ], 'Ujian berhasil dimulai');
 
             } catch (\Exception $e) {
                 DB::rollBack();
-
-                return $this->errorResponse('Gagal memulai ujian: '.$e->getMessage());
+                return $this->errorResponse('Gagal memulai ujian: ' . $e->getMessage());
             }
         });
     }
 
     /**
      * Get user exams by exam ID
+     *
+     * @param string $examId
+     * @param array $filters
+     * @param int $perPage
+     * @return array
      */
     public function getUserExamsByExam(string $examId, array $filters = [], int $perPage = 15): array
     {
@@ -266,7 +295,7 @@ class ExamService extends BaseService
 
             return ResponseHelper::paginate($userExams, 'Daftar user exam berhasil diambil');
         } catch (\Exception $e) {
-            return $this->errorResponse('Gagal mengambil daftar user exam: '.$e->getMessage());
+            return $this->errorResponse('Gagal mengambil daftar user exam: ' . $e->getMessage());
         }
     }
 
@@ -285,7 +314,7 @@ class ExamService extends BaseService
 
             return ResponseHelper::paginate($userExams, 'Riwayat ujian berhasil diambil');
         } catch (\Exception $e) {
-            return $this->errorResponse('Gagal mengambil riwayat ujian: '.$e->getMessage());
+            return $this->errorResponse('Gagal mengambil riwayat ujian: ' . $e->getMessage());
         }
     }
 
@@ -322,7 +351,7 @@ class ExamService extends BaseService
                 ],
             ], 'Detail riwayat ujian berhasil diambil');
         } catch (\Exception $e) {
-            return $this->errorResponse('Gagal mengambil detail riwayat ujian: '.$e->getMessage());
+            return $this->errorResponse('Gagal mengambil detail riwayat ujian: ' . $e->getMessage());
         }
     }
 
@@ -372,7 +401,7 @@ class ExamService extends BaseService
                 'server_time' => Carbon::now(),
             ], 'Data ujian hari ini berhasil diambil');
         } catch (\Exception $e) {
-            return $this->errorResponse('Gagal mengambil ujian hari ini: '.$e->getMessage());
+            return $this->errorResponse('Gagal mengambil ujian hari ini: ' . $e->getMessage());
         }
     }
 

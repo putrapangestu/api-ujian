@@ -118,7 +118,7 @@ class ExamService extends BaseService
                     $this->createUserExamsForGroups($exam, $data['student_groups']);
                 }
 
-                return $this->successResponse($exam->load(['questionGroups']), 'Ujian berhasil dibuat', 201);
+                return $this->successResponse($exam->loadMissing(['questionGroups']), 'Ujian berhasil dibuat', 201);
 
             } catch (\Exception $e) {
                 DB::rollBack();

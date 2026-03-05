@@ -96,7 +96,7 @@ class Question extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function options()
+    public function questionOptions()
     {
         return $this->hasMany(QuestionOption::class);
     }
@@ -171,7 +171,7 @@ class Question extends Model
     {
         if ($this->isMultipleChoice()) {
             // For multiple choice, check against options
-            $correctOption = $this->options()->where('is_correct', true)->first();
+            $correctOption = $this->questionOptions()->where('is_correct', true)->first();
             return $correctOption && $correctOption->option_text === $answer;
         }
 
@@ -186,7 +186,7 @@ class Question extends Model
      */
     public function getCorrectOption(): ?QuestionOption
     {
-        return $this->options()->where('is_correct', true)->first();
+        return $this->questionOptions()->where('is_correct', true)->first();
     }
 
     /**
@@ -196,6 +196,6 @@ class Question extends Model
      */
     public function getTotalScore(): int
     {
-        return $this->options()->sum('score');
+        return $this->questionOptions()->sum('score');
     }
 }

@@ -211,7 +211,7 @@ class ExamQuestionSelectorService extends BaseService
             // Get questions with proper ordering
             $questions = QuestionExam::where('exam_id', $examId)
                 ->where('is_active', true)
-                ->with(['question', 'questionGroup'])
+                ->with(['question.questionOptions', 'questionGroup'])
                 ->get()
                 ->sortBy(function ($examQuestion) use ($questionOrderMap) {
                     return $questionOrderMap[$examQuestion->id] ?? 999;
@@ -220,7 +220,6 @@ class ExamQuestionSelectorService extends BaseService
 
             // Format questions for response
             $formattedQuestions = $questions->map(function ($examQuestion, $index) use ($questionOrderMap) {
-                dd($examQuestion->question->options);
                 return [
                     'id' => $examQuestion->id,
                     'question_number' => $examQuestion->question_number,
@@ -230,7 +229,7 @@ class ExamQuestionSelectorService extends BaseService
                     'score' => $examQuestion->question->score,
                     'weight' => $examQuestion->weight,
                     'group_name' => $examQuestion->questionGroup->name,
-                    'options' => $examQuestion->question->options->map(function ($option) {
+                    'options' => $examQuestion->question->questionOptions->map(function ($option) {
                         return [
                             'id' => $option->id,
                             'option_text' => $option->option_text

@@ -373,47 +373,19 @@ class ExamController extends Controller
      * @param  string  $examId
      * @return \Illuminate\Http\JsonResponse
      */
-    #[OA\Post(
-        path: '/exams/{id}/questions-for-student',
+    #[OA\Get(
+        path: '/exams/{id}/questions-for-student/{userId}',
         summary: 'Ambil soal ujian untuk siswa',
         tags: ['Exams', 'Exam Questions'],
         parameters: [
-            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'userId', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
         ],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: 'student_id', type: 'integer'),
-                ]
-            )
-        ),
         responses: [new OA\Response(response: 200, description: 'Success')]
     )]
-    #[OA\Post(
-        path: '/exam-questions/{examId}/for-student',
-        summary: 'Ambil soal ujian untuk siswa',
-        tags: ['Exams', 'Exam Questions'],
-        parameters: [
-            new OA\Parameter(name: 'examId', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
-        ],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: 'student_id', type: 'integer'),
-                ]
-            )
-        ),
-        responses: [new OA\Response(response: 200, description: 'Success')]
-    )]
-    public function getExamQuestionsForStudent(Request $request, $examId)
+    public function getExamQuestionsForStudent(Request $request, $examId, $userId)
     {
-        $request->validate([
-            'student_id' => 'required|integer|exists:students,id',
-        ]);
-
-        $result = $this->questionSelectorService->getExamQuestionsForStudent($examId, $request->student_id);
+        $result = $this->questionSelectorService->getExamQuestionsForStudent($examId, $userId);
 
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);

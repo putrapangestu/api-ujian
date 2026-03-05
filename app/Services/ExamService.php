@@ -242,13 +242,8 @@ class ExamService extends BaseService
                 // Create user exam
                 $userExam = UserExam::where('user_id', $userId)
                     ->where('exam_id', $examId)
+                    ->where('status', UserExam::STATUS_PENDING)
                     ->first();
-
-                if($userExam->status == UserExam::STATUS_IN_PROGRESS) {
-                    return $this->errorResponse('Kamu sudah mengikuti ujian ini');
-                } else if($userExam->status == UserExam::STATUS_COMPLETED) {
-                    return $this->errorResponse('Kamu sudah selesai mengikuti ujian ini');
-                }
 
                 if($userExam) {
                     $userExam->update([
@@ -263,12 +258,6 @@ class ExamService extends BaseService
                         'status' => UserExam::STATUS_IN_PROGRESS,
                     ]);
                 }
-
-                // set load
-                $userExam->load([
-                    'questionExams.question.options',
-                    'questionExams.questionGroup.questionCategory'
-                ]);
 
                 return $this->successResponse([
                     'user_exam' => $userExam,

@@ -127,7 +127,7 @@ class ExamQuestionSelectorService extends BaseService
      * @param string $studentId
      * @return array
      */
-    public function generateRandomQuestionOrder(string $examId, string $studentId): array
+    public function generateRandomQuestionOrder(string $examId, string $userId): array
     {
         try {
             // Get all questions for this exam
@@ -152,14 +152,14 @@ class ExamQuestionSelectorService extends BaseService
             // Log the randomization for audit purposes
             Log::info('Question order generated for student', [
                 'exam_id' => $examId,
-                'student_id' => $studentId,
+                'user_id' => $userId,
                 'question_count' => count($questionOrderMap),
                 'timestamp' => now()->toISOString(),
             ]);
 
             return $this->successResponse([
                 'exam_id' => $examId,
-                'student_id' => $studentId,
+                'user_id' => $userId,
                 'question_order' => $questionOrderMap,
                 'total_questions' => count($questionOrderMap),
             ]);
@@ -177,11 +177,11 @@ class ExamQuestionSelectorService extends BaseService
      * @param string $studentId
      * @return array
      */
-    public function getExamQuestionsForStudent(string $examId, string $studentId): array
+    public function getExamQuestionsForStudent(string $examId, string $userId): array
     {
         try {
             // Generate random order for this student if not exists
-            $orderResult = $this->generateRandomQuestionOrder($examId, $studentId);
+            $orderResult = $this->generateRandomQuestionOrder($examId, $userId);
 
             if (!$orderResult['success']) {
                 return $orderResult;
@@ -223,7 +223,7 @@ class ExamQuestionSelectorService extends BaseService
 
             return $this->successResponse([
                 'exam_id' => $examId,
-                'student_id' => $studentId,
+                'user_id' => $userId,
                 'questions' => $formattedQuestions,
                 'total_questions' => count($formattedQuestions),
             ]);

@@ -43,13 +43,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [ExamController::class, 'index'])->name('exams.index');
         Route::get('/history', [ExamController::class, 'history'])->name('exams.history');
         Route::get('/history/{userExamId}', [ExamController::class, 'historyDetail'])->name('exams.history-detail');
+        Route::get('/{id}/questions-for-student/{userId}', [ExamController::class, 'getExamQuestionsForStudent'])->name('exams.questions-for-student');
         Route::get('/today', [ExamController::class, 'today'])->name('exams.today');
         Route::get('/{id}', [ExamController::class, 'show'])->name('exams.show');
         Route::get('/{id}/questions', [ExamController::class, 'getExamQuestions'])->name('exams.questions');
         Route::get('/{id}/user-exams', [ExamController::class, 'getUserExamsByExam'])->name('exams.user-exams');
         Route::post('/{id}/start', [ExamController::class, 'startExam'])->name('exams.start');
         Route::post('/{exam}/select-questions', [ExamController::class, 'selectQuestionsFromBanks'])->name('exams.select-questions');
-        Route::post('/{id}/questions-for-student', [ExamController::class, 'getExamQuestionsForStudent'])->name('exams.questions-for-student');
         Route::post('/validate-question-banks', [ExamController::class, 'validateQuestionBankSelection'])->name('exams.validate-question-banks');
     });
 
@@ -126,7 +126,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('exam-questions')->group(function () {
         Route::post('/{exam}/select-from-banks', [ExamController::class, 'selectQuestionsFromBanks'])->name('exam-questions.select-from-banks');
         Route::post('/validate-banks', [ExamController::class, 'validateQuestionBankSelection'])->name('exam-questions.validate-banks');
-        Route::post('/{exam}/for-student', [ExamController::class, 'getExamQuestionsForStudent'])->name('exam-questions.for-student');
+        // Route::post('/{exam}/for-student', [ExamController::class, 'getExamQuestionsForStudent'])->name('exam-questions.for-student');
     });
 
     // Admin routes

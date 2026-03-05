@@ -57,7 +57,6 @@ class Question extends Model
     protected function casts(): array
     {
         return [
-            'options' => 'array',
             'score' => 'integer',
         ];
     }

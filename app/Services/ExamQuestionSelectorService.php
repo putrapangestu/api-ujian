@@ -220,7 +220,6 @@ class ExamQuestionSelectorService extends BaseService
 
             // Format questions for response
             $formattedQuestions = $questions->map(function ($examQuestion, $index) use ($questionOrderMap) {
-                dd($examQuestion->question->options, collect($examQuestion->question?->options ?? []));
                 return [
                     'id' => $examQuestion->id,
                     'question_number' => $examQuestion->question_number,
@@ -230,12 +229,12 @@ class ExamQuestionSelectorService extends BaseService
                     'score' => $examQuestion->question->score,
                     'weight' => $examQuestion->weight,
                     'group_name' => $examQuestion->questionGroup->name,
-                    'options' => collect($examQuestion->question?->options ?? [])->map(function ($option) {
-                            return [
-                                'id' => $option->id,
-                                'option_text' => $option->option_text,
-                            ];
-                        }) ?? collect(),
+                    'options' => $examQuestion->question->options->map(function ($option) {
+                        return [
+                            'id' => $option->id,
+                            'option_text' => $option->option_text
+                        ];
+                    }),
                 ];
             });
 

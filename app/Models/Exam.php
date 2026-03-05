@@ -123,15 +123,13 @@ class Exam extends Model
      */
     public function isAvailable(): bool
     {
-        $now = Carbon::now();
-
         // Check start date
-        if ($this->start_date && $now < $this->start_date) {
+        if (Carbon::now()->lt($this->start_date)) {
             return false;
         }
 
         // Check end date
-        if ($this->end_date && $now > $this->end_date) {
+        if (Carbon::now()->gt($this->end_date)) {
             return false;
         }
 
@@ -149,7 +147,7 @@ class Exam extends Model
             return true;
         }
 
-        return Carbon::now() >= $this->start_date;
+        return Carbon::now()->gte($this->start_date);
     }
 
     /**
@@ -163,7 +161,7 @@ class Exam extends Model
             return false;
         }
 
-        return Carbon::now() > $this->end_date;
+        return Carbon::now()->gt($this->end_date);
     }
 
     /**

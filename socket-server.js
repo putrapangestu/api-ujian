@@ -1,8 +1,10 @@
+import 'dotenv/config';
 import http from 'http';
 import { Server } from 'socket.io';
 
 const port = Number.parseInt(process.env.SOCKET_IO_PORT ?? '3001', 10);
 const key = process.env.SOCKET_IO_KEY ?? '';
+const clients = new Map();
 
 const server = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
@@ -10,6 +12,13 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/health') {
         res.writeHead(200, { 'content-type': 'application/json' });
         res.end(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }));
+        return;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/clients') {
+        const list = Array.from(clients.values());
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ count: list.length, clients: list, timestamp: new Date().toISOString() }));
         return;
     }
 
@@ -67,14 +76,40 @@ const io = new Server(server, {
     },
 });
 
+io.engine.on('connection_error', (err) => {
+    console.warn(JSON.stringify({
+        event: 'engine_connection_error',
+        message: err?.message ?? String(err),
+        code: err?.code ?? null,
+        context: err?.context ?? null,
+        timestamp: new Date().toISOString(),
+    }));
+});
+
 io.use((socket, next) => {
     const clientKey =
         socket.handshake.auth?.key ??
         socket.handshake.query?.key ??
         socket.handshake.headers?.['x-socket-key'];
     if (clientKey === key) {
+        console.log(JSON.stringify({
+            event: 'handshake_auth_ok',
+            key_present: !!clientKey,
+            address: socket.handshake.address ?? null,
+            exam_id: socket.handshake.query?.exam_id ?? null,
+            student_id: socket.handshake.query?.student_id ?? null,
+            timestamp: new Date().toISOString(),
+        }));
         next();
     } else {
+        console.warn(JSON.stringify({
+            event: 'handshake_auth_fail',
+            key_present: !!clientKey,
+            address: socket.handshake.address ?? null,
+            exam_id: socket.handshake.query?.exam_id ?? null,
+            student_id: socket.handshake.query?.student_id ?? null,
+            timestamp: new Date().toISOString(),
+        }));
         next(new Error('unauthorized'));
     }
 });
@@ -99,6 +134,14 @@ io.on('connection', (socket) => {
     if (studentId) {
         socket.join(`student:${studentId}`);
     }
+
+    clients.set(socket.id, {
+        id: socket.id,
+        exam_id: examId ?? null,
+        student_id: studentId ?? null,
+        rooms: Array.from(socket.rooms),
+        connected_at: new Date().toISOString(),
+    });
 
     if (examId) {
         socket.to(`exam:${examId}`).emit('user_connected', {
@@ -131,6 +174,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('answer_sync', (payload, callback) => {
+        console.log("")
         const body = (payload?.data ?? payload) ?? {};
         const room = examId ? `exam:${examId}` : '';
         const base = {
@@ -198,7 +242,24 @@ io.on('connection', (socket) => {
                 timestamp: new Date().toISOString(),
             });
         }
+        clients.delete(socket.id);
     });
 });
 
 server.listen(port, '0.0.0.0');
+server.on('listening', () => {
+    console.log(JSON.stringify({
+        event: 'server_listening',
+        port,
+        host: '0.0.0.0',
+        timestamp: new Date().toISOString(),
+    }));
+});
+server.on('error', (err) => {
+    console.error(JSON.stringify({
+        event: 'server_error',
+        message: err?.message ?? String(err),
+        code: err?.code ?? null,
+        timestamp: new Date().toISOString(),
+    }));
+});

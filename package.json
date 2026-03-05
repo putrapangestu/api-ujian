@@ -6,7 +6,8 @@
         "build": "vite build",
         "dev": "vite"
     },
-     "dependencies": {
+    "dependencies": {
+        "dotenv": "^17.3.1",
         "socket.io": "^4.8.1"
     },
     "devDependencies": {

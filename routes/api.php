@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\QuestionGroupController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentGroupController;
 use App\Http\Controllers\Api\UserController;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -165,7 +166,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/test', function () {
     return response()->json([
         'message' => 'API is working!',
-        'timestamp' => now()->toDateTimeString(),
+        'timestamp' => Carbon::now()->toDateTimeString(),
     ]);
 });
 

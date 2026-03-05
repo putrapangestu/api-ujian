@@ -1,12 +1,13 @@
 <?php
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Route;
 
 /**
  * Socket.IO Routes
- * 
+ *
  * Routes untuk Socket.IO integration dan testing
- * 
+ *
  * @package Routes
  * @author Development Team
  * @version 1.0.0
@@ -14,13 +15,13 @@ use Illuminate\Support\Facades\Route;
 
 // Socket.IO testing endpoints
 Route::prefix('socket-io')->middleware('auth:sanctum')->group(function () {
-    
+
     // Test Socket.IO connection
     Route::get('/test-connection', function () {
         return response()->json([
             'message' => 'Socket.IO connection test endpoint',
             'status' => 'ready',
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
     })->name('socket-io.test-connection');
 
@@ -41,13 +42,13 @@ Route::prefix('socket-io')->middleware('auth:sanctum')->group(function () {
             'channel' => 'exam-monitoring',
             'event' => 'exam_action',
             'data' => $data,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
 
         return response()->json([
             'message' => 'Test broadcast sent',
             'data' => $data,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
     })->name('socket-io.test-monitoring');
 
@@ -66,13 +67,13 @@ Route::prefix('socket-io')->middleware('auth:sanctum')->group(function () {
             'channel' => 'exam-completion',
             'event' => 'exam_completed',
             'data' => $data,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
 
         return response()->json([
             'message' => 'Test completion broadcast sent',
             'data' => $data,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
     })->name('socket-io.test-completion');
 
@@ -92,13 +93,13 @@ Route::prefix('socket-io')->middleware('auth:sanctum')->group(function () {
             'channel' => 'group-monitoring',
             'event' => 'group_statistics_updated',
             'data' => $data,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
 
         return response()->json([
             'message' => 'Test group monitoring broadcast sent',
             'data' => $data,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
     })->name('socket-io.test-group-monitoring');
 
@@ -114,13 +115,13 @@ Route::prefix('socket-io')->middleware('auth:sanctum')->group(function () {
             'channel' => 'category-monitoring',
             'event' => 'category_statistics_updated',
             'data' => $data,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
 
         return response()->json([
             'message' => 'Test category monitoring broadcast sent',
             'data' => $data,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
     })->name('socket-io.test-category-monitoring');
 
@@ -128,7 +129,7 @@ Route::prefix('socket-io')->middleware('auth:sanctum')->group(function () {
 
 // Testing routes
 Route::prefix('testing')->middleware('auth:sanctum')->group(function () {
-    
+
     // Performance test endpoint
     Route::post('/performance', function (\Illuminate\Http\Request $request) {
         $request->validate([
@@ -139,7 +140,7 @@ Route::prefix('testing')->middleware('auth:sanctum')->group(function () {
         // Run performance test via command
         $output = [];
         $returnCode = 0;
-        
+
         exec('php artisan test:performance --users=' . $request->users . ' --questions=' . $request->questions, $output, $returnCode);
 
         return response()->json([
@@ -150,7 +151,7 @@ Route::prefix('testing')->middleware('auth:sanctum')->group(function () {
             ],
             'command_output' => $output,
             'return_code' => $returnCode,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
     })->name('testing.performance');
 
@@ -159,7 +160,7 @@ Route::prefix('testing')->middleware('auth:sanctum')->group(function () {
         // Run security test via command
         $output = [];
         $returnCode = 0;
-        
+
         $verbose = $request->boolean('verbose') ? ' --verbose' : '';
         exec('php artisan test:security' . $verbose, $output, $returnCode);
 
@@ -170,7 +171,7 @@ Route::prefix('testing')->middleware('auth:sanctum')->group(function () {
             ],
             'command_output' => $output,
             'return_code' => $returnCode,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
     })->name('testing.security');
 

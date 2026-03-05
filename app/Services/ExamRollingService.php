@@ -6,6 +6,7 @@ use App\Models\UserExam;
 use App\Models\Student;
 use App\Models\Exam;
 use App\Models\StudentGroup;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -251,7 +252,7 @@ class ExamRollingService extends BaseService
             'new_group_id' => $newGroup->id,
             'old_group_name' => $oldGroup ? $oldGroup->name : null,
             'new_group_name' => $newGroup->name,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
     }
 
@@ -279,7 +280,7 @@ class ExamRollingService extends BaseService
                     'id' => $newGroup->id,
                     'name' => $newGroup->name,
                 ],
-                'timestamp' => now()->toISOString(),
+                'timestamp' => Carbon::now()->toISOString(),
             ],
         ];
 
@@ -319,7 +320,7 @@ class ExamRollingService extends BaseService
 
         $exam = $userExam->exam;
         $durationInSeconds = $exam->duration * 60;
-        $elapsedTime = now()->diffInSeconds($userExam->start_time);
+        $elapsedTime = Carbon::now()->diffInSeconds($userExam->start_time);
         $remainingTime = $durationInSeconds - $elapsedTime;
 
         return max(0, $remainingTime);

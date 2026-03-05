@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\Exam;
 use App\Models\QuestionGroup;
 use App\Models\QuestionCategory;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -139,7 +140,7 @@ class SocketIOService extends BaseService
             $data = [
                 'exam_id' => $examId,
                 'statistics' => $statistics,
-                'timestamp' => now()->toISOString(),
+                'timestamp' => Carbon::now()->toISOString(),
             ];
 
             $this->emitEvent('exam-statistics', 'statistics_updated', $data, $this->examRoom($examId));
@@ -159,7 +160,7 @@ class SocketIOService extends BaseService
                 'user_exam_id' => $monitoring->user_exam_id,
                 'student_id' => $monitoring->student_id,
                 'reason' => $cheating,
-                'flagged_at' => now()->toISOString(),
+                'flagged_at' => Carbon::now()->toISOString(),
             ];
 
             $this->emitEvent('cheating-monitoring', 'cheating_detected', $data, $this->examRoom($monitoring->exam_id));
@@ -264,7 +265,7 @@ class SocketIOService extends BaseService
                 'code' => QuestionGroup::find($questionGroupId)->code,
             ] : null,
             'statistics' => $statistics,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ];
     }
 
@@ -295,7 +296,7 @@ class SocketIOService extends BaseService
                     'average_score' => $category['average_score'],
                 ];
             }, $categories),
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ];
     }
 
@@ -356,7 +357,7 @@ class SocketIOService extends BaseService
             'exam_id' => $userExam->exam_id,
             'old_group' => $rollData['old_group'],
             'new_group' => $rollData['new_group'],
-            'rolled_at' => now()->toISOString(),
+            'rolled_at' => Carbon::now()->toISOString(),
             'student' => $userExam->student ? [
                 'id' => $userExam->student->id,
                 'name' => $userExam->student->name,

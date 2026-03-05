@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Student;
 use App\Models\StudentGroup;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Role;
@@ -33,7 +34,7 @@ class StudentUserSeeder extends Seeder
             ]);
         }
 
-        $timestamp = now()->format('YmdHis');
+        $timestamp = Carbon::now()->format('YmdHis');
         $hasEmail = Schema::hasColumn('students', 'email');
         $hasNisn = Schema::hasColumn('students', 'nisn');
         $hasPhone = Schema::hasColumn('students', 'phone');
@@ -75,7 +76,7 @@ class StudentUserSeeder extends Seeder
             }
 
             if ($hasBirthDate) {
-                $studentData['birth_date'] = now()->subYears(18)->toDateString();
+                $studentData['birth_date'] = Carbon::now()->subYears(18)->toDateString();
             }
 
             if ($hasStatus) {

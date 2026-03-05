@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -122,7 +123,7 @@ class Exam extends Model
      */
     public function isAvailable(): bool
     {
-        $now = now();
+        $now = Carbon::now();
 
         // Check start date
         if ($this->start_date && $now < $this->start_date) {
@@ -148,7 +149,7 @@ class Exam extends Model
             return true;
         }
 
-        return now() >= $this->start_date;
+        return Carbon::now() >= $this->start_date;
     }
 
     /**
@@ -162,7 +163,7 @@ class Exam extends Model
             return false;
         }
 
-        return now() > $this->end_date;
+        return Carbon::now() > $this->end_date;
     }
 
     /**

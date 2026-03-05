@@ -433,7 +433,7 @@ class ExamMonitoringService extends BaseService
 
         $fastAnswers = ExamMonitoring::where('user_exam_id', $monitoring->user_exam_id)
             ->where('action', ExamMonitoring::ACTION_ANSWER)
-            ->where('created_at', '>=', now()->subMinute())
+            ->where('created_at', '>=', Carbon::now()->subMinute())
             ->where('time_spent', '<=', 2)
             ->count();
 

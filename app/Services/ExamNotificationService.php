@@ -6,13 +6,14 @@ use App\Models\Student;
 use App\Models\Exam;
 use App\Models\UserExam;
 use App\Models\StudentGroup;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 /**
  * ExamNotification Service Class
- * 
+ *
  * Service ini menangani notifikasi untuk pengerjaan ujian
- * 
+ *
  * @package App\Services
  * @author Development Team
  * @version 1.0.0
@@ -21,7 +22,7 @@ class ExamNotificationService extends BaseService
 {
     /**
      * Send exam start notification
-     * 
+     *
      * @param UserExam $userExam
      * @return array
      */
@@ -57,7 +58,7 @@ class ExamNotificationService extends BaseService
 
     /**
      * Send exam reminder notification
-     * 
+     *
      * @param UserExam $userExam
      * @param int $minutesRemaining
      * @return array
@@ -93,7 +94,7 @@ class ExamNotificationService extends BaseService
 
     /**
      * Send exam completion notification
-     * 
+     *
      * @param UserExam $userExam
      * @return array
      */
@@ -108,7 +109,7 @@ class ExamNotificationService extends BaseService
             $notificationData = [
                 'type' => 'exam_completed',
                 'title' => 'Ujian Selesai',
-                'message' => "Ujian {$exam->title} telah selesai. Nilai: {$score}. " . 
+                'message' => "Ujian {$exam->title} telah selesai. Nilai: {$score}. " .
                            ($passed ? 'Selamat, Anda lulus!' : 'Maaf, Anda belum lulus.'),
                 'student_id' => $student->id,
                 'exam_id' => $exam->id,
@@ -133,7 +134,7 @@ class ExamNotificationService extends BaseService
 
     /**
      * Send exam assignment notification to group
-     * 
+     *
      * @param StudentGroup $group
      * @param Exam $exam
      * @return array
@@ -176,7 +177,7 @@ class ExamNotificationService extends BaseService
 
     /**
      * Send cheating alert notification
-     * 
+     *
      * @param UserExam $userExam
      * @param string $alertType
      * @param string $details
@@ -197,7 +198,7 @@ class ExamNotificationService extends BaseService
                 'user_exam_id' => $userExam->id,
                 'alert_type' => $alertType,
                 'details' => $details,
-                'alert_time' => now()->toISOString(),
+                'alert_time' => Carbon::now()->toISOString(),
             ];
 
             // Log notification
@@ -215,7 +216,7 @@ class ExamNotificationService extends BaseService
 
     /**
      * Broadcast notification via Socket.IO
-     * 
+     *
      * @param array $notificationData
      * @return void
      */
@@ -226,7 +227,7 @@ class ExamNotificationService extends BaseService
         Log::info('Socket.IO Broadcast Notification', [
             'channel' => 'exam-notifications',
             'data' => $notificationData,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
     }
 }

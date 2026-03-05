@@ -7,6 +7,7 @@ use App\Models\ExamMonitoring;
 use App\Models\UserAnswer;
 use App\Services\ExamMonitoringService;
 use App\Services\SocketIOService;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -121,7 +122,7 @@ class ProcessExamSubmission implements ShouldQueue
 
             // Update user exam
             $userExam->update([
-                'end_time' => now(),
+                'end_time' => Carbon::now(),
                 'score' => $totalScore,
                 'status' => UserExam::STATUS_COMPLETED,
             ]);

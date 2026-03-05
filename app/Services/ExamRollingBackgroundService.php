@@ -8,6 +8,7 @@ use App\Models\StudentGroup;
 use App\Models\UserExam;
 use App\Models\QuestionExam;
 use App\Jobs\ProcessExamRolling;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -258,7 +259,7 @@ class ExamRollingBackgroundService extends BaseService
             'old_group_name' => $oldGroup ? $oldGroup->name : null,
             'new_group_name' => $newGroup->name,
             'background_job_dispatched' => true,
-            'timestamp' => now()->toISOString(),
+            'timestamp' => Carbon::now()->toISOString(),
         ]);
     }
 }

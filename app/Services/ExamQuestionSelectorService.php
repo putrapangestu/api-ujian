@@ -6,6 +6,7 @@ use App\Models\Exam;
 use App\Models\Question;
 use App\Models\QuestionGroup;
 use App\Models\QuestionExam;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -154,7 +155,7 @@ class ExamQuestionSelectorService extends BaseService
                 'exam_id' => $examId,
                 'user_id' => $userId,
                 'question_count' => count($questionOrderMap),
-                'timestamp' => now()->toISOString(),
+                'timestamp' => Carbon::now()->toISOString(),
             ]);
 
             return $this->successResponse([

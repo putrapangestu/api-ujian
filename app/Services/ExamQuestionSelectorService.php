@@ -229,7 +229,12 @@ class ExamQuestionSelectorService extends BaseService
                     'score' => $examQuestion->question->score,
                     'weight' => $examQuestion->weight,
                     'group_name' => $examQuestion->questionGroup->name,
-                    'options' => $examQuestion->question->options
+                    'options' => $examQuestion->question?->options?->map(function ($option) {
+                            return [
+                                'id' => $option->id,
+                                'option_text' => $option->option_text,
+                            ];
+                        }) ?? collect(),
                 ];
             });
 

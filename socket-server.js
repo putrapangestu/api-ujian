@@ -174,7 +174,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('answer_sync', (payload, callback) => {
-        console.log("")
         const body = (payload?.data ?? payload) ?? {};
         const room = examId ? `exam:${examId}` : '';
         const base = {

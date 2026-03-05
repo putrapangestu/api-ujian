@@ -187,6 +187,12 @@ class ExamQuestionSelectorService extends BaseService
                 return $this->errorResponse('Ujian tidak ditemukan', null, 404);
             }
 
+            $student = Student::with('group')->where('user_id', $userId)->first();
+
+            if (!$student) {
+                return $this->errorResponse('Siswa tidak ditemukan', null, 404);
+            }
+
             // Check if exam is available
             if (!$exam->isAvailable()) {
                 return $this->errorResponse('Ujian tidak tersedia', null, 403);
@@ -235,7 +241,7 @@ class ExamQuestionSelectorService extends BaseService
 
             return $this->successResponse([
                 'exam' => $exam,
-                'user_id' => $userId,
+                'student' => $student,
                 'questions' => $formattedQuestions,
                 'total_questions' => count($formattedQuestions),
             ]);

@@ -19,6 +19,8 @@ use Illuminate\Support\Collection;
  */
 class ResponseHelper
 {
+    private static array $dateKeysCache = [];
+
     /**
      * Generate success response
      *
@@ -107,11 +109,17 @@ class ResponseHelper
 
         if ($data instanceof Model) {
             $array = $data->toArray();
-            $casts = $data->getCasts();
-            $dateKeys = array_unique(array_merge($data->getDates(), array_keys(array_filter(
-                $casts,
-                fn ($cast) => in_array($cast, ['date', 'datetime', 'immutable_date', 'immutable_datetime'], true)
-            ))));
+            $class = get_class($data);
+            if (!isset(self::$dateKeysCache[$class])) {
+                $casts = $data->getCasts();
+                $dateKeys = array_unique(array_merge($data->getDates(), array_keys(array_filter(
+                    $casts,
+                    fn ($cast) => in_array($cast, ['date', 'datetime', 'immutable_date', 'immutable_datetime'], true)
+                ))));
+                self::$dateKeysCache[$class] = ['dateKeys' => $dateKeys, 'casts' => $casts];
+            }
+            $dateKeys = self::$dateKeysCache[$class]['dateKeys'];
+            $casts = self::$dateKeysCache[$class]['casts'];
 
             foreach ($dateKeys as $key) {
                 if ($data->{$key} instanceof DateTimeInterface) {
@@ -122,7 +130,12 @@ class ResponseHelper
                 }
             }
 
-            return self::formatDateTimes($array);
+            $relations = $data->getRelations();
+            foreach ($relations as $relationName => $relationData) {
+                $array[$relationName] = self::formatDateTimes($relationData);
+            }
+
+            return $array;
         }
 
         if ($data instanceof Collection) {

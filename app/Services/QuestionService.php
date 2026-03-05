@@ -134,10 +134,12 @@ class QuestionService extends BaseService
                     $data['question_category_id'] = $questionGroup->question_category_id;
                 }
 
-                $question = Question::create($data);
+                $createData = $data;
+                unset($createData['options']);
+                $question = Question::create($createData);
 
                 // Create options for multiple choice questions
-                if ($question->question_type === 'multiple_choice' && isset($data['options'])) {
+                if (isset($data['options'])) {
                     foreach ($data['options'] as $optionData) {
                         QuestionOption::create([
                             'question_id' => $question->id,
@@ -178,7 +180,9 @@ class QuestionService extends BaseService
                 }
 
                 // Update question
-                $question->update($data);
+                $updateData = $data;
+                unset($updateData['options']);
+                $question->update($updateData);
 
                 // Update options for multiple choice questions
                 if ($question->question_type === 'multiple_choice' && isset($data['options'])) {

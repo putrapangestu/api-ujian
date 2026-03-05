@@ -223,7 +223,6 @@ class QuestionBankService extends BaseService
             'question_type' => $questionType,
             'score' => $score,
             'correct_answer' => null,
-            'options' => null,
         ]);
 
         $questionTextWithFiles = $this->replacePluginFileReferences($question->id, $questionText, $filesByName);
@@ -440,7 +439,6 @@ class QuestionBankService extends BaseService
 
         $question->update([
             'correct_answer' => strtolower(trim(strip_tags($correct->option_text))),
-            'options' => $createdOptions ? collect($createdOptions)->pluck('option_text')->values()->all() : null,
         ]);
 
         return $this->successResponse(true, 'Ok');
@@ -489,7 +487,6 @@ class QuestionBankService extends BaseService
 
         $question->update([
             'correct_answer' => $correct->option_text,
-            'options' => collect($options)->pluck('option_text')->values()->all(),
             'score' => $questionScore,
         ]);
 

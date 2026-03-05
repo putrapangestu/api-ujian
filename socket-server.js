@@ -68,10 +68,6 @@ const io = new Server(server, {
 });
 
 io.use((socket, next) => {
-    if (!key) {
-        next();
-        return;
-    }
     const clientKey =
         socket.handshake.auth?.key ??
         socket.handshake.query?.key ??
@@ -131,6 +127,58 @@ io.on('connection', (socket) => {
                 room,
                 timestamp: new Date().toISOString(),
             }));
+        }
+    });
+
+    socket.on('answer_sync', (payload, callback) => {
+        const body = (payload?.data ?? payload) ?? {};
+        const room = examId ? `exam:${examId}` : '';
+        const base = {
+            exam_id: body.exam_id ?? examId ?? null,
+            student_id: body.student_id ?? studentId ?? null,
+            action: body.action ?? 'ANSWER',
+        };
+        const items = Array.isArray(body.answers)
+            ? body.answers.map((a) => ({ ...base, ...a }))
+            : [{ ...base, ...body }];
+
+        console.log(JSON.stringify({
+            event: 'answer_sync_received',
+            id: socket.id,
+            count: items.length,
+            exam_id: base.exam_id,
+            student_id: base.student_id,
+            timestamp: new Date().toISOString(),
+        }));
+
+        for (const item of items) {
+            const data = {
+                id: item.id ?? null,
+                user_exam_id: item.user_exam_id ?? null,
+                student_id: item.student_id,
+                exam_id: item.exam_id,
+                action: item.action,
+                question_id: item.question_id,
+                answer: item.answer,
+                time_spent: item.time_spent,
+                created_at: item.created_at ?? new Date().toISOString(),
+            };
+            if (room) {
+                io.to(room).emit('exam_action', { channel: 'exam-monitoring', data });
+            } else {
+                io.emit('exam_action', { channel: 'exam-monitoring', data });
+            }
+        }
+
+        const ack = {
+            status: 'ok',
+            received: items.length,
+            timestamp: new Date().toISOString(),
+        };
+        if (typeof callback === 'function') {
+            callback(ack);
+        } else {
+            socket.emit('answer_sync_ack', ack);
         }
     });
 

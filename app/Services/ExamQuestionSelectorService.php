@@ -220,6 +220,7 @@ class ExamQuestionSelectorService extends BaseService
 
             // Format questions for response
             $formattedQuestions = $questions->map(function ($examQuestion, $index) use ($questionOrderMap) {
+                dd($examQuestion->question->options);
                 return [
                     'id' => $examQuestion->id,
                     'question_number' => $examQuestion->question_number,

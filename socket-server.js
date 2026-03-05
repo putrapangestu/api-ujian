@@ -67,6 +67,22 @@ const io = new Server(server, {
     },
 });
 
+io.use((socket, next) => {
+    if (!key) {
+        next();
+        return;
+    }
+    const clientKey =
+        socket.handshake.auth?.key ??
+        socket.handshake.query?.key ??
+        socket.handshake.headers?.['x-socket-key'];
+    if (clientKey === key) {
+        next();
+    } else {
+        next(new Error('unauthorized'));
+    }
+});
+
 io.on('connection', (socket) => {
     const examId = socket.handshake.query.exam_id;
     const studentId = socket.handshake.query.student_id;
@@ -88,6 +104,23 @@ io.on('connection', (socket) => {
         socket.join(`student:${studentId}`);
     }
 
+    if (examId) {
+        socket.to(`exam:${examId}`).emit('user_connected', {
+            id: socket.id,
+            exam_id: examId ?? null,
+            student_id: studentId ?? null,
+            timestamp: new Date().toISOString(),
+        });
+    }
+
+    socket.emit('connected', {
+        id: socket.id,
+        exam_id: examId ?? null,
+        student_id: studentId ?? null,
+        rooms: Array.from(socket.rooms),
+        timestamp: new Date().toISOString(),
+    });
+
     socket.on('join', (payload) => {
         const room = payload?.room;
         if (room) {
@@ -108,6 +141,15 @@ io.on('connection', (socket) => {
             reason,
             timestamp: new Date().toISOString(),
         }));
+        if (examId) {
+            socket.to(`exam:${examId}`).emit('user_disconnected', {
+                id: socket.id,
+                exam_id: examId ?? null,
+                student_id: studentId ?? null,
+                reason,
+                timestamp: new Date().toISOString(),
+            });
+        }
     });
 });
 

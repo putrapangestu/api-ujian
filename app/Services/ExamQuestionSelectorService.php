@@ -6,6 +6,7 @@ use App\Models\Exam;
 use App\Models\Question;
 use App\Models\QuestionGroup;
 use App\Models\QuestionExam;
+use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;

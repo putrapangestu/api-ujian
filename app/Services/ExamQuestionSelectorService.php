@@ -181,6 +181,17 @@ class ExamQuestionSelectorService extends BaseService
     public function getExamQuestionsForStudent(string $examId, string $userId): array
     {
         try {
+            $exam = Exam::find($examId);
+
+            if (!$exam) {
+                return $this->errorResponse('Ujian tidak ditemukan', null, 404);
+            }
+
+            // Check if exam is available
+            if (!$exam->isAvailable()) {
+                return $this->errorResponse('Ujian tidak tersedia', null, 403);
+            }
+
             // Generate random order for this student if not exists
             $orderResult = $this->generateRandomQuestionOrder($examId, $userId);
 
@@ -223,7 +234,7 @@ class ExamQuestionSelectorService extends BaseService
             });
 
             return $this->successResponse([
-                'exam_id' => $examId,
+                'exam' => $exam,
                 'user_id' => $userId,
                 'questions' => $formattedQuestions,
                 'total_questions' => count($formattedQuestions),

@@ -71,6 +71,15 @@ io.on('connection', (socket) => {
     const examId = socket.handshake.query.exam_id;
     const studentId = socket.handshake.query.student_id;
 
+    console.log(JSON.stringify({
+        event: 'socket_connected',
+        id: socket.id,
+        exam_id: examId ?? null,
+        student_id: studentId ?? null,
+        address: socket.handshake.address ?? null,
+        timestamp: new Date().toISOString(),
+    }));
+
     if (examId) {
         socket.join(`exam:${examId}`);
     }
@@ -83,7 +92,22 @@ io.on('connection', (socket) => {
         const room = payload?.room;
         if (room) {
             socket.join(room);
+            console.log(JSON.stringify({
+                event: 'socket_join_room',
+                id: socket.id,
+                room,
+                timestamp: new Date().toISOString(),
+            }));
         }
+    });
+
+    socket.on('disconnect', (reason) => {
+        console.log(JSON.stringify({
+            event: 'socket_disconnected',
+            id: socket.id,
+            reason,
+            timestamp: new Date().toISOString(),
+        }));
     });
 });
 

@@ -224,6 +224,12 @@ class ExamService extends BaseService
                     return $this->errorResponse('Ujian tidak ditemukan', null, 404);
                 }
 
+                return $this->successResponse([
+                    'exam' => $exam,
+                    'now' => Carbon::now(),
+                    'available' => $exam->isAvailable(),
+                ], 'test ujian');
+
                 // Check if exam is available
                 if (!$exam->isAvailable()) {
                     return $this->errorResponse('Ujian tidak tersedia saat ini');

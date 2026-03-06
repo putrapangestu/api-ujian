@@ -68,3 +68,29 @@ deploy_dev:
     - docker exec $CONTAINER_NAME php artisan migrate --force
     - docker exec $CONTAINER_NAME php artisan optimize
     - docker exec $CONTAINER_NAME php artisan l5-swagger:generate
+
+# ================================
+# 3️⃣ Deploy For Socket
+# ================================
+deploy:
+  stage: deploy
+  tags:
+    - runner-development-shell
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - |
+      sudo -u www rsync -az --no-o --no-g \
+        --exclude=.git \
+        --exclude=.env \
+        --exclude=node_modules \
+        --exclude=vendor \
+        --exclude=storage \
+        --exclude=proxy_cache_dir \
+        --exclude=.user.ini \
+        ./ "$DEPLOY_DIR/"
+
+    - sudo -u www bash -lc "
+        cd '$DEPLOY_DIR' &&
+        composer install --no-interaction --prefer-dist --optimize-autoloader
+      "

@@ -92,6 +92,5 @@ deploy_socket:
 
     - sudo -u www bash -lc "
         cd '$DEPLOY_DIR' &&
-        composer install --no-interaction --prefer-dist --optimize-autoloader &&
-        npm install --omit=dev
+        composer install --no-interaction --prefer-dist --optimize-autoloader
       "

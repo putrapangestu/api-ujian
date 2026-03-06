@@ -72,7 +72,7 @@ deploy_dev:
 # ================================
 # 3️⃣ Deploy For Socket
 # ================================
-deploy:
+deploy_socket:
   stage: deploy
   tags:
     - runner-development-shell
@@ -92,5 +92,6 @@ deploy:
 
     - sudo -u www bash -lc "
         cd '$DEPLOY_DIR' &&
-        composer install --no-interaction --prefer-dist --optimize-autoloader
+        composer install --no-interaction --prefer-dist --optimize-autoloader &&
+        npm install --omit=dev
       "

@@ -79,6 +79,10 @@ deploy_socket:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
+    - mkdir -p $DEPLOY_DIR_SOCKET
+    - sudo chown -R www:www $DEPLOY_DIR_SOCKET
+    - sudo chmod -R 775 $DEPLOY_DIR_SOCKET
+
     - |
       sudo -u www rsync -az --no-o --no-g \
         --exclude=.git \

@@ -135,7 +135,7 @@ class QuestionRepository implements QuestionRepositoryInterface
      */
     public function getWithOptions(string $questionId): ?Question
     {
-        return Question::with('questionOptions')->find($questionId);
+        return Question::with('options')->find($questionId);
     }
 
     /**

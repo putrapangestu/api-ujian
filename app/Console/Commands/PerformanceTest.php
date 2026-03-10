@@ -280,11 +280,11 @@ class PerformanceTest extends Command
                 $isCorrect = rand(1, 100) <= 80;
                 
                 if ($isCorrect) {
-                    $correctOption = $question->questionOptions()->where('is_correct', true)->first();
+                    $correctOption = $question->options()->where('is_correct', true)->first();
                     $answer = $correctOption ? $correctOption->option_text : '4';
                     $score = $question->score;
                 } else {
-                    $wrongOptions = $question->questionOptions()->where('is_correct', false)->get();
+                    $wrongOptions = $question->options()->where('is_correct', false)->get();
                     $wrongOption = $wrongOptions->random();
                     $answer = $wrongOption->option_text;
                     $score = 0;

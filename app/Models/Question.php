@@ -23,7 +23,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $question_group_id
  * @property string $question_text
  * @property string $question_type multiple_choice, essay, true_false
- * @property array $options Pilihan jawaban untuk multiple choice
  * @property string|null $correct_answer
  * @property int $score Nilai soal
  * @property \Carbon\Carbon $created_at
@@ -44,7 +43,6 @@ class Question extends Model
         'question_group_id',
         'question_text',
         'question_type',
-        'options',
         'correct_answer',
         'score',
     ];
@@ -96,7 +94,7 @@ class Question extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function questionOptions()
+    public function options()
     {
         return $this->hasMany(QuestionOption::class);
     }
@@ -171,7 +169,7 @@ class Question extends Model
     {
         if ($this->isMultipleChoice()) {
             // For multiple choice, check against options
-            $correctOption = $this->questionOptions()->where('is_correct', true)->first();
+            $correctOption = $this->options()->where('is_correct', true)->first();
             return $correctOption && $correctOption->option_text === $answer;
         }
 
@@ -186,7 +184,7 @@ class Question extends Model
      */
     public function getCorrectOption(): ?QuestionOption
     {
-        return $this->questionOptions()->where('is_correct', true)->first();
+        return $this->options()->where('is_correct', true)->first();
     }
 
     /**
@@ -196,6 +194,6 @@ class Question extends Model
      */
     public function getTotalScore(): int
     {
-        return $this->questionOptions()->sum('score');
+        return $this->options()->sum('score');
     }
 }

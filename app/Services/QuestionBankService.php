@@ -231,7 +231,7 @@ class QuestionBankService extends BaseService
         }
 
         if ($questionType === 'essay') {
-            $question->load(['questionOptions', 'category', 'questionGroup']);
+            $question->load(['options', 'category', 'questionGroup']);
 
             return $this->successResponse($question, 'Soal berhasil dibuat');
         }
@@ -242,7 +242,7 @@ class QuestionBankService extends BaseService
                 return $tfResult;
             }
 
-            $question->load(['questionOptions', 'category', 'questionGroup']);
+            $question->load(['options', 'category', 'questionGroup']);
 
             return $this->successResponse($question, 'Soal berhasil dibuat');
         }
@@ -253,7 +253,7 @@ class QuestionBankService extends BaseService
                 return $scResult;
             }
 
-            $question->load(['questionOptions', 'category', 'questionGroup']);
+            $question->load(['options', 'category', 'questionGroup']);
 
             return $this->successResponse($question, 'Soal berhasil dibuat');
         }
@@ -263,7 +263,7 @@ class QuestionBankService extends BaseService
             return $mcResult;
         }
 
-        $question->load(['questionOptions', 'category', 'questionGroup']);
+        $question->load(['options', 'category', 'questionGroup']);
 
         return $this->successResponse($question, 'Soal berhasil dibuat');
     }
@@ -612,13 +612,13 @@ class QuestionBankService extends BaseService
                 return $this->errorResponse("Baris $rowNumber: Minimal 2 opsi untuk multiple choice");
             }
 
-            if (! $question->questionOptions->where('is_correct', true)->first()) {
+            if (! $question->options->where('is_correct', true)->first()) {
                 return $this->errorResponse("Baris $rowNumber: Tidak ada opsi yang benar");
             }
         }
 
         // Load relationships
-        $question->loadMissing(['questionOptions', 'category', 'questionGroup']);
+        $question->loadMissing(['options', 'category', 'questionGroup']);
 
         return $this->successResponse($question, 'Soal berhasil dibuat');
     }
@@ -647,7 +647,7 @@ class QuestionBankService extends BaseService
                 $query->where('category_id', $categoryId);
             }
 
-            $questions = $query->with(['questionOptions', 'category', 'questionGroup', 'exam'])->get();
+            $questions = $query->with(['options', 'category', 'questionGroup', 'exam'])->get();
 
             if ($questions->isEmpty()) {
                 return $this->errorResponse('Tidak ada soal untuk diekspor');
@@ -682,7 +682,7 @@ class QuestionBankService extends BaseService
 
                 // Set options for multiple choice
                 if ($question->question_type === 'multiple_choice') {
-                    $options = $question->questionOptions->sortBy('option_label');
+                    $options = $question->options->sortBy('option_label');
                     $optionColumn = 'G';
                     foreach ($options as $option) {
                         $sheet->setCellValue($optionColumn.$row, $option->option_text);

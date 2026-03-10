@@ -38,7 +38,7 @@ class QuestionService extends BaseService
     {
         try {
             $query = Question::query()
-            ->with(['questionOptions', 'questionGroup','category']);
+            ->with(['options', 'questionGroup','category']);
 
             if (isset($filters['exam_id']) && $filters['exam_id']) {
                 $query->where('exam_id', $filters['exam_id']);
@@ -80,7 +80,7 @@ class QuestionService extends BaseService
     {
         try {
             $query = Question::query()
-            ->with(['questionOptions', 'questionGroup','category', 'questionExams']);
+            ->with(['options', 'questionGroup','category', 'questionExams']);
 
             if (isset($filters['exam_id']) && $filters['exam_id']) {
                 $query->whereRelation('questionExams','exam_id', $filters['exam_id'])->whereHas('questionExams');
@@ -152,7 +152,7 @@ class QuestionService extends BaseService
                 }
 
                 // Load relationships
-                $question->loadMissing(['questionOptions', 'category', 'questionGroup']);
+                $question->loadMissing(['options', 'category', 'questionGroup']);
 
                 return $this->successResponse($question, 'Soal berhasil dibuat', 201);
 
@@ -187,7 +187,7 @@ class QuestionService extends BaseService
                 // Update options for multiple choice questions
                 if ($question->question_type === 'multiple_choice' && isset($data['options'])) {
                     // Delete existing options
-                    $question->questionOptions()->delete();
+                    $question->options()->delete();
 
                     // Create new options
                     foreach ($data['options'] as $optionData) {
@@ -202,7 +202,7 @@ class QuestionService extends BaseService
                 }
 
                 // Load relationships
-                $question->loadMissing(['questionOptions', 'category', 'questionGroup']);
+                $question->loadMissing(['options', 'category', 'questionGroup']);
 
                 return $this->successResponse($question, 'Soal berhasil diupdate');
 

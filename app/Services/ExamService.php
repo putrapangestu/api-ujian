@@ -47,7 +47,9 @@ class ExamService extends BaseService
     public function getAllExams(array $filters = [], int $perPage = 15): array
     {
         try {
-            $query = Exam::query()->withCount('questions');
+            $query = Exam::query()
+            ->with(['userExams.user.student.group'])
+            ->withCount('questions');
 
             if (isset($filters['search'])) {
                 $search = $filters['search'];
@@ -62,6 +64,20 @@ class ExamService extends BaseService
             }
 
             $exams = $query->paginate($perPage);
+
+            $exams->getCollection()->transform(function ($exam) {
+                $groups = $exam->userExams
+                    ->map(function ($userExam) {
+                        $user = $userExam->user;
+                        return $user && $user->student ? $user->student->group : null;
+                    })
+                    ->filter()
+                    ->unique('id')
+                    ->values();
+
+                $exam->setRelation('studentGroups', $groups);
+                return $exam;
+            });
 
             return ResponseHelper::paginate($exams, 'Daftar ujian berhasil diambil');
 

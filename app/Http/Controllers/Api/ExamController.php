@@ -488,4 +488,58 @@ class ExamController extends Controller
 
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
     }
+
+    #[OA\Post(
+        path: '/exams/{id}/finish',
+        summary: 'Selesaikan ujian (opsional kirim jawaban untuk dinilai)',
+        tags: ['Exams'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        requestBody: new OA\RequestBody(
+            required: false,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: 'questions',
+                        type: 'array',
+                        items: new OA\Items(
+                            properties: [
+                                new OA\Property(property: 'question_id', type: 'string'),
+                                new OA\Property(property: 'answer', type: 'string', nullable: true),
+                                new OA\Property(property: 'question_option_id', type: 'string', nullable: true),
+                                new OA\Property(property: 'time_spent', type: 'integer', nullable: true),
+                                new OA\Property(property: 'question_order', type: 'integer', nullable: true),
+                                new OA\Property(property: 'question_number', type: 'integer', nullable: true),
+                            ]
+                        )
+                    ),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: 'Success')]
+    )]
+    public function finishExam(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'questions' => 'nullable|array',
+            'questions.*.question_id' => 'required_with:questions|string',
+            'questions.*.answer' => 'nullable|string',
+            'questions.*.question_option_id' => 'nullable|string|exists:question_options,id',
+            'questions.*.time_spent' => 'nullable|integer|min:0',
+            'questions.*.question_order' => 'nullable|integer|min:1',
+            'questions.*.question_number' => 'nullable|integer|min:1',
+        ]);
+
+        $userId = $request->user()->id;
+        $questions = $validated['questions'] ?? [];
+
+        $result = $this->examService->finishExam($id, $userId, $questions);
+
+        if ($result['success']) {
+            return $this->successResponse($result['data'], $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], $result['code'] ?? 400, $result['errors'] ?? null);
+    }
 }

@@ -5,10 +5,15 @@ namespace App\Services;
 use App\Models\Exam;
 use App\Models\Student;
 use App\Models\UserExam;
+use App\Models\UserAnswer;
+use App\Models\Question;
+use App\Models\QuestionOption;
+use App\Models\ExamMonitoring;
 use App\Repositories\ExamRepositoryInterface;
 use App\Helpers\ResponseHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Exam Service Class
@@ -431,6 +436,186 @@ class ExamService extends BaseService
         } catch (\Exception $e) {
             return $this->errorResponse('Gagal mengambil ujian hari ini: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Finish exam for user with optional grading
+     *
+     * @param string $examId
+     * @param string $userId
+     * @param array $questions Optional answers payload
+     * @return array
+     */
+    public function finishExam(string $examId, string $userId, array $questions = []): array
+    {
+        return DB::transaction(function () use ($examId, $userId, $questions) {
+            try {
+                $exam = $this->examRepository->find($examId);
+                if (!$exam) {
+                    return $this->errorResponse('Ujian tidak ditemukan', null, 404);
+                }
+
+                $userExam = UserExam::where('user_id', $userId)
+                    ->where('exam_id', $examId)
+                    ->first();
+
+                if (!$userExam) {
+                    return $this->errorResponse('Ujian untuk user ini tidak ditemukan atau belum dimulai', null, 404);
+                }
+
+                if ($userExam->isCompleted()) {
+                    return $this->errorResponse('Ujian sudah diselesaikan sebelumnya');
+                }
+
+                if (!$userExam->isInProgress()) {
+                    return $this->errorResponse('Ujian belum dimulai', null, 400);
+                }
+
+                $processed = 0;
+                $invalidQuestions = [];
+
+                if (!empty($questions) && is_array($questions)) {
+                    $items = collect($questions);
+                    $questionIds = $items->pluck('question_id')->filter()->unique()->values();
+                    $optionIds = $items->pluck('question_option_id')->filter()->unique()->values();
+
+                    $examQuestions = $exam->questions()->whereIn('id', $questionIds)->get()->keyBy('id');
+                    $options = $optionIds->isNotEmpty()
+                        ? QuestionOption::whereIn('id', $optionIds)->get()->keyBy('id')
+                        : collect();
+                    $existingAnswers = $questionIds->isNotEmpty()
+                        ? UserAnswer::where('user_exam_id', $userExam->id)->whereIn('question_id', $questionIds)->get()->keyBy('question_id')
+                        : collect();
+
+                    $answersToInsert = [];
+                    $monitoringRows = [];
+                    $now = Carbon::now();
+
+                    foreach ($items as $item) {
+                        $questionId = $item['question_id'] ?? null;
+                        if (!$questionId) {
+                            continue;
+                        }
+
+                        $question = $examQuestions->get($questionId);
+                        if (!$question) {
+                            $invalidQuestions[] = $questionId;
+                            continue;
+                        }
+
+                        $answerText = $item['answer'] ?? null;
+                        $questionOptionId = $item['question_option_id'] ?? null;
+                        $timeSpent = $item['time_spent'] ?? null;
+                        $questionOrder = $item['question_order'] ?? null;
+                        $questionNumber = $item['question_number'] ?? null;
+
+                        $isCorrect = false;
+                        $score = 0;
+
+                        if ($questionOptionId) {
+                            $option = $options->get($questionOptionId);
+                            if ($option && $option->question_id === $questionId) {
+                                $isCorrect = (bool) $option->is_correct;
+                                $score = (int) $option->score;
+                                $answerText = $answerText ?? $option->option_text;
+                            }
+                        } elseif ($answerText !== null) {
+                            $isCorrect = $question->isCorrect($answerText);
+                            $score = $isCorrect ? (int) $question->score : 0;
+                        } else {
+                            continue;
+                        }
+
+                        $payload = [
+                            'question_option_id' => $questionOptionId,
+                            'answer' => $answerText,
+                            'is_correct' => $isCorrect,
+                            'score' => $score,
+                        ];
+                        if ($timeSpent !== null) {
+                            $payload['time_spent'] = $timeSpent;
+                        }
+                        if ($questionOrder !== null) {
+                            $payload['question_order'] = $questionOrder;
+                        }
+                        if ($questionNumber !== null) {
+                            $payload['question_number'] = $questionNumber;
+                        }
+
+                        $existing = $existingAnswers->get($questionId);
+                        if ($existing) {
+                            $existing->update($payload);
+                        } else {
+                            $answersToInsert[] = array_merge($payload, [
+                                'id' => (string) Str::uuid(),
+                                'user_exam_id' => $userExam->id,
+                                'question_id' => $questionId,
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ]);
+                        }
+
+                        $monitoringRows[] = [
+                            'id' => (string) Str::uuid(),
+                            'user_exam_id' => $userExam->id,
+                            'student_id' => $userExam->student_id,
+                            'exam_id' => $userExam->exam_id,
+                            'action' => ExamMonitoring::ACTION_ANSWER,
+                            'question_id' => $questionId,
+                            'answer' => $answerText,
+                            'time_spent' => $timeSpent ?? 0,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
+
+                        $processed++;
+                    }
+
+                    if (!empty($answersToInsert)) {
+                        UserAnswer::insert($answersToInsert);
+                    }
+                    if (!empty($monitoringRows)) {
+                        ExamMonitoring::insert($monitoringRows);
+                    }
+                }
+
+                $totalScore = (int) $userExam->userAnswers()->sum('score');
+
+                $userExam->update([
+                    'end_time' => Carbon::now(),
+                    'score' => $totalScore,
+                    'status' => UserExam::STATUS_COMPLETED,
+                ]);
+
+                ExamMonitoring::create([
+                    'user_exam_id' => $userExam->id,
+                    'student_id' => $userExam->student_id,
+                    'exam_id' => $userExam->exam_id,
+                    'action' => ExamMonitoring::ACTION_SUBMIT,
+                    'time_spent' => 0,
+                ]);
+
+                $answers = $userExam->userAnswers()->with(['question', 'questionOption'])->get();
+                $answeredCount = $answers->filter(function ($answer) {
+                    return $answer->answer !== null || $answer->question_option_id !== null;
+                })->count();
+
+                return $this->successResponse([
+                    'user_exam' => $userExam->fresh(),
+                    'summary' => [
+                        'processed_answers' => $processed,
+                        'invalid_question_ids' => $invalidQuestions,
+                        'total_questions' => $answers->count(),
+                        'answered_questions' => $answeredCount,
+                        'correct_answers' => $answers->where('is_correct', true)->count(),
+                        'total_score' => (int) $answers->sum('score'),
+                    ],
+                ], 'Ujian berhasil diselesaikan');
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return $this->errorResponse('Gagal menyelesaikan ujian: ' . $e->getMessage());
+            }
+        });
     }
 
     private function createUserExamsForGroups(Exam $exam, array $groupIds): void

@@ -50,6 +50,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}/questions', [ExamController::class, 'getExamQuestions'])->name('exams.questions');
         Route::get('/{id}/user-exams', [ExamController::class, 'getUserExamsByExam'])->name('exams.user-exams');
         Route::post('/{id}/start', [ExamController::class, 'startExam'])->name('exams.start');
+        Route::post('/{id}/finish', [ExamController::class, 'finishExam'])->name('exams.finish');
         Route::post('/{exam}/select-questions', [ExamController::class, 'selectQuestionsFromBanks'])->name('exams.select-questions');
         Route::post('/validate-question-banks', [ExamController::class, 'validateQuestionBankSelection'])->name('exams.validate-question-banks');
     });

@@ -7,6 +7,7 @@ use App\Models\Question;
 use App\Models\QuestionGroup;
 use App\Models\QuestionExam;
 use App\Models\Student;
+use App\Models\UserExam;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -199,6 +200,14 @@ class ExamQuestionSelectorService extends BaseService
                 return $this->errorResponse('Ujian tidak tersedia', null, 403);
             }
 
+            $userExam = UserExam::where('exam_id', $examId)
+                ->where('user_id', $userId)
+                ->first();
+
+            if (!$userExam) {
+                return $this->errorResponse('Tidak terdaftar sebagai peserta ujian', null, 403);
+            }
+
             // Generate random order for this student if not exists
             $orderResult = $this->generateRandomQuestionOrder($examId, $userId);
 
@@ -243,6 +252,7 @@ class ExamQuestionSelectorService extends BaseService
                 'student' => $student,
                 'questions' => $formattedQuestions,
                 'total_questions' => count($formattedQuestions),
+                'user_exam' => $userExam
             ]);
 
         } catch (\Exception $e) {

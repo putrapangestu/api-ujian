@@ -8,6 +8,7 @@ use App\Repositories\StudentGroupRepositoryInterface;
 use App\Repositories\UserRepositoryInterface;
 use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -186,6 +187,7 @@ class StudentService extends BaseService
      */
     public function updateStudent(string $id, array $data): array
     {
+        Log::info('Update student', ['id' => $id, 'data' => $data]);
         return DB::transaction(function () use ($id, $data) {
             try {
                 // Extract user data from payload
@@ -216,19 +218,16 @@ class StudentService extends BaseService
                     }
                 }
 
-                // update user email if changed
-                $this->userRepository->update($student->user_id, ['email' => $data['email'], 'name' => $data['name']]);
+                // Update user if changed
+                if (!empty($payloadUser)) {
+                    $this->userRepository->update($student->user_id, $payloadUser);
+                }
 
                 // Update student
                 $updated = $this->studentRepository->update($id, $data);
 
                 if (!$updated) {
                     return $this->errorResponse('Gagal update siswa');
-                }
-
-                // Update user if changed
-                if (!empty($payloadUser)) {
-                    $this->userRepository->update($student->user_id, $payloadUser);
                 }
 
                 // Get updated student

@@ -225,6 +225,54 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('status_update', (payload) => {
+        const body = (payload?.data ?? payload) ?? {};
+        const room = examId ? `exam:${examId}` : '';
+        
+        const data = {
+            student_id: body.student_id ?? studentId ?? null,
+            exam_id: body.exam_id ?? examId ?? null,
+            is_focused: body.is_focused ?? true,
+            current_question_id: body.current_question_id ?? null,
+            answered_count: body.answered_count ?? 0,
+            timestamp: new Date().toISOString(),
+        };
+
+        if (clients.has(socket.id)) {
+            const clientData = clients.get(socket.id);
+            clients.set(socket.id, { ...clientData, last_status: data });
+        }
+
+        if (room) {
+            socket.to(room).emit('student_status', { channel: 'exam-monitoring', data });
+        } else {
+            socket.broadcast.emit('student_status', { channel: 'exam-monitoring', data });
+        }
+    });
+
+    socket.on('request_active_students', (payload, callback) => {
+        const targetExamId = payload?.exam_id ?? examId;
+        if (!targetExamId) {
+            if (typeof callback === 'function') callback({ error: 'exam_id_required' });
+            return;
+        }
+        
+        const activeStudents = Array.from(clients.values())
+            .filter(c => c.exam_id === targetExamId && c.student_id != null)
+            .map(c => ({
+                socket_id: c.id,
+                student_id: c.student_id,
+                connected_at: c.connected_at,
+                last_status: c.last_status ?? null
+            }));
+            
+        if (typeof callback === 'function') {
+            callback({ status: 'ok', data: activeStudents });
+        } else {
+            socket.emit('active_students_list', { channel: 'exam-monitoring', exam_id: targetExamId, data: activeStudents });
+        }
+    });
+
     socket.on('disconnect', (reason) => {
         console.log(JSON.stringify({
             event: 'socket_disconnected',

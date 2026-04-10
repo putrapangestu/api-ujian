@@ -76,8 +76,8 @@ class AuthService extends BaseService
                 return $this->errorResponse('Email atau password salah', null, 401);
             }
 
-            // Get user
-            $user = $this->userRepository->findByEmail($credentials['email']);
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
 
             // Generate token
             $token = $user->createToken('auth_token')->plainTextToken;

@@ -53,7 +53,6 @@ class ExamService extends BaseService
     {
         try {
             $query = Exam::query()
-            ->with(['userExams.user.student.group'])
             ->withCount('questions');
 
             if (isset($filters['search'])) {
@@ -70,16 +69,20 @@ class ExamService extends BaseService
 
             $exams = $query->paginate($perPage);
 
-            $exams->getCollection()->transform(function ($exam) {
-                $groups = $exam->userExams
-                    ->map(function ($userExam) {
-                        $user = $userExam->user;
-                        return $user && $user->student ? $user->student->group : null;
-                    })
-                    ->filter()
-                    ->unique('id')
-                    ->values();
+            $examIds = $exams->pluck('id');
 
+            $groupsByExam = DB::table('user_exams')
+                ->whereIn('user_exams.exam_id', $examIds)
+                ->join('users', 'users.id', '=', 'user_exams.user_id')
+                ->join('students', 'students.user_id', '=', 'users.id')
+                ->join('student_groups', 'student_groups.id', '=', 'students.group_id')
+                ->select('user_exams.exam_id', 'student_groups.id', 'student_groups.name', 'student_groups.description')
+                ->distinct()
+                ->get()
+                ->groupBy('exam_id');
+
+            $exams->getCollection()->transform(function ($exam) use ($groupsByExam) {
+                $groups = $groupsByExam->get($exam->id, collect());
                 $exam->setRelation('studentGroups', $groups);
                 return $exam;
             });

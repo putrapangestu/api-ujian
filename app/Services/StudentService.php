@@ -188,6 +188,16 @@ class StudentService extends BaseService
     {
         return DB::transaction(function () use ($id, $data) {
             try {
+                // Extract user data from payload
+                $payloadUser = [];
+                if (isset($data['name'])) {
+                    $payloadUser['name'] = $data['name'];
+                }
+                if (isset($data['email'])) {
+                    $payloadUser['email'] = $data['email'];
+                    unset($data['email']);
+                }
+
                 // Check if student exists
                 $student = $this->studentRepository->find($id);
                 if (!$student) {
@@ -214,6 +224,11 @@ class StudentService extends BaseService
 
                 if (!$updated) {
                     return $this->errorResponse('Gagal update siswa');
+                }
+
+                // Update user if changed
+                if (!empty($payloadUser)) {
+                    $this->userRepository->update($student->user_id, $payloadUser);
                 }
 
                 // Get updated student

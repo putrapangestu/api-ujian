@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('question_categories', function (Blueprint $table) {
-            if (Schema::hasColumn('question_categories', 'code')) {
-                $table->string('code')->dropUnique()->change();
+            if (Schema::hasIndex('question_categories', 'question_categories_code_unique')) {
+                $table->dropUnique('question_categories_code_unique');
             }
         });
     }
@@ -24,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('question_categories', function (Blueprint $table) {
-            //
+            if (!Schema::hasIndex('question_categories', 'question_categories_code_unique')) {
+                $table->unique('code', 'question_categories_code_unique');
+            }
         });
     }
 };

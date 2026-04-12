@@ -35,11 +35,11 @@ class StudentRequest extends BaseRequest
         // Jika update, tambahkan unique rule untuk nisn dan email
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
             $studentId = $this->id;
-            $rules['nisn'] = 'nullable|string|max:20|unique:students,nisn,' . $studentId;
+            $rules['nisn'] = 'nullable|string|max:20|unique:students,nisn,' . $studentId . ',id,deleted_at,NULL';
             $rules['email'] = 'required|string|email|max:255|unique:users,email,' . $studentId;
         } else {
-            $rules['nisn'] = 'nullable|string|max:20|unique:students';
-            $rules['email'] = 'required|string|email|max:255|unique:users';
+            $rules['nisn'] = 'nullable|string|max:20|unique:students,deleted_at,NULL';
+            $rules['email'] = 'required|string|email|max:255|unique:users,deleted_at,NULL';
         }
 
         return $rules;

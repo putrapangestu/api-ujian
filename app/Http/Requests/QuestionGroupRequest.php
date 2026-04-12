@@ -31,9 +31,9 @@ class QuestionGroupRequest extends BaseRequest
         // Jika update, tambahkan unique rule untuk code
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
             $groupId = $this->id;
-            $rules['code'] = 'required|string|max:50|unique:question_groups,code,' . $groupId;
+            $rules['code'] = 'required|string|max:50|unique:question_groups,code,' . $groupId . ',id,deleted_at,NULL';
         } else {
-            $rules['code'] = 'required|string|max:50|unique:question_groups';
+            $rules['code'] = 'required|string|max:50|unique:question_groups,deleted_at,NULL';
         }
 
         return $rules;

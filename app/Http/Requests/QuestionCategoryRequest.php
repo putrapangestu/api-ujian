@@ -32,9 +32,9 @@ class QuestionCategoryRequest extends BaseRequest
         // Jika update, tambahkan unique rule untuk code
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
             $categoryId = $this->id;
-            $rules['code'] = 'required|string|max:50|unique:question_categories,code,' . $categoryId;
+            $rules['code'] = 'required|string|max:50|unique:question_categories,code,' . $categoryId . ',id,deleted_at,NULL';
         } else {
-            $rules['code'] = 'required|string|max:50|unique:question_categories';
+            $rules['code'] = 'required|string|max:50|unique:question_categories,deleted_at,NULL';
         }
 
         return $rules;

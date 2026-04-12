@@ -30,9 +30,9 @@ class StudentGroupRequest extends BaseRequest
         // Jika update, tambahkan unique rule untuk name
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
             $groupId = $this->id;
-            $rules['name'] = 'required|string|max:255|unique:student_groups,name,' . $groupId;
+            $rules['name'] = 'required|string|max:255|unique:student_groups,name,' . $groupId . ',id,deleted_at,NULL';
         } else {
-            $rules['name'] = 'required|string|max:255|unique:student_groups';
+            $rules['name'] = 'required|string|max:255|unique:student_groups,deleted_at,NULL';
         }
 
         return $rules;

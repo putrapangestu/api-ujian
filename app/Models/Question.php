@@ -178,6 +178,26 @@ class Question extends Model
     }
 
     /**
+     * Check if the question has been used in any non-draft exam.
+     * Or if it has user answers.
+     *
+     * @return bool
+     */
+    public function hasBeenUsedInExam(): bool
+    {
+        // 1. Paling cepat: cek apakah sudah ada jawaban dari peserta untuk soal ini
+        if ($this->userAnswers()->exists()) {
+            return true;
+        }
+
+        // 2. Jika belum ada yang menjawab, pastikan soal ini belum masuk di ujian yang aktif/selesai
+        // Query ini lebih ringan karena hanya 1 level relasi (questionExams -> exam)
+        return $this->questionExams()->whereHas('exam', function ($query) {
+            $query->whereRelation('userExams','status', '!=', UserExam::STATUS_PENDING);
+        })->exists();
+    }
+
+    /**
      * Get the correct option for multiple choice questions
      *
      * @return QuestionOption|null

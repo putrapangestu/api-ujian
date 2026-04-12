@@ -362,8 +362,15 @@ class ExamService extends BaseService
                 ->with([
                     'exam',
                     'userAnswers' => function ($query) {
-                        $query->with(['question', 'questionOption'])
-                            ->orderBy('question_order');
+                        $query->with([
+                            'question' => function ($q) {
+                                $q->withTrashed();
+                            },
+                            'questionOption' => function ($q) {
+                                $q->withTrashed();
+                            }
+                        ])
+                        ->orderBy('question_order');
                     },
                 ])
                 ->first();

@@ -32,6 +32,7 @@ class QuestionRequest extends BaseRequest
         // Validasi tambahan berdasarkan tipe soal
         if ($this->question_type === 'multiple_choice' || $this->question_type === 'single_choice') {
             $rules['options'] = 'required|array|min:2';
+            $rules['options.*.id'] = 'nullable';
             $rules['options.*.option_text'] = 'required|string|max:255';
             $rules['options.*.is_correct'] = 'required|boolean';
             $rules['options.*.score'] = 'required|integer|min:0|max:100';

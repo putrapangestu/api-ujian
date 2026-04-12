@@ -179,25 +179,51 @@ class QuestionService extends BaseService
                     return $this->errorResponse('Soal tidak ditemukan', null, 404);
                 }
 
-                // Update question
+                // Check if we need to version the question
+                if ($question->hasBeenUsedInExam()) {
+                    return $this->versionQuestion($question, $data);
+                }
+
+                // Update question in-place
                 $updateData = $data;
                 unset($updateData['options']);
                 $question->update($updateData);
 
                 // Update options for multiple choice questions
-                if ($question->question_type === 'multiple_choice' && isset($data['options'])) {
-                    // Delete existing options
-                    $question->options()->delete();
-
+                if (($question->question_type === 'multiple_choice' || $question->question_type === 'single_choice') && isset($data['options'])) {
                     // Create new options
+                    $existingOptions = $question->options;
+                    $getCheckOptions = isset($data['options']) ? collect($data['options'])->pluck('id')->filter()->toArray() : [];
+                    if(count($getCheckOptions)) {
+                        $existingOptions->whereNotIn('id', $getCheckOptions)->each->delete();
+                    } elseif (empty($getCheckOptions)) {
+                        // If no IDs provided in request but we have options, delete all existing options
+                        $existingOptions->each->delete();
+                    }
+
                     foreach ($data['options'] as $optionData) {
-                        QuestionOption::create([
-                            'question_id' => $question->id,
-                            'option_text' => $optionData['option_text'],
-                            'is_correct' => $optionData['is_correct'],
-                            'score' => $optionData['score'],
-                            'option_label' => $optionData['label'] ?? null,
-                        ]);
+                        // Delete existing options
+                        $existingOption = null;
+                        if (isset($optionData['id'])) {
+                            $existingOption = $existingOptions->where('id', $optionData['id'])->first();
+                        }
+
+                        if ($existingOption) {
+                            $existingOption->update([
+                                'option_text' => $optionData['option_text'],
+                                'is_correct' => $optionData['is_correct'],
+                                'score' => $optionData['score'],
+                                'option_label' => $optionData['label'] ?? null,
+                            ]);
+                        } else {
+                            QuestionOption::create([
+                                'question_id' => $question->id,
+                                'option_text' => $optionData['option_text'],
+                                'is_correct' => $optionData['is_correct'],
+                                'score' => $optionData['score'],
+                                'option_label' => $optionData['label'] ?? null,
+                            ]);
+                        }
                     }
                 }
 
@@ -212,6 +238,69 @@ class QuestionService extends BaseService
                 return $this->errorResponse('Gagal update soal: '.$e->getMessage());
             }
         });
+    }
+
+    /**
+     * Create a new version of a used question and soft delete the old one.
+     *
+     * @param Question $oldQuestion
+     * @param array $data
+     * @return array
+     */
+    private function versionQuestion(Question $oldQuestion, array $data): array
+    {
+        // 1. Prepare new question data (merge old unchanged data with new updates)
+        $newQuestionData = [
+            'exam_id' => $data['exam_id'] ?? $oldQuestion->exam_id,
+            'question_group_id' => $data['question_group_id'] ?? $oldQuestion->question_group_id,
+            'category_id' => $data['category_id'] ?? $oldQuestion->category_id,
+            'question_text' => $data['question_text'] ?? $oldQuestion->question_text,
+            'question_type' => $data['question_type'] ?? $oldQuestion->question_type,
+            'score' => $data['score'] ?? $oldQuestion->score,
+            'correct_answer' => $data['correct_answer'] ?? $oldQuestion->correct_answer,
+        ];
+
+        // 2. Create the new question
+        $newQuestion = Question::create($newQuestionData);
+
+        // 3. Create options for the new question
+        if (($newQuestion->question_type === 'multiple_choice' || $newQuestion->question_type === 'single_choice') && isset($data['options'])) {
+            foreach ($data['options'] as $optionData) {
+                QuestionOption::create([
+                    'question_id' => $newQuestion->id,
+                    'option_text' => $optionData['option_text'],
+                    'is_correct' => $optionData['is_correct'],
+                    'score' => $optionData['score'],
+                    'option_label' => $optionData['label'] ?? null,
+                ]);
+            }
+        } elseif (($newQuestion->question_type === 'multiple_choice' || $newQuestion->question_type === 'single_choice')) {
+            // Jika update tidak membawa data opsi baru, copy dari opsi lama
+            foreach ($oldQuestion->options as $oldOption) {
+                QuestionOption::create([
+                    'question_id' => $newQuestion->id,
+                    'option_text' => $oldOption->option_text,
+                    'is_correct' => $oldOption->is_correct,
+                    'score' => $oldOption->score,
+                    'option_label' => $oldOption->option_label,
+                ]);
+            }
+        }
+
+        // 4. Soft delete the old question
+        $oldQuestion->delete();
+
+        // 5. Update total questions for the group if needed
+        if ($newQuestion->question_group_id) {
+            $group = QuestionGroup::find($newQuestion->question_group_id);
+            if ($group) {
+                $group->updateTotalQuestions();
+            }
+        }
+
+        $newQuestion->loadMissing(['options', 'category', 'questionGroup']);
+
+        return $this->successResponse($newQuestion, 'Soal berhasil diperbarui (versi baru dibuat karena soal sudah pernah digunakan)');
     }
 
     /**

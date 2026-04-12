@@ -143,7 +143,7 @@ class QuestionService extends BaseService
                     foreach ($data['options'] as $optionData) {
                         QuestionOption::create([
                             'question_id' => $question->id,
-                            'option_text' => $optionData['text'],
+                            'option_text' => $optionData['option_text'],
                             'is_correct' => $optionData['is_correct'],
                             'score' => $optionData['score'],
                             'option_label' => $optionData['label'] ?? null,
@@ -193,7 +193,7 @@ class QuestionService extends BaseService
                     foreach ($data['options'] as $optionData) {
                         QuestionOption::create([
                             'question_id' => $question->id,
-                            'option_text' => $optionData['text'],
+                            'option_text' => $optionData['option_text'],
                             'is_correct' => $optionData['is_correct'],
                             'score' => $optionData['score'],
                             'option_label' => $optionData['label'] ?? null,

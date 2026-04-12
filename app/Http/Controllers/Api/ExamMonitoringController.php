@@ -212,4 +212,85 @@ class ExamMonitoringController extends Controller
 
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
     }
+
+    /**
+     * Force submit exam by admin
+     *
+     * @param Request $request
+     * @param \App\Services\ExamService $examService
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Post(
+        path: "/exam-monitoring/force-submit",
+        summary: "Force submit ujian oleh admin",
+        tags: ["Exam Monitoring"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "user_exam_id", type: "integer"),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    public function forceSubmit(Request $request, \App\Services\ExamService $examService)
+    {
+        $request->validate([
+            'user_exam_id' => 'required|exists:user_exams,id'
+        ]);
+
+        $userExam = \App\Models\UserExam::find($request->user_exam_id);
+
+        // Panggil method finishExam dari ExamService
+        $result = $examService->finishExam($userExam, []);
+
+        // Broadcast force submit ke student via socket
+        app(\App\Services\SocketIOService::class)->emitEvent(
+            'admin-action',
+            'force_submit',
+            ['message' => 'Ujian Anda dihentikan paksa oleh Admin.'],
+            "student:{$userExam->student_id}"
+        );
+
+        return response()->json(['status' => 'success', 'message' => 'Peserta dihentikan paksa.']);
+    }
+
+    /**
+     * Unblock student exam
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Post(
+        path: "/exam-monitoring/unblock",
+        summary: "Buka blokir ujian siswa",
+        tags: ["Exam Monitoring"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "user_exam_id", type: "integer"),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    public function unblockStudent(Request $request)
+    {
+        $request->validate([
+            'user_exam_id' => 'required|exists:user_exams,id'
+        ]);
+
+        $userExam = \App\Models\UserExam::find($request->user_exam_id);
+
+        app(\App\Services\SocketIOService::class)->emitEvent(
+            'admin-action',
+            'unblock',
+            ['message' => 'Silakan lanjutkan ujian.'],
+            "student:{$userExam->student_id}"
+        );
+
+        return response()->json(['status' => 'success', 'message' => 'Blokir dibuka.']);
+    }
 }

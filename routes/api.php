@@ -30,6 +30,11 @@ Route::prefix('auth')->middleware('throttle:10,1')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
 });
 
+// Internal routes for Socket.IO synchronization
+Route::prefix('internal')->middleware('internal.api.key')->group(function () {
+    Route::post('/sync-answers', [\App\Http\Controllers\Api\Internal\ExamSyncController::class, 'syncAnswers']);
+});
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
@@ -111,6 +116,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/summary/{examId}', [ExamMonitoringController::class, 'getExamSummary'])->name('exam-monitoring.summary');
         Route::get('/by-group/{examId}/{questionGroupId}', [ExamMonitoringController::class, 'getMonitoringByQuestionGroup'])->name('exam-monitoring.by-group');
         Route::get('/by-category/{examId}', [ExamMonitoringController::class, 'getMonitoringByCategory'])->name('exam-monitoring.by-category');
+        Route::post('/force-submit', [ExamMonitoringController::class, 'forceSubmit'])->name('exam-monitoring.force-submit');
+        Route::post('/unblock', [ExamMonitoringController::class, 'unblockStudent'])->name('exam-monitoring.unblock');
     });
 
     // Exam Rolling routes

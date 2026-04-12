@@ -52,6 +52,7 @@ class UserExam extends Model
         'start_time',
         'end_time',
         'score',
+        'current_score',
         'status',
     ];
 

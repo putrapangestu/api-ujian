@@ -31,11 +31,118 @@ class ExamMonitoringService extends BaseService
      * ExamMonitoringService constructor
      *
      * @param StudentRepositoryInterface $studentRepository
+     * @param SocketIOService $socketIOService
      */
     public function __construct(StudentRepositoryInterface $studentRepository, SocketIOService $socketIOService)
     {
         $this->studentRepository = $studentRepository;
         $this->socketIOService = $socketIOService;
+    }
+
+    /**
+     * Menerima sinkronisasi data bulk dari Node.js WebSocket Server
+     *
+     * @param array $answers
+     * @param array $monitorings
+     * @param array $cheatCounters
+     * @return array
+     */
+    public function processBulkSync(array $answers, array $monitorings, array $cheatCounters): array
+    {
+        return DB::transaction(function () use ($answers, $monitorings, $cheatCounters) {
+            try {
+                // 1. Bulk Insert Monitorings
+                if (!empty($monitorings)) {
+                    // Validasi atau persiapkan data monitoring jika perlu
+                    $monitoringRows = array_map(function ($monitoring) {
+                        return array_merge($monitoring, [
+                            'created_at' => $monitoring['created_at'] ?? now(),
+                            'updated_at' => $monitoring['updated_at'] ?? now(),
+                        ]);
+                    }, $monitorings);
+
+                    ExamMonitoring::insert($monitoringRows);
+                }
+
+                // 2. Process Answers (Upsert)
+                $userExamIds = [];
+                if (!empty($answers)) {
+                    $answerRows = array_map(function ($answer) {
+                        $isCorrect = false;
+                        $score = 0;
+                        $questionOptionId = null;
+
+                        // Di sistem nyata, kita perlu memverifikasi jawaban dengan kunci jawaban di sini.
+                        // Jika struktur database memungkinkan, panggil layanan yang dapat memvalidasi jawaban.
+                        $question = \App\Models\Question::with('options')->find($answer['question_id']);
+                        if ($question) {
+                            if ($question->type === \App\Models\Question::TYPE_MULTIPLE_CHOICE || $question->type === \App\Models\Question::TYPE_TRUE_FALSE) {
+                                // Pilihan ganda, answer berisi question_option_id
+                                $questionOptionId = $answer['answer'];
+                                $correctOption = $question->options->where('is_correct', true)->first();
+                                
+                                if ($correctOption && $correctOption->id == $questionOptionId) {
+                                    $isCorrect = true;
+                                    $score = $question->score ?? 1;
+                                }
+                            } else {
+                                // Essay
+                                $isCorrect = true; // Essay perlu dinilai manual nanti, asumsikan benar sementara
+                                $score = 0; // Tidak langsung diberi nilai penuh
+                            }
+                        }
+
+                        return [
+                            'user_exam_id' => $answer['user_exam_id'],
+                            'question_id' => $answer['question_id'],
+                            'answer' => $answer['answer'],
+                            'question_option_id' => $questionOptionId,
+                            'is_correct' => $isCorrect,
+                            'score' => $score,
+                            'time_spent' => $answer['time_spent'] ?? 0,
+                            'created_at' => $answer['created_at'] ?? now(),
+                            'updated_at' => $answer['updated_at'] ?? now(),
+                        ];
+                    }, $answers);
+
+                    \App\Models\UserAnswer::upsert(
+                        $answerRows,
+                        ['user_exam_id', 'question_id'], // unique keys (membutuhkan index unique di DB)
+                        ['answer', 'question_option_id', 'is_correct', 'score', 'time_spent', 'updated_at'] // update columns
+                    );
+                    $userExamIds = array_unique(array_column($answers, 'user_exam_id'));
+                }
+
+                // 3. Recalculate current_score
+                $updatedScores = [];
+                foreach ($userExamIds as $userExamId) {
+                    $totalScore = (int) \App\Models\UserAnswer::where('user_exam_id', $userExamId)->sum('score');
+                    UserExam::where('id', $userExamId)->update(['current_score' => $totalScore]);
+                    $updatedScores[$userExamId] = $totalScore;
+                }
+
+                // 4. (Optional) Process Cheat Counters if needed to DB
+                // Saat ini cheat dihandle realtime, bisa ditambahkan jika ingin persistensi.
+
+                // 5. Emit back to Node.js
+                foreach ($updatedScores as $userExamId => $score) {
+                    $userExam = UserExam::find($userExamId);
+                    if ($userExam) {
+                        $this->socketIOService->broadcastExamStatistics($userExam->exam_id, [
+                            'user_exam_id' => $userExamId,
+                            'student_id' => $userExam->student_id,
+                            'current_score' => $score,
+                            'type' => 'realtime_score_update'
+                        ]);
+                    }
+                }
+
+                return ['success' => true];
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Bulk Sync Error: ' . $e->getMessage());
+                throw $e;
+            }
+        });
     }
 
     /**

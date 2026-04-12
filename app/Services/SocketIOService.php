@@ -300,7 +300,7 @@ class SocketIOService extends BaseService
         ];
     }
 
-    private function emitEvent(string $channel, string $event, array $data, ?string $room = null): bool
+    public function emitEvent(string $channel, string $event, array $data, ?string $room = null): bool
     {
         $url = config('services.socket_io.url');
         if (!$url) {

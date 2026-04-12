@@ -1,6 +1,18 @@
 import 'dotenv/config';
 import http from 'http';
 import { Server } from 'socket.io';
+import Redis from 'ioredis';
+
+const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+const redis = new Redis(redisUrl);
+
+redis.on('error', (err) => {
+    log('error', { event: 'redis_error', message: err.message });
+});
+
+redis.on('connect', () => {
+    log('info', { event: 'redis_connected' });
+});
 
 const port = Number.parseInt(process.env.SOCKET_IO_PORT ?? '3001', 10);
 const key = process.env.SOCKET_IO_KEY ?? '';
@@ -194,6 +206,88 @@ io.on('connection', (socket) => {
         connected_at: nowIso(),
     });
 
+    // Handle submit answer
+    socket.on('submit_answer', async (payload) => {
+        try {
+            const { exam_id, student_id, user_exam_id, question_id, answer, time_spent } = payload;
+            if (!exam_id || !user_exam_id || !question_id) return;
+
+            const answerData = {
+                user_exam_id,
+                student_id,
+                exam_id,
+                question_id,
+                answer: answer || null,
+                time_spent: time_spent || 0,
+                created_at: nowIso(),
+                updated_at: nowIso()
+            };
+
+            // Simpan jawaban di Redis Hash (field: question_id, value: JSON string)
+            await redis.hset(`exam:${exam_id}:answers:${user_exam_id}`, question_id, JSON.stringify(answerData));
+
+            // Simpan log monitoring
+            const monitoringData = {
+                user_exam_id, student_id, exam_id,
+                action: 'answer', question_id, answer, time_spent: time_spent || 0,
+                created_at: nowIso()
+            };
+            await redis.lpush(`exam:monitorings_queue`, JSON.stringify(monitoringData));
+
+            // Beri tahu klien bahwa jawaban telah diterima
+            socket.emit('answer_received', { question_id, status: 'saved' });
+
+        } catch (error) {
+            log('error', { event: 'submit_answer_error', error: error.message });
+        }
+    });
+
+    // Handle heartbeat
+    socket.on('heartbeat', async (payload) => {
+        try {
+            const { exam_id, user_exam_id, time_remaining } = payload;
+            if (!exam_id || !user_exam_id) return;
+
+            // Update state peserta
+            const state = {
+                time_remaining,
+                last_seen: nowIso(),
+                socket_id: socket.id
+            };
+            await redis.hset(`exam:${exam_id}:state`, user_exam_id, JSON.stringify(state));
+
+            // Broadcast ke admin room
+            io.to(`exam:${exam_id}`).emit('student_state_update', { user_exam_id, time_remaining, status: 'online' });
+        } catch (error) {
+            log('error', { event: 'heartbeat_error', error: error.message });
+        }
+    });
+
+    // Handle cheat warning
+    socket.on('cheat_warning', async (payload) => {
+        try {
+            const { exam_id, user_exam_id, student_id, type } = payload;
+            if (!exam_id || !user_exam_id) return;
+
+            // Increment cheat counter
+            const cheatCount = await redis.hincrby(`exam:${exam_id}:cheats`, user_exam_id, 1);
+
+            // Broadcast alert ke Admin
+            io.to(`exam:${exam_id}`).emit('cheat_alert', {
+                user_exam_id,
+                student_id,
+                type,
+                count: cheatCount,
+                timestamp: nowIso()
+            });
+
+            // Kirim feedback ke peserta untuk menampilkan blokir (Opsi B)
+            socket.emit('cheat_blocked', { count: cheatCount, message: 'Anda terdeteksi melakukan tindakan mencurigakan. Menunggu persetujuan admin.' });
+        } catch (error) {
+            log('error', { event: 'cheat_warning_error', error: error.message });
+        }
+    });
+
     if (examId) {
         socket.to(`exam:${examId}`).emit('user_connected', {
             id: socket.id,
@@ -340,10 +434,79 @@ io.on('connection', (socket) => {
                 reason,
                 timestamp: nowIso(),
             });
+            // Update online status in Redis
+            if (studentId) {
+                redis.hget(`exam:${examId}:state`, studentId).then(stateStr => {
+                    if (stateStr) {
+                        const state = JSON.parse(stateStr);
+                        state.status = 'offline';
+                        state.last_seen = nowIso();
+                        redis.hset(`exam:${examId}:state`, studentId, JSON.stringify(state));
+                        io.to(`exam:${examId}`).emit('student_state_update', { user_exam_id: studentId, status: 'offline' });
+                    }
+                }).catch(e => log('error', { event: 'disconnect_redis_error', error: e.message }));
+            }
         }
         clients.delete(socket.id);
     });
 });
+
+const LARAVEL_API_URL = process.env.LARAVEL_API_URL || 'http://localhost:8000/api/internal/sync-answers';
+const INTERNAL_KEY = key;
+
+async function processBatchSync() {
+    try {
+        // Ambil semua monitoring log
+        const monitoringsRaw = await redis.lrange('exam:monitorings_queue', 0, -1);
+        if (monitoringsRaw.length > 0) {
+            await redis.ltrim('exam:monitorings_queue', monitoringsRaw.length, -1);
+        }
+        const monitorings = monitoringsRaw.map(r => JSON.parse(r));
+
+        // Ambil kunci-kunci jawaban yang ada
+        const answerKeys = await redis.keys('exam:*:answers:*');
+        let allAnswers = [];
+
+        for (const aKey of answerKeys) {
+            const answersHash = await redis.hgetall(aKey);
+            for (const qId in answersHash) {
+                allAnswers.push(JSON.parse(answersHash[qId]));
+            }
+            await redis.del(aKey);
+        }
+
+        if (allAnswers.length === 0 && monitorings.length === 0) return;
+
+        log('info', { event: 'batch_sync_start', answers_count: allAnswers.length, monitoring_count: monitorings.length });
+
+        // Kirim HTTP POST ke Laravel
+        const response = await fetch(LARAVEL_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'x-internal-key': INTERNAL_KEY
+            },
+            body: JSON.stringify({
+                answers: allAnswers,
+                monitorings: monitorings
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Laravel returned ${response.status}: ${errorText}`);
+        }
+
+        log('info', { event: 'batch_sync_success' });
+
+    } catch (error) {
+        log('error', { event: 'batch_sync_failed', message: error.message });
+    }
+}
+
+// Jalankan setiap 30 detik
+setInterval(processBatchSync, 30000);
 
 server.listen(port, '0.0.0.0');
 server.on('listening', () => {

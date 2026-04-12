@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\InternalApiKeyMiddleware;
 
 /**
  * Bootstrap Application Configuration
@@ -26,7 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register custom middleware
         $middleware->alias([
             'admin' => AdminMiddleware::class,
-            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'internal.api.key' => InternalApiKeyMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

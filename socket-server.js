@@ -154,6 +154,7 @@ io.engine.on('connection_error', (err) => {
 
 io.use((socket, next) => {
     const clientKey =
+        socket.handshake.auth?.token ??
         socket.handshake.auth?.key ??
         socket.handshake.query?.key ??
         socket.handshake.headers?.['x-socket-key'];
@@ -176,6 +177,49 @@ io.use((socket, next) => {
         });
         next(new Error('unauthorized'));
     }
+});
+
+// Timer for periodic exam:tick broadcast
+setInterval(() => {
+    io.emit('exam:tick', { serverTime: Date.now() });
+}, 1000);
+
+// Admin Namespace
+const adminNamespace = io.of('/admin');
+adminNamespace.use((socket, next) => {
+    const clientKey =
+        socket.handshake.auth?.token ??
+        socket.handshake.auth?.key ??
+        socket.handshake.query?.key ??
+        socket.handshake.headers?.['x-socket-key'];
+
+    if (!requireAuth || clientKey === key) {
+        next();
+    } else {
+        next(new Error('unauthorized'));
+    }
+});
+
+adminNamespace.on('connection', (socket) => {
+    log('info', { event: 'admin_connected', id: socket.id });
+
+    // Admin listens to force_submit commands
+    socket.on('admin:force_submit', async (payload) => {
+        try {
+            const { exam_id, user_exam_id, student_id } = payload;
+            if (!exam_id || !student_id) return;
+
+            // Broadcast to the specific student
+            io.to(`student:${studentId}`).emit('admin_action', {
+                action: 'force_submit',
+                message: 'Ujian Anda dihentikan paksa oleh Admin.'
+            });
+
+            log('info', { event: 'admin_force_submit', exam_id, student_id });
+        } catch (error) {
+            log('error', { event: 'admin_force_submit_error', error: error.message });
+        }
+    });
 });
 
 io.on('connection', (socket) => {
@@ -257,7 +301,14 @@ io.on('connection', (socket) => {
             await redis.hset(`exam:${exam_id}:state`, user_exam_id, JSON.stringify(state));
 
             // Broadcast ke admin room
-            io.to(`exam:${exam_id}`).emit('student_state_update', { user_exam_id, time_remaining, status: 'online' });
+            io.to(`exam:${examId}`).emit('exam:progress_update', {
+                id: user_exam_id,
+                update: {
+                    time_remaining,
+                    status: 'online',
+                    last_seen: state.last_seen
+                }
+            });
         } catch (error) {
             log('error', { event: 'heartbeat_error', error: error.message });
         }
@@ -442,7 +493,13 @@ io.on('connection', (socket) => {
                         state.status = 'offline';
                         state.last_seen = nowIso();
                         redis.hset(`exam:${examId}:state`, studentId, JSON.stringify(state));
-                        io.to(`exam:${examId}`).emit('student_state_update', { user_exam_id: studentId, status: 'offline' });
+                        io.to(`exam:${examId}`).emit('exam:progress_update', {
+                            id: studentId,
+                            update: {
+                                status: 'offline',
+                                last_seen: state.last_seen
+                            }
+                        });
                     }
                 }).catch(e => log('error', { event: 'disconnect_redis_error', error: e.message }));
             }

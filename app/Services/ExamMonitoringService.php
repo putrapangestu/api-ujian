@@ -214,16 +214,23 @@ class ExamMonitoringService extends BaseService
 
                             $catCode = strtoupper($answer->question->category->code);
 
+                            // Periksa apakah siswa sudah menjawab (answer text atau option_id tidak null)
+                            $isAnswered = ($answer->answer !== null || $answer->question_option_id !== null);
+
                             if (isset($categories[$catCode])) {
                                 $categories[$catCode]['score'] += (int) $answer->score;
-                                $categories[$catCode]['answered'] += 1;
+                                if ($isAnswered) {
+                                    $categories[$catCode]['answered'] += 1;
+                                }
                             } else {
                                 // If answer has a category not in question_exam (should be rare), track it as OTHER
                                 if (!isset($categories['OTHER'])) {
                                     $categories['OTHER'] = ['score' => 0, 'answered' => 0, 'total' => 0];
                                 }
                                 $categories['OTHER']['score'] += (int) $answer->score;
-                                $categories['OTHER']['answered'] += 1;
+                                if ($isAnswered) {
+                                    $categories['OTHER']['answered'] += 1;
+                                }
                             }
                         }
 
@@ -350,12 +357,12 @@ class ExamMonitoringService extends BaseService
                 $categories = [];
                 foreach (['TWK', 'TIU', 'TKP'] as $cat) {
                     $categories[$cat] = [
-                        'score' => 0, 
-                        'answered' => 0, 
+                        'score' => 0,
+                        'answered' => 0,
                         'total' => $examCategoriesTotal[$cat] ?? $examCategoriesTotal[strtolower($cat)] ?? 0
                     ];
                 }
-                
+
                 // Also include any other categories found in the exam
                 foreach ($examCategoriesTotal as $code => $total) {
                     $upperCode = strtoupper($code);
@@ -370,15 +377,22 @@ class ExamMonitoringService extends BaseService
 
                     $catCode = strtoupper($answer->question->category->code);
 
+                    // Periksa apakah siswa sudah menjawab (answer text atau option_id tidak null)
+                    $isAnswered = ($answer->answer !== null || $answer->question_option_id !== null);
+
                     if (isset($categories[$catCode])) {
                         $categories[$catCode]['score'] += (int) $answer->score;
-                        $categories[$catCode]['answered'] += 1;
+                        if ($isAnswered) {
+                            $categories[$catCode]['answered'] += 1;
+                        }
                     } else {
                         if (!isset($categories['OTHER'])) {
                             $categories['OTHER'] = ['score' => 0, 'answered' => 0, 'total' => 0];
                         }
                         $categories['OTHER']['score'] += (int) $answer->score;
-                        $categories['OTHER']['answered'] += 1;
+                        if ($isAnswered) {
+                            $categories['OTHER']['answered'] += 1;
+                        }
                     }
                 }
 

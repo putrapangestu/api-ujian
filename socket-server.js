@@ -289,25 +289,28 @@ io.on('connection', (socket) => {
     // Handle heartbeat
     socket.on('heartbeat', async (payload) => {
         try {
-            const { exam_id, user_exam_id, time_remaining } = payload;
+            const { exam_id, user_exam_id, student_id, time_remaining, time_spent } = payload;
             if (!exam_id || !user_exam_id) return;
 
             // Update state peserta
             const state = {
                 time_remaining,
+                time_spent,
                 last_seen: nowIso(),
                 socket_id: socket.id
             };
             await redis.hset(`exam:${exam_id}:state`, user_exam_id, JSON.stringify(state));
 
-            // Broadcast ke admin room
-            io.to(`exam:${examId}`).emit('exam:progress_update', {
-                id: user_exam_id,
+            // Karena data categories & total_score sekarang diproses oleh Laravel setiap bulk sync,
+            // Kita cukup meng-update time_spent & status saja via Socket secara real-time.
+            // Struktur yang dikirim oleh heartbeat harus compatible dengan `update` object dari FE
+            io.to(`exam:${exam_id}`).emit('exam:progress_update', { 
+                id: student_id, 
                 update: {
-                    time_remaining,
+                    time_spent: time_spent || 0, 
                     status: 'online',
                     last_seen: state.last_seen
-                }
+                } 
             });
         } catch (error) {
             log('error', { event: 'heartbeat_error', error: error.message });

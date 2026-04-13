@@ -114,7 +114,7 @@ class ExamMonitoringService extends BaseService
                                 // Pilihan ganda, answer berisi question_option_id
                                 $questionOptionId = $answer['answer'];
                                 $correctOption = $question->options->where('is_correct', true)->first();
-                                
+
                                 if ($correctOption && $correctOption->id == $questionOptionId) {
                                     $isCorrect = true;
                                     $score = $question->score ?? 1;
@@ -160,14 +160,60 @@ class ExamMonitoringService extends BaseService
 
                 // 5. Emit back to Node.js
                 foreach ($updatedScores as $userExamId => $score) {
-                    $userExam = UserExam::find($userExamId);
+                    $userExam = UserExam::with(['student.user', 'answers.question.category'])->find($userExamId);
                     if ($userExam) {
-                        $this->socketIOService->broadcastExamStatistics($userExam->exam_id, [
-                            'user_exam_id' => $userExamId,
-                            'student_id' => $userExam->student_id,
-                            'current_score' => $score,
-                            'type' => 'realtime_score_update'
-                        ]);
+                        // Calculate time spent
+                        $timeSpent = 0;
+                        if ($userExam->start_time) {
+                            $endTime = $userExam->end_time ? \Carbon\Carbon::parse($userExam->end_time) : now();
+                            $timeSpent = \Carbon\Carbon::parse($userExam->start_time)->diffInSeconds($endTime);
+                        }
+
+                        // Process categories
+                        $categories = [];
+                        foreach ($userExam->answers as $answer) {
+                            if (!$answer->question || !$answer->question->category) continue;
+
+                            $catName = $answer->question->category->name;
+
+                            if (!isset($categories[$catName])) {
+                                $totalQuestionsInCategory = \App\Models\Question::where('category_id', $answer->question->category_id)
+                                    ->whereHas('exams', function($q) use ($userExam) {
+                                        $q->where('exams.id', $userExam->exam_id);
+                                    })->count();
+
+                                $categories[$catName] = [
+                                    'score' => 0,
+                                    'answered' => 0,
+                                    'total' => $totalQuestionsInCategory > 0 ? $totalQuestionsInCategory : 30
+                                ];
+                            }
+
+                            $categories[$catName]['score'] += (int) $answer->score;
+                            $categories[$catName]['answered'] += 1;
+                        }
+
+                        $status = 'online';
+                        if ($userExam->status === \App\Models\UserExam::STATUS_COMPLETED) {
+                            $status = 'finished';
+                        }
+
+                        $payload = [
+                            'id' => $userExam->student_id,
+                            'update' => [
+                                'time_spent' => $timeSpent,
+                                'categories' => (object) $categories,
+                                'total_score' => $score,
+                                'status' => $status
+                            ]
+                        ];
+
+                        $this->socketIOService->emitEvent(
+                            'exam:' . $userExam->exam_id,
+                            'exam:progress_update',
+                            $payload,
+                            'exam:' . $userExam->exam_id
+                        );
                     }
                 }
 
@@ -218,7 +264,7 @@ class ExamMonitoringService extends BaseService
     }
 
     /**
-     * Get real-time exam monitoring data
+     * Get real-time exam monitoring data formatted for FE
      *
      * @param string $examId
      * @return array
@@ -228,29 +274,70 @@ class ExamMonitoringService extends BaseService
         try {
             // Get active user exams for this exam
             $activeExams = UserExam::where('exam_id', $examId)
-                ->where('status', UserExam::STATUS_IN_PROGRESS)
-                ->with(['student', 'exam'])
+                ->with(['student.user', 'answers.question.category'])
                 ->get();
 
             $monitoringData = [];
 
             foreach ($activeExams as $userExam) {
-                // Get latest monitoring data for this user exam
-                $latestMonitoring = ExamMonitoring::where('user_exam_id', $userExam->id)
-                    ->orderBy('created_at', 'desc')
-                    ->first();
+                // Determine status based on user_exam status
+                $status = 'offline';
+                if ($userExam->status === \App\Models\UserExam::STATUS_COMPLETED) {
+                    $status = 'finished';
+                } else if ($userExam->status === \App\Models\UserExam::STATUS_IN_PROGRESS) {
+                    $status = 'online'; // Default to online for in_progress, socket will update to offline if heartbeat missed
+                }
+
+                // Calculate time spent
+                $timeSpent = 0;
+                if ($userExam->start_time) {
+                    $endTime = $userExam->end_time ? \Carbon\Carbon::parse($userExam->end_time) : now();
+                    $timeSpent = \Carbon\Carbon::parse($userExam->start_time)->diffInSeconds($endTime);
+                }
+
+                // Process categories
+                $categories = [];
+                $answers = $userExam->answers;
+
+                foreach ($answers as $answer) {
+                    if (!$answer->question || !$answer->question->category) continue;
+
+                    $catName = $answer->question->category->name;
+
+                    if (!isset($categories[$catName])) {
+                        // Count total questions for this category in the exam
+                        // This might be expensive in a loop, ideally we pre-calculate this
+                        $totalQuestionsInCategory = \App\Models\Question::where('category_id', $answer->question->category_id)
+                            ->whereHas('exams', function($q) use ($examId) {
+                                $q->where('exams.id', $examId);
+                            })->count();
+
+                        $categories[$catName] = [
+                            'score' => 0,
+                            'answered' => 0,
+                            'total' => $totalQuestionsInCategory > 0 ? $totalQuestionsInCategory : 30 // Fallback
+                        ];
+                    }
+
+                    $categories[$catName]['score'] += (int) $answer->score;
+                    $categories[$catName]['answered'] += 1;
+                }
 
                 $monitoringData[] = [
-                    'user_exam' => $userExam,
-                    'latest_action' => $latestMonitoring,
-                    'time_remaining' => $this->calculateTimeRemaining($userExam),
-                    'progress' => $this->calculateProgress($userExam),
+                    'id' => $userExam->student_id, // frontend expects student uuid as id
+                    'user_exam_id' => $userExam->id,
+                    'name' => $userExam->student->user->name ?? 'Unknown',
+                    'status' => $status,
+                    'time_spent' => $timeSpent,
+                    'categories' => (object) $categories,
+                    'total_score' => (int) $userExam->current_score
                 ];
             }
 
             return $this->successResponse($monitoringData, 'Data monitoring realtime berhasil diambil');
 
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('getRealtimeMonitoring error: ' . $e->getMessage());
             return $this->errorResponse('Gagal mengambil data monitoring: ' . $e->getMessage());
         }
     }

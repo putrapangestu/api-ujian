@@ -173,8 +173,39 @@ class ExamMonitoringService extends BaseService
                 }
 
                 // 5. Emit back to Node.js
+                // Bulk aggregate answers for all active user_exams
+                $userExamIds = array_keys($updatedScores);
+                $answerAggregates = [];
+
+                if (!empty($userExamIds)) {
+                    $aggregates = \App\Models\UserAnswer::whereIn('user_answers.user_exam_id', $userExamIds)
+                        ->join('questions', 'user_answers.question_id', '=', 'questions.id')
+                        ->join('question_groups', 'questions.question_group_id', '=', 'question_groups.id')
+                        ->join('question_categories', 'question_groups.question_category_id', '=', 'question_categories.id')
+                        ->select(
+                            'user_answers.user_exam_id',
+                            'question_categories.code as cat_code',
+                            DB::raw('SUM(user_answers.score) as total_score'),
+                            DB::raw('SUM(CASE WHEN user_answers.answer IS NOT NULL OR user_answers.question_option_id IS NOT NULL THEN 1 ELSE 0 END) as answered_count')
+                        )
+                        ->groupBy('user_answers.user_exam_id', 'question_categories.code')
+                        ->get();
+
+                    foreach ($aggregates as $agg) {
+                        $userExamId = $agg->user_exam_id;
+                        $code = strtoupper($agg->cat_code);
+                        if (!isset($answerAggregates[$userExamId])) {
+                            $answerAggregates[$userExamId] = [];
+                        }
+                        $answerAggregates[$userExamId][$code] = [
+                            'score' => (int) $agg->total_score,
+                            'answered' => (int) $agg->answered_count
+                        ];
+                    }
+                }
+
                 foreach ($updatedScores as $userExamId => $score) {
-                    $userExam = UserExam::with(['user.student', 'userAnswers.question.category'])->find($userExamId);
+                    $userExam = UserExam::with(['user.student', 'exam'])->find($userExamId);
                     if ($userExam) {
                         // Calculate time remaining
                         $timeRemaining = 0;
@@ -210,28 +241,18 @@ class ExamMonitoringService extends BaseService
                             }
                         }
 
-                        foreach ($userExam->userAnswers as $answer) {
-                            if (!$answer->question || !$answer->question->category) continue;
-
-                            $catCode = strtoupper($answer->question->category->code);
-
-                            // Periksa apakah siswa sudah menjawab (answer text atau option_id tidak null)
-                            $isAnswered = ($answer->answer !== null || $answer->question_option_id !== null);
-
+                        // Populate with aggregated answers
+                        $userAggs = $answerAggregates[$userExam->id] ?? [];
+                        foreach ($userAggs as $catCode => $data) {
                             if (isset($categories[$catCode])) {
-                                $categories[$catCode]['score'] += (int) $answer->score;
-                                if ($isAnswered) {
-                                    $categories[$catCode]['answered'] += 1;
-                                }
+                                $categories[$catCode]['score'] = $data['score'];
+                                $categories[$catCode]['answered'] = $data['answered'];
                             } else {
-                                // If answer has a category not in question_exam (should be rare), track it as OTHER
                                 if (!isset($categories['OTHER'])) {
                                     $categories['OTHER'] = ['score' => 0, 'answered' => 0, 'total' => 0];
                                 }
-                                $categories['OTHER']['score'] += (int) $answer->score;
-                                if ($isAnswered) {
-                                    $categories['OTHER']['answered'] += 1;
-                                }
+                                $categories['OTHER']['score'] += $data['score'];
+                                $categories['OTHER']['answered'] += $data['answered'];
                             }
                         }
 
@@ -316,20 +337,50 @@ class ExamMonitoringService extends BaseService
     public function getRealtimeMonitoring(string $examId): array
     {
         try {
-            // Get active user exams for this exam
+            // Get active user exams for this exam without loading all userAnswers
             $activeExams = UserExam::where('exam_id', $examId)
-                ->with(['user.student', 'userAnswers.question.category'])
+                ->with(['user.student', 'exam'])
                 ->get();
 
             // Pre-calculate total questions per category for this exam
             $examCategoriesTotal = \App\Models\QuestionExam::where('question_exam.exam_id', $examId)
-                ->join('questions', 'question_exam.question_id', '=', 'questions.id')
-                ->join('question_categories', 'questions.category_id', '=', 'question_categories.id')
-                ->select('question_categories.code', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+                ->join('question_groups', 'question_exam.question_group_id', '=', 'question_groups.id')
+                ->join('question_categories', 'question_groups.question_category_id', '=', 'question_categories.id')
+                ->select('question_categories.code', DB::raw('count(question_exam.id) as total'))
                 ->groupBy('question_categories.code')
                 ->pluck('total', 'code');
 
-            Log::info("Data Exam Get : ", [$examCategoriesTotal]);
+            // Bulk aggregate answers for all active user_exams
+            $userExamIds = $activeExams->pluck('id')->toArray();
+
+            // Get scores and answered counts per user_exam_id and category code
+            $answerAggregates = [];
+            if (!empty($userExamIds)) {
+                $aggregates = \App\Models\UserAnswer::whereIn('user_answers.user_exam_id', $userExamIds)
+                    ->join('questions', 'user_answers.question_id', '=', 'questions.id')
+                    ->join('question_groups', 'questions.question_group_id', '=', 'question_groups.id')
+                    ->join('question_categories', 'question_groups.question_category_id', '=', 'question_categories.id')
+                    ->select(
+                        'user_answers.user_exam_id',
+                        'question_categories.code as cat_code',
+                        DB::raw('SUM(user_answers.score) as total_score'),
+                        DB::raw('SUM(CASE WHEN user_answers.answer IS NOT NULL OR user_answers.question_option_id IS NOT NULL THEN 1 ELSE 0 END) as answered_count')
+                    )
+                    ->groupBy('user_answers.user_exam_id', 'question_categories.code')
+                    ->get();
+
+                foreach ($aggregates as $agg) {
+                    $userExamId = $agg->user_exam_id;
+                    $code = strtoupper($agg->cat_code);
+                    if (!isset($answerAggregates[$userExamId])) {
+                        $answerAggregates[$userExamId] = [];
+                    }
+                    $answerAggregates[$userExamId][$code] = [
+                        'score' => (int) $agg->total_score,
+                        'answered' => (int) $agg->answered_count
+                    ];
+                }
+            }
 
             $monitoringData = [];
 
@@ -377,28 +428,18 @@ class ExamMonitoringService extends BaseService
                     }
                 }
 
-                // Process answers
-                foreach ($userExam->userAnswers as $answer) {
-                    if (!$answer->question || !$answer->question->category) continue;
-
-                    $catCode = strtoupper($answer->question->category->code);
-
-                    // Periksa apakah siswa sudah menjawab (answer text atau option_id tidak null)
-                    $isAnswered = ($answer->answer !== null || $answer->question_option_id !== null);
-
+                // Populate with aggregated answers
+                $userAggs = $answerAggregates[$userExam->id] ?? [];
+                foreach ($userAggs as $catCode => $data) {
                     if (isset($categories[$catCode])) {
-                        $categories[$catCode]['score'] += (int) $answer->score;
-                        if ($isAnswered) {
-                            $categories[$catCode]['answered'] += 1;
-                        }
+                        $categories[$catCode]['score'] = $data['score'];
+                        $categories[$catCode]['answered'] = $data['answered'];
                     } else {
                         if (!isset($categories['OTHER'])) {
                             $categories['OTHER'] = ['score' => 0, 'answered' => 0, 'total' => 0];
                         }
-                        $categories['OTHER']['score'] += (int) $answer->score;
-                        if ($isAnswered) {
-                            $categories['OTHER']['answered'] += 1;
-                        }
+                        $categories['OTHER']['score'] += $data['score'];
+                        $categories['OTHER']['answered'] += $data['answered'];
                     }
                 }
 

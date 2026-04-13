@@ -175,22 +175,39 @@ class ExamMonitoringService extends BaseService
                 foreach ($updatedScores as $userExamId => $score) {
                     $userExam = UserExam::with(['user.student', 'userAnswers.question.category'])->find($userExamId);
                     if ($userExam) {
-                        // Calculate time spent
-                        $timeSpent = 0;
-                        if ($userExam->start_time) {
-                            $endTime = $userExam->end_time ? \Carbon\Carbon::parse($userExam->end_time) : now();
-                            $timeSpent = \Carbon\Carbon::parse($userExam->start_time)->diffInSeconds($endTime);
+                        // Calculate time remaining
+                        $timeRemaining = 0;
+                        if ($userExam->exam && $userExam->exam->duration) {
+                            $durationInSeconds = $userExam->exam->duration * 60;
+                            if (!$userExam->start_time) {
+                                $timeRemaining = $durationInSeconds; // Not started yet
+                            } else {
+                                $endTime = $userExam->end_time ? \Carbon\Carbon::parse($userExam->end_time) : now();
+                                $timeSpent = \Carbon\Carbon::parse($userExam->start_time)->diffInSeconds($endTime);
+                                $timeRemaining = max(0, $durationInSeconds - $timeSpent);
+                            }
                         }
 
                         // Get category totals for this specific exam
                         $totals = $examCategoriesTotal[$userExam->exam_id] ?? [];
 
-                        // Process categories
-                        $categories = [
-                            'TWK' => ['score' => 0, 'answered' => 0, 'total' => $totals['TWK'] ?? $totals['twk'] ?? 30],
-                            'TIU' => ['score' => 0, 'answered' => 0, 'total' => $totals['TIU'] ?? $totals['tiu'] ?? 35],
-                            'TKP' => ['score' => 0, 'answered' => 0, 'total' => $totals['TKP'] ?? $totals['tkp'] ?? 45]
-                        ];
+                        // Initialize categories dynamically based on totals, fallback to default if empty
+                        $categories = [];
+                        foreach (['TWK', 'TIU', 'TKP'] as $cat) {
+                            $categories[$cat] = [
+                                'score' => 0,
+                                'answered' => 0,
+                                'total' => $totals[$cat] ?? $totals[strtolower($cat)] ?? 0
+                            ];
+                        }
+
+                        // Also include any other categories found in the exam
+                        foreach ($totals as $code => $total) {
+                            $upperCode = strtoupper($code);
+                            if (!isset($categories[$upperCode])) {
+                                $categories[$upperCode] = ['score' => 0, 'answered' => 0, 'total' => $total];
+                            }
+                        }
 
                         foreach ($userExam->userAnswers as $answer) {
                             if (!$answer->question || !$answer->question->category) continue;
@@ -200,6 +217,13 @@ class ExamMonitoringService extends BaseService
                             if (isset($categories[$catCode])) {
                                 $categories[$catCode]['score'] += (int) $answer->score;
                                 $categories[$catCode]['answered'] += 1;
+                            } else {
+                                // If answer has a category not in question_exam (should be rare), track it as OTHER
+                                if (!isset($categories['OTHER'])) {
+                                    $categories['OTHER'] = ['score' => 0, 'answered' => 0, 'total' => 0];
+                                }
+                                $categories['OTHER']['score'] += (int) $answer->score;
+                                $categories['OTHER']['answered'] += 1;
                             }
                         }
 
@@ -213,7 +237,7 @@ class ExamMonitoringService extends BaseService
                         $payload = [
                             'id' => $studentId,
                             'update' => [
-                                'timeRemaining' => $timeSpent,
+                                'timeRemaining' => $timeRemaining,
                                 'categories' => (object) $categories,
                                 'totalScore' => $score,
                                 'status' => $status
@@ -309,19 +333,36 @@ class ExamMonitoringService extends BaseService
                     $status = 'online'; // Default to online for in_progress, socket will update to offline if heartbeat missed
                 }
 
-                // Calculate time spent
-                $timeSpent = 0;
-                if ($userExam->start_time) {
-                    $endTime = $userExam->end_time ? \Carbon\Carbon::parse($userExam->end_time) : now();
-                    $timeSpent = \Carbon\Carbon::parse($userExam->start_time)->diffInSeconds($endTime);
+                // Calculate time remaining
+                $timeRemaining = 0;
+                if ($userExam->exam && $userExam->exam->duration) {
+                    $durationInSeconds = $userExam->exam->duration * 60;
+                    if (!$userExam->start_time) {
+                        $timeRemaining = $durationInSeconds; // Not started yet
+                    } else {
+                        $endTime = $userExam->end_time ? \Carbon\Carbon::parse($userExam->end_time) : now();
+                        $timeSpent = \Carbon\Carbon::parse($userExam->start_time)->diffInSeconds($endTime);
+                        $timeRemaining = max(0, $durationInSeconds - $timeSpent);
+                    }
                 }
 
-                // Initialize categories
-                $categories = [
-                    'TWK' => ['score' => 0, 'answered' => 0, 'total' => $examCategoriesTotal['TWK'] ?? $examCategoriesTotal['twk'] ?? 30],
-                    'TIU' => ['score' => 0, 'answered' => 0, 'total' => $examCategoriesTotal['TIU'] ?? $examCategoriesTotal['tiu'] ?? 35],
-                    'TKP' => ['score' => 0, 'answered' => 0, 'total' => $examCategoriesTotal['TKP'] ?? $examCategoriesTotal['tkp'] ?? 45]
-                ];
+                // Initialize categories dynamically based on totals
+                $categories = [];
+                foreach (['TWK', 'TIU', 'TKP'] as $cat) {
+                    $categories[$cat] = [
+                        'score' => 0, 
+                        'answered' => 0, 
+                        'total' => $examCategoriesTotal[$cat] ?? $examCategoriesTotal[strtolower($cat)] ?? 0
+                    ];
+                }
+                
+                // Also include any other categories found in the exam
+                foreach ($examCategoriesTotal as $code => $total) {
+                    $upperCode = strtoupper($code);
+                    if (!isset($categories[$upperCode])) {
+                        $categories[$upperCode] = ['score' => 0, 'answered' => 0, 'total' => $total];
+                    }
+                }
 
                 // Process answers
                 foreach ($userExam->userAnswers as $answer) {
@@ -329,10 +370,15 @@ class ExamMonitoringService extends BaseService
 
                     $catCode = strtoupper($answer->question->category->code);
 
-                    // Only process TWK, TIU, TKP
                     if (isset($categories[$catCode])) {
                         $categories[$catCode]['score'] += (int) $answer->score;
                         $categories[$catCode]['answered'] += 1;
+                    } else {
+                        if (!isset($categories['OTHER'])) {
+                            $categories['OTHER'] = ['score' => 0, 'answered' => 0, 'total' => 0];
+                        }
+                        $categories['OTHER']['score'] += (int) $answer->score;
+                        $categories['OTHER']['answered'] += 1;
                     }
                 }
 
@@ -343,7 +389,7 @@ class ExamMonitoringService extends BaseService
                     'id' => $studentId, // frontend expects student uuid as id
                     'name' => $studentName,
                     'status' => $status,
-                    'timeRemaining' => $timeSpent, // Based on FE's note: time_spent replaced by timeRemaining
+                    'timeRemaining' => $timeRemaining, // Based on FE's note: time_spent replaced by timeRemaining
                     'totalScore' => (int) $userExam->current_score,
                     'categories' => (object) $categories
                 ];

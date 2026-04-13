@@ -8,6 +8,7 @@ use App\Models\QuestionGroup;
 use App\Repositories\StudentRepositoryInterface;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * ExamMonitoring Service Class
@@ -327,6 +328,8 @@ class ExamMonitoringService extends BaseService
                 ->select('question_categories.code', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
                 ->groupBy('question_categories.code')
                 ->pluck('total', 'code');
+
+            Log::info("Data Exam Get : ", [$examCategoriesTotal]);
 
             $monitoringData = [];
 

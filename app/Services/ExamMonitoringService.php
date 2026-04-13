@@ -326,8 +326,7 @@ class ExamMonitoringService extends BaseService
                 ->join('question_categories', 'questions.category_id', '=', 'question_categories.id')
                 ->select('question_categories.code', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
                 ->groupBy('question_categories.code')
-                ->pluck('total', 'code')
-                ->toArray();
+                ->pluck('total', 'code');
 
             $monitoringData = [];
 
@@ -356,10 +355,14 @@ class ExamMonitoringService extends BaseService
                 // Initialize categories dynamically based on totals
                 $categories = [];
                 foreach (['TWK', 'TIU', 'TKP'] as $cat) {
+                    $total = $examCategoriesTotal->get($cat)
+                            ?? $examCategoriesTotal->get(strtolower($cat))
+                            ?? 0;
+
                     $categories[$cat] = [
                         'score' => 0,
                         'answered' => 0,
-                        'total' => $examCategoriesTotal[$cat] ?? $examCategoriesTotal[strtolower($cat)] ?? 0
+                        'total' => $total
                     ];
                 }
 

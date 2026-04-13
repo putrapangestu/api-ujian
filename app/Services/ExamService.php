@@ -643,6 +643,7 @@ class ExamService extends BaseService
                 ],
                 [
                     'user_id' => $student->user_id,
+                    'student_id' => $student->id,
                     'status' => UserExam::STATUS_PENDING,
                     'score' => 0,
                     'start_time' => null,

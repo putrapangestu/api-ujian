@@ -173,7 +173,7 @@ class ExamMonitoringService extends BaseService
 
                 // 5. Emit back to Node.js
                 foreach ($updatedScores as $userExamId => $score) {
-                    $userExam = UserExam::with(['student.user', 'userAnswers.question.category'])->find($userExamId);
+                    $userExam = UserExam::with(['user.student', 'userAnswers.question.category'])->find($userExamId);
                     if ($userExam) {
                         // Calculate time spent
                         $timeSpent = 0;
@@ -208,8 +208,10 @@ class ExamMonitoringService extends BaseService
                             $status = 'finished';
                         }
 
+                        $studentId = $userExam->student_id ?? ($userExam->user->student->id ?? $userExam->user_id);
+
                         $payload = [
-                            'id' => $userExam->student_id,
+                            'id' => $studentId,
                             'update' => [
                                 'timeRemaining' => $timeSpent,
                                 'categories' => (object) $categories,
@@ -284,7 +286,7 @@ class ExamMonitoringService extends BaseService
         try {
             // Get active user exams for this exam
             $activeExams = UserExam::where('exam_id', $examId)
-                ->with(['student.user', 'userAnswers.question.category'])
+                ->with(['user.student', 'userAnswers.question.category'])
                 ->get();
 
             // Pre-calculate total questions per category for this exam
@@ -334,9 +336,12 @@ class ExamMonitoringService extends BaseService
                     }
                 }
 
+                $studentId = $userExam->student_id ?? ($userExam->user->student->id ?? $userExam->user_id);
+                $studentName = $userExam->user->name ?? 'Unknown';
+
                 $monitoringData[] = [
-                    'id' => $userExam->student_id, // frontend expects student uuid as id
-                    'name' => $userExam->student->user->name ?? 'Unknown',
+                    'id' => $studentId, // frontend expects student uuid as id
+                    'name' => $studentName,
                     'status' => $status,
                     'timeRemaining' => $timeSpent, // Based on FE's note: time_spent replaced by timeRemaining
                     'totalScore' => (int) $userExam->current_score,

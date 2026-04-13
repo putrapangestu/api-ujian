@@ -42,10 +42,10 @@ class AutoSubmitExams extends Command
             if (!$userExam->exam || !$userExam->exam->duration) {
                 return false;
             }
-            
+
             // Expected end time = start time + duration (in minutes)
             $expectedEndTime = Carbon::parse($userExam->start_time)->addMinutes($userExam->exam->duration);
-            
+
             // Allow a grace period of 60 seconds for the final bulk sync from Node.js to complete
             return Carbon::now()->gt($expectedEndTime->addSeconds(60));
         });
@@ -63,8 +63,8 @@ class AutoSubmitExams extends Command
         foreach ($expiredExams as $userExam) {
             try {
                 // Call finishExam with an empty array. It will calculate score based on synced user_answers
-                $examService->finishExam($userExam, []);
-                
+                $examService->finishExam($userExam->exam_id, $userExam->user_id, []);
+
                 // Notify via socket to force frontend redirect (if they reconnect or are lingering)
                 $socketService->emitEvent(
                     'admin-action',

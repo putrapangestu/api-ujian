@@ -162,7 +162,7 @@ class ExamMonitoringService extends BaseService
                 $examIds = array_unique(array_column($answers, 'exam_id'));
                 $examCategoriesTotal = [];
                 foreach ($examIds as $examId) {
-                    $examCategoriesTotal[$examId] = \App\Models\QuestionExam::where('exam_id', $examId)
+                    $examCategoriesTotal[$examId] = \App\Models\QuestionExam::where('question_exam.exam_id', $examId)
                         ->join('questions', 'question_exam.question_id', '=', 'questions.id')
                         ->join('question_categories', 'questions.category_id', '=', 'question_categories.id')
                         ->select('question_categories.code', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
@@ -288,7 +288,7 @@ class ExamMonitoringService extends BaseService
                 ->get();
 
             // Pre-calculate total questions per category for this exam
-            $examCategoriesTotal = \App\Models\QuestionExam::where('exam_id', $examId)
+            $examCategoriesTotal = \App\Models\QuestionExam::where('question_exam.exam_id', $examId)
                 ->join('questions', 'question_exam.question_id', '=', 'questions.id')
                 ->join('question_categories', 'questions.category_id', '=', 'question_categories.id')
                 ->select('question_categories.code', \Illuminate\Support\Facades\DB::raw('count(*) as total'))

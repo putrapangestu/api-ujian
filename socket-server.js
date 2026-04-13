@@ -301,13 +301,13 @@ io.on('connection', (socket) => {
             };
             await redis.hset(`exam:${exam_id}:state`, user_exam_id, JSON.stringify(state));
 
-            // Karena data categories & total_score sekarang diproses oleh Laravel setiap bulk sync,
-            // Kita cukup meng-update time_spent & status saja via Socket secara real-time.
+            // Karena data categories & totalScore sekarang diproses oleh Laravel setiap bulk sync,
+            // Kita cukup meng-update timeRemaining & status saja via Socket secara real-time.
             // Struktur yang dikirim oleh heartbeat harus compatible dengan `update` object dari FE
             io.to(`exam:${exam_id}`).emit('exam:progress_update', { 
                 id: student_id, 
                 update: {
-                    time_spent: time_spent || 0, 
+                    timeRemaining: time_remaining || 0, 
                     status: 'online',
                     last_seen: state.last_seen
                 } 

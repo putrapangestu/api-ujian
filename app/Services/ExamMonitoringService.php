@@ -158,6 +158,19 @@ class ExamMonitoringService extends BaseService
                 // 4. (Optional) Process Cheat Counters if needed to DB
                 // Saat ini cheat dihandle realtime, bisa ditambahkan jika ingin persistensi.
 
+                // Pre-calculate total questions per category for these exams to avoid n+1
+                $examIds = array_unique(array_column($answers, 'exam_id'));
+                $examCategoriesTotal = [];
+                foreach ($examIds as $examId) {
+                    $examCategoriesTotal[$examId] = \App\Models\QuestionExam::where('exam_id', $examId)
+                        ->join('questions', 'question_exam.question_id', '=', 'questions.id')
+                        ->join('question_categories', 'questions.category_id', '=', 'question_categories.id')
+                        ->select('question_categories.code', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+                        ->groupBy('question_categories.code')
+                        ->pluck('total', 'code')
+                        ->toArray();
+                }
+
                 // 5. Emit back to Node.js
                 foreach ($updatedScores as $userExamId => $score) {
                     $userExam = UserExam::with(['student.user', 'answers.question.category'])->find($userExamId);
@@ -169,28 +182,25 @@ class ExamMonitoringService extends BaseService
                             $timeSpent = \Carbon\Carbon::parse($userExam->start_time)->diffInSeconds($endTime);
                         }
 
+                        // Get category totals for this specific exam
+                        $totals = $examCategoriesTotal[$userExam->exam_id] ?? [];
+
                         // Process categories
-                        $categories = [];
+                        $categories = [
+                            'TWK' => ['score' => 0, 'answered' => 0, 'total' => $totals['TWK'] ?? $totals['twk'] ?? 30],
+                            'TIU' => ['score' => 0, 'answered' => 0, 'total' => $totals['TIU'] ?? $totals['tiu'] ?? 35],
+                            'TKP' => ['score' => 0, 'answered' => 0, 'total' => $totals['TKP'] ?? $totals['tkp'] ?? 45]
+                        ];
+
                         foreach ($userExam->answers as $answer) {
                             if (!$answer->question || !$answer->question->category) continue;
 
-                            $catName = $answer->question->category->name;
+                            $catCode = strtoupper($answer->question->category->code);
 
-                            if (!isset($categories[$catName])) {
-                                $totalQuestionsInCategory = \App\Models\Question::where('category_id', $answer->question->category_id)
-                                    ->whereHas('exams', function($q) use ($userExam) {
-                                        $q->where('exams.id', $userExam->exam_id);
-                                    })->count();
-
-                                $categories[$catName] = [
-                                    'score' => 0,
-                                    'answered' => 0,
-                                    'total' => $totalQuestionsInCategory > 0 ? $totalQuestionsInCategory : 30
-                                ];
+                            if (isset($categories[$catCode])) {
+                                $categories[$catCode]['score'] += (int) $answer->score;
+                                $categories[$catCode]['answered'] += 1;
                             }
-
-                            $categories[$catName]['score'] += (int) $answer->score;
-                            $categories[$catName]['answered'] += 1;
                         }
 
                         $status = 'online';
@@ -201,9 +211,9 @@ class ExamMonitoringService extends BaseService
                         $payload = [
                             'id' => $userExam->student_id,
                             'update' => [
-                                'time_spent' => $timeSpent,
+                                'timeRemaining' => $timeSpent,
                                 'categories' => (object) $categories,
-                                'total_score' => $score,
+                                'totalScore' => $score,
                                 'status' => $status
                             ]
                         ];
@@ -277,6 +287,15 @@ class ExamMonitoringService extends BaseService
                 ->with(['student.user', 'answers.question.category'])
                 ->get();
 
+            // Pre-calculate total questions per category for this exam
+            $examCategoriesTotal = \App\Models\QuestionExam::where('exam_id', $examId)
+                ->join('questions', 'question_exam.question_id', '=', 'questions.id')
+                ->join('question_categories', 'questions.category_id', '=', 'question_categories.id')
+                ->select('question_categories.code', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+                ->groupBy('question_categories.code')
+                ->pluck('total', 'code')
+                ->toArray();
+
             $monitoringData = [];
 
             foreach ($activeExams as $userExam) {
@@ -295,42 +314,33 @@ class ExamMonitoringService extends BaseService
                     $timeSpent = \Carbon\Carbon::parse($userExam->start_time)->diffInSeconds($endTime);
                 }
 
-                // Process categories
-                $categories = [];
-                $answers = $userExam->answers;
+                // Initialize categories
+                $categories = [
+                    'TWK' => ['score' => 0, 'answered' => 0, 'total' => $examCategoriesTotal['TWK'] ?? $examCategoriesTotal['twk'] ?? 30],
+                    'TIU' => ['score' => 0, 'answered' => 0, 'total' => $examCategoriesTotal['TIU'] ?? $examCategoriesTotal['tiu'] ?? 35],
+                    'TKP' => ['score' => 0, 'answered' => 0, 'total' => $examCategoriesTotal['TKP'] ?? $examCategoriesTotal['tkp'] ?? 45]
+                ];
 
-                foreach ($answers as $answer) {
+                // Process answers
+                foreach ($userExam->answers as $answer) {
                     if (!$answer->question || !$answer->question->category) continue;
 
-                    $catName = $answer->question->category->name;
+                    $catCode = strtoupper($answer->question->category->code);
 
-                    if (!isset($categories[$catName])) {
-                        // Count total questions for this category in the exam
-                        // This might be expensive in a loop, ideally we pre-calculate this
-                        $totalQuestionsInCategory = \App\Models\Question::where('category_id', $answer->question->category_id)
-                            ->whereHas('exams', function($q) use ($examId) {
-                                $q->where('exams.id', $examId);
-                            })->count();
-
-                        $categories[$catName] = [
-                            'score' => 0,
-                            'answered' => 0,
-                            'total' => $totalQuestionsInCategory > 0 ? $totalQuestionsInCategory : 30 // Fallback
-                        ];
+                    // Only process TWK, TIU, TKP
+                    if (isset($categories[$catCode])) {
+                        $categories[$catCode]['score'] += (int) $answer->score;
+                        $categories[$catCode]['answered'] += 1;
                     }
-
-                    $categories[$catName]['score'] += (int) $answer->score;
-                    $categories[$catName]['answered'] += 1;
                 }
 
                 $monitoringData[] = [
                     'id' => $userExam->student_id, // frontend expects student uuid as id
-                    'user_exam_id' => $userExam->id,
                     'name' => $userExam->student->user->name ?? 'Unknown',
                     'status' => $status,
-                    'time_spent' => $timeSpent,
-                    'categories' => (object) $categories,
-                    'total_score' => (int) $userExam->current_score
+                    'timeRemaining' => $timeSpent, // Based on FE's note: time_spent replaced by timeRemaining
+                    'totalScore' => (int) $userExam->current_score,
+                    'categories' => (object) $categories
                 ];
             }
 

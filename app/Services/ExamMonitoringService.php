@@ -173,7 +173,7 @@ class ExamMonitoringService extends BaseService
 
                 // 5. Emit back to Node.js
                 foreach ($updatedScores as $userExamId => $score) {
-                    $userExam = UserExam::with(['student.user', 'answers.question.category'])->find($userExamId);
+                    $userExam = UserExam::with(['student.user', 'userAnswers.question.category'])->find($userExamId);
                     if ($userExam) {
                         // Calculate time spent
                         $timeSpent = 0;
@@ -192,7 +192,7 @@ class ExamMonitoringService extends BaseService
                             'TKP' => ['score' => 0, 'answered' => 0, 'total' => $totals['TKP'] ?? $totals['tkp'] ?? 45]
                         ];
 
-                        foreach ($userExam->answers as $answer) {
+                        foreach ($userExam->userAnswers as $answer) {
                             if (!$answer->question || !$answer->question->category) continue;
 
                             $catCode = strtoupper($answer->question->category->code);
@@ -284,7 +284,7 @@ class ExamMonitoringService extends BaseService
         try {
             // Get active user exams for this exam
             $activeExams = UserExam::where('exam_id', $examId)
-                ->with(['student.user', 'answers.question.category'])
+                ->with(['student.user', 'userAnswers.question.category'])
                 ->get();
 
             // Pre-calculate total questions per category for this exam
@@ -322,7 +322,7 @@ class ExamMonitoringService extends BaseService
                 ];
 
                 // Process answers
-                foreach ($userExam->answers as $answer) {
+                foreach ($userExam->userAnswers as $answer) {
                     if (!$answer->question || !$answer->question->category) continue;
 
                     $catCode = strtoupper($answer->question->category->code);

@@ -40,6 +40,40 @@ class ExamMonitoringService extends BaseService
     }
 
     /**
+     * Mengambil daftar ujian yang sedang aktif (ONGOING) untuk keperluan monitoring
+     *
+     * @return array
+     */
+    public function getActiveExams(): array
+    {
+        try {
+            $now = \Carbon\Carbon::now();
+            $exams = \App\Models\Exam::where('start_date', '<=', $now)
+                ->where('end_date', '>=', $now)
+                ->withCount('userExams as participant_count')
+                ->orderBy('start_date', 'desc')
+                ->get()
+                ->map(function ($exam) {
+                    return [
+                        'id' => $exam->id,
+                        'title' => $exam->title,
+                        'description' => $exam->description,
+                        'start_date' => $exam->start_date,
+                        'end_date' => $exam->end_date,
+                        'duration' => $exam->duration,
+                        'participant_count' => $exam->participant_count,
+                        'status' => 'ongoing'
+                    ];
+                });
+
+            return $this->successResponse($exams, 'Daftar ujian aktif berhasil diambil');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('ExamMonitoringService getActiveExams Error: ' . $e->getMessage());
+            return $this->errorResponse('Gagal mengambil daftar ujian aktif: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Menerima sinkronisasi data bulk dari Node.js WebSocket Server
      *
      * @param array $answers

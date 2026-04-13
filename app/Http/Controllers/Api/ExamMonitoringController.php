@@ -34,6 +34,28 @@ class ExamMonitoringController extends Controller
     }
 
     /**
+     * Get list of active (ongoing) exams for monitoring
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Get(
+        path: "/exam-monitoring/active",
+        summary: "Daftar ujian yang sedang berlangsung",
+        tags: ["Exam Monitoring"],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    public function getActiveExams()
+    {
+        $result = $this->examMonitoringService->getActiveExams();
+
+        if ($result['success']) {
+            return $this->successResponse($result['data'], $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
+
+    /**
      * Record exam action for monitoring
      *
      * @param Request $request

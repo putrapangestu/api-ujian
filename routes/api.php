@@ -110,6 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Exam Monitoring routes
     Route::prefix('exam-monitoring')->group(function () {
+        Route::get('/active', [ExamMonitoringController::class, 'getActiveExams'])->name('exam-monitoring.active');
         Route::post('/record-action', [ExamMonitoringController::class, 'recordAction'])->name('exam-monitoring.record');
         Route::get('/realtime/{examId}', [ExamMonitoringController::class, 'getRealtimeMonitoring'])->name('exam-monitoring.realtime');
         Route::get('/student/{studentId}/{examId}', [ExamMonitoringController::class, 'getStudentMonitoring'])->name('exam-monitoring.student');

@@ -37,8 +37,9 @@ class QuestionBankService extends BaseService
         return DB::transaction(function () use ($file, $examId, $questionGroupId, $categoryId) {
             try {
                 // Process file
-                $filePath = $file->store('temp');
-                $fileFullPath = storage_path('app/'.$filePath);
+                $fileName = $file->getClientOriginalName();
+                $filePath = $file->storeAs('temp', 'import_' . uniqid() . '_' . $fileName, 'public');
+                $fileFullPath = storage_path('app/public/'.$filePath);
 
                 // Read Excel file
                 $spreadsheet = IOFactory::load($fileFullPath);
@@ -70,12 +71,14 @@ class QuestionBankService extends BaseService
                 }
 
                 // Clean up file
-                Storage::delete($filePath);
+                Storage::disk('public')->delete($filePath);
 
                 // Update question group total
                 if ($questionGroupId) {
                     $questionGroup = QuestionGroup::find($questionGroupId);
-                    $questionGroup->updateTotalQuestions();
+                    if ($questionGroup) {
+                        $questionGroup->updateTotalQuestions();
+                    }
                 }
 
                 return $this->successResponse([
@@ -87,6 +90,9 @@ class QuestionBankService extends BaseService
 
             } catch (\Exception $e) {
                 DB::rollBack();
+                if (isset($filePath)) {
+                    Storage::disk('public')->delete($filePath);
+                }
 
                 return $this->errorResponse('Gagal import bank soal: '.$e->getMessage());
             }
@@ -953,17 +959,17 @@ class QuestionBankService extends BaseService
         }
 
         // Save to temporary file
-        $fileName = 'Template_Import_Soal.xlsx';
-        $tempPath = storage_path('app/temp/' . $fileName);
+        $fileName = 'Template_Import_Soal_' . uniqid() . '.xlsx';
+        $tempPath = storage_path('app/public/temp/' . $fileName);
 
-        if (!File::exists(storage_path('app/temp'))) {
-            File::makeDirectory(storage_path('app/temp'), 0755, true);
+        if (!File::exists(storage_path('app/public/temp'))) {
+            File::makeDirectory(storage_path('app/public/temp'), 0755, true);
         }
 
         $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
         $writer->save($tempPath);
 
-        return response()->download($tempPath, $fileName)->deleteFileAfterSend(true);
+        return response()->download($tempPath, 'Template_Import_Soal.xlsx')->deleteFileAfterSend(true);
     }
 
     /**

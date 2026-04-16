@@ -2,9 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\Exam;
 use App\Models\ExamMonitoring;
-use App\Models\UserExam;
+use App\Models\Question;
+use App\Models\QuestionCategory;
 use App\Models\QuestionGroup;
+use App\Models\Student;
+use App\Models\UserAnswer;
+use App\Models\UserExam;
 use App\Repositories\StudentRepositoryInterface;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -109,9 +114,9 @@ class ExamMonitoringService extends BaseService
 
                         // Di sistem nyata, kita perlu memverifikasi jawaban dengan kunci jawaban di sini.
                         // Jika struktur database memungkinkan, panggil layanan yang dapat memvalidasi jawaban.
-                        $question = \App\Models\Question::with('options')->find($answer['question_id']);
+                        $question = Question::with('options')->find($answer['question_id']);
                         if ($question) {
-                            if ($question->type === \App\Models\Question::TYPE_MULTIPLE_CHOICE || $question->type === \App\Models\Question::TYPE_TRUE_FALSE) {
+                            if ($question->type === Question::TYPE_MULTIPLE_CHOICE || $question->type === Question::TYPE_TRUE_FALSE) {
                                 // Pilihan ganda, answer berisi question_option_id
                                 $questionOptionId = $answer['answer'];
                                 $correctOption = $question->options->where('is_correct', true)->first();

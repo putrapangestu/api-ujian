@@ -32,6 +32,10 @@ class Question extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
+    const TYPE_MULTIPLE_CHOICE = 'multiple_choice';
+    const TYPE_TRUE_FALSE = 'true_false';
+    const TYPE_ESSAY = 'essay';
+
     /**
      * The attributes that are mass assignable.
      *

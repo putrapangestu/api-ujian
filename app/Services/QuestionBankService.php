@@ -10,8 +10,10 @@ use App\Models\QuestionOption;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use ZipArchive;
 
 /**
  * QuestionBank Service Class
@@ -621,6 +623,251 @@ class QuestionBankService extends BaseService
         $question->loadMissing(['options', 'category', 'questionGroup']);
 
         return $this->successResponse($question, 'Soal berhasil dibuat');
+    }
+
+    public function importExamViewZip($file, ?string $examId = null, ?string $questionGroupId = null, ?string $categoryId = null): array
+    {
+        return DB::transaction(function () use ($file, $examId, $questionGroupId, $categoryId) {
+            try {
+                if ($examId && ! Exam::find($examId)) {
+                    return $this->errorResponse('Ujian tidak ditemukan');
+                }
+
+                $zip = new ZipArchive;
+                $res = $zip->open($file->getPathname());
+                if ($res !== true) {
+                    return $this->errorResponse('Gagal membuka file ZIP');
+                }
+
+                // Buat temporary directory untuk extract zip
+                $tempDir = storage_path('app/temp/examview_' . uniqid());
+                if (!File::exists($tempDir)) {
+                    File::makeDirectory($tempDir, 0755, true);
+                }
+
+                $zip->extractTo($tempDir);
+                $zip->close();
+
+                // Cari file .dat yang biasanya menyimpan XML data (misal: res00001.dat)
+                $datFiles = File::glob($tempDir . '/*.dat');
+                if (empty($datFiles)) {
+                    File::deleteDirectory($tempDir);
+                    return $this->errorResponse('Format Blackboard ZIP tidak valid (file .dat tidak ditemukan)');
+                }
+
+                $xmlFile = $datFiles[0];
+                $xmlContent = file_get_contents($xmlFile);
+
+                // Moodle XML kadang error jika deklarasi entitas Blackboard berantakan.
+                // Kita ganti agar bisa diparsing SimpleXML dengan baik.
+                $xmlContent = str_replace(['&', '< ', '> '], ['&amp;', '&lt; ', '&gt; '], $xmlContent);
+
+                $xml = @simplexml_load_string($xmlContent, 'SimpleXMLElement', LIBXML_NOCDATA);
+
+                if (!$xml) {
+                    File::deleteDirectory($tempDir);
+                    return $this->errorResponse('Gagal membaca struktur XML soal');
+                }
+
+                $questions = [];
+                $errors = [];
+                $itemNumber = 0;
+
+                // Pada format Blackboard, soal ada di <item>
+                $items = $xml->xpath('//item');
+
+                if (empty($items)) {
+                    File::deleteDirectory($tempDir);
+                    return $this->errorResponse('Tidak ada soal (item) ditemukan dalam file');
+                }
+
+                foreach ($items as $item) {
+                    $itemNumber++;
+                    try {
+                        $result = $this->processBlackboardItem($item, $itemNumber, $tempDir, $examId, $questionGroupId, $categoryId);
+                        if ($result['success']) {
+                            $questions[] = $result['data'];
+                        } else {
+                            $errors[] = $result['message'];
+                        }
+                    } catch (\Exception $e) {
+                        $errors[] = 'Item ' . $itemNumber . ': ' . $e->getMessage();
+                    }
+                }
+
+                File::deleteDirectory($tempDir);
+
+                // Update question group total
+                if ($questionGroupId) {
+                    $questionGroup = QuestionGroup::find($questionGroupId);
+                    if ($questionGroup) {
+                        $questionGroup->updateTotalQuestions();
+                    }
+                }
+
+                return $this->successResponse([
+                    'imported' => $questions,
+                    'errors' => $errors,
+                    'total_imported' => count($questions),
+                    'total_errors' => count($errors),
+                ], 'Import ExamView ZIP selesai');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                if (isset($tempDir) && File::exists($tempDir)) {
+                    File::deleteDirectory($tempDir);
+                }
+                return $this->errorResponse('Gagal import ExamView: ' . $e->getMessage());
+            }
+        });
+    }
+
+    private function processBlackboardItem(\SimpleXMLElement $item, int $itemNumber, string $tempDir, ?string $examId, ?string $questionGroupId, ?string $categoryId): array
+    {
+        // Deteksi Tipe Soal
+        $questionTypeStr = '';
+        if (isset($item->itemmetadata->bbmd_questiontype)) {
+            $questionTypeStr = (string)$item->itemmetadata->bbmd_questiontype;
+        }
+
+        // Mapping tipe soal
+        $questionType = match ($questionTypeStr) {
+            'Multiple Choice' => 'multiple_choice',
+            'True/False' => 'true_false',
+            'Essay' => 'essay',
+            'Multiple Answer' => 'multiple_choice',
+            default => 'multiple_choice',
+        };
+
+        // Ambil teks soal dari presentation > material > mattext
+        $questionText = '';
+        if (isset($item->presentation->flow->material->mattext)) {
+            $questionText = (string)$item->presentation->flow->material->mattext;
+        }
+
+        if (trim(strip_tags($questionText)) === '' && strpos($questionText, '<img') === false) {
+            return $this->errorResponse('Item ' . $itemNumber . ': teks soal kosong');
+        }
+
+        // Proses gambar dalam teks soal
+        $questionText = $this->processBlackboardImages($questionText, $tempDir);
+
+        // Buat soal
+        $question = Question::create([
+            'exam_id' => $examId,
+            'question_group_id' => $questionGroupId,
+            'category_id' => $categoryId,
+            'question_text' => $questionText,
+            'question_type' => $questionType,
+            'score' => 1,
+            'correct_answer' => null,
+        ]);
+
+        // Proses opsi
+        if ($questionType === 'multiple_choice' || $questionType === 'true_false') {
+            $this->processBlackboardOptions($question, $item, $tempDir);
+        }
+
+        $question->load(['options', 'category', 'questionGroup']);
+        return $this->successResponse($question, 'Soal berhasil dibuat');
+    }
+
+    private function processBlackboardImages(string $text, string $tempDir): string
+    {
+        if (empty($text)) return $text;
+
+        preg_match_all('/<img[^>]+src=([\'"])(?<src>[^\1]+)\1[^>]*>/i', $text, $matches);
+
+        if (!empty($matches['src'])) {
+            foreach ($matches['src'] as $src) {
+                $imagePathInZip = urldecode($src);
+
+                $sourceFilePath = $tempDir . '/' . $imagePathInZip;
+
+                if (!File::exists($sourceFilePath)) {
+                    $basename = basename($imagePathInZip);
+                    $foundFiles = File::glob($tempDir . '/*/' . $basename);
+                    if (!empty($foundFiles)) {
+                        $sourceFilePath = $foundFiles[0];
+                    }
+                }
+
+                if (File::exists($sourceFilePath)) {
+                    $extension = pathinfo($sourceFilePath, PATHINFO_EXTENSION);
+                    if (!$extension) $extension = 'png';
+                    $newFilename = 'q_img_' . uniqid() . '.' . $extension;
+                    $storagePath = 'questions/' . date('Y/m');
+
+                    $fullStorageDir = storage_path('app/public/' . $storagePath);
+                    if (!File::exists($fullStorageDir)) {
+                        File::makeDirectory($fullStorageDir, 0755, true);
+                    }
+
+                    File::copy($sourceFilePath, $fullStorageDir . '/' . $newFilename);
+
+                    $newUrl = asset('storage/' . $storagePath . '/' . $newFilename);
+
+                    $text = str_replace($src, $newUrl, $text);
+                }
+            }
+        }
+
+        return $text;
+    }
+
+    private function processBlackboardOptions(Question $question, \SimpleXMLElement $item, string $tempDir): void
+    {
+        $options = [];
+        $correctIdent = '';
+
+        if (isset($item->resprocessing->respcondition)) {
+            foreach ($item->resprocessing->respcondition as $resp) {
+                if (isset($resp->setvar) && (string)$resp->setvar > 0 && isset($resp->conditionvar->varequal)) {
+                    $correctIdent = (string)$resp->conditionvar->varequal;
+                    break;
+                }
+            }
+        }
+
+        if (isset($item->presentation->response_lid->render_choice->response_label)) {
+            $labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+            $index = 0;
+
+            foreach ($item->presentation->response_lid->render_choice->response_label as $labelNode) {
+                $ident = (string)$labelNode['ident'];
+
+                $optionText = '';
+                if (isset($labelNode->material->mattext)) {
+                    $optionText = (string)$labelNode->material->mattext;
+                }
+
+                $optionText = $this->processBlackboardImages($optionText, $tempDir);
+
+                $isCorrect = ($ident === $correctIdent);
+                $optionLabel = $labels[$index] ?? 'A';
+
+                $options[] = [
+                    'option_label' => $optionLabel,
+                    'option_text' => $optionText,
+                    'is_correct' => $isCorrect,
+                ];
+
+                if ($isCorrect) {
+                    $question->update(['correct_answer' => $optionLabel]);
+                }
+
+                $index++;
+            }
+        }
+
+        foreach ($options as $opt) {
+            $question->options()->create([
+                'option_label' => $opt['option_label'],
+                'option_text' => $opt['option_text'],
+                'is_correct' => $opt['is_correct'],
+                'score' => $opt['is_correct'] ? $question->score : 0,
+            ]);
+        }
     }
 
     /**

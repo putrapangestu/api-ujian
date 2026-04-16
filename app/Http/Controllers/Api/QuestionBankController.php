@@ -157,6 +157,34 @@ class QuestionBankController extends Controller
     }
 
     /**
+     * Download Excel template for importing questions
+     *
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse
+     */
+    #[OA\Get(
+        path: '/question-bank/download-template',
+        summary: 'Download template Excel untuk import soal',
+        tags: ['Question Bank'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'File Excel template berhasil diunduh',
+                content: new OA\MediaType(
+                    mediaType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+            )
+        ]
+    )]
+    public function downloadTemplate()
+    {
+        try {
+            return $this->questionBankService->downloadTemplate();
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengunduh template: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Export question bank to Excel file
      *
      * @return \Illuminate\Http\JsonResponse

@@ -107,6 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/import-moodle', [QuestionBankController::class, 'importMoodleXml'])->name('question-bank.import-moodle');
         Route::post('/import-examview', [QuestionBankController::class, 'importExamView'])->name('question-bank.import-examview');
         Route::get('/export', [QuestionBankController::class, 'export'])->name('question-bank.export');
+        Route::get('/download-template', [QuestionBankController::class, 'downloadTemplate'])->name('question-bank.download-template');
     });
 
     // Exam Monitoring routes

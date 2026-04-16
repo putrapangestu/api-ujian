@@ -871,11 +871,105 @@ class QuestionBankService extends BaseService
     }
 
     /**
+     * Generate and download Excel template for importing questions
+     *
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function downloadTemplate()
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Set column headers based on import logic
+        $headers = [
+            'A1' => 'Teks Soal (Wajib)',
+            'B1' => 'Tipe Soal (Wajib)',
+            'C1' => 'Kategori (Opsional)',
+            'D1' => 'Skor (Opsional, Default: 1)',
+            'E1' => 'Jawaban Benar (Wajib untuk Pilihan Ganda)',
+            'F1' => 'Grup Soal (Opsional)',
+            'G1' => 'Opsi A',
+            'H1' => 'Opsi B',
+            'I1' => 'Opsi C',
+            'J1' => 'Opsi D',
+            'K1' => 'Opsi E',
+        ];
+
+        foreach ($headers as $cell => $value) {
+            $sheet->setCellValue($cell, $value);
+            $sheet->getStyle($cell)->getFont()->setBold(true);
+            $sheet->getStyle($cell)->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                ->getStartColor()->setARGB('FFE0E0E0');
+        }
+
+        // Add Data Validation for Question Type
+        $validation = $sheet->getCell('B2')->getDataValidation();
+        $validation->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
+        $validation->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_INFORMATION);
+        $validation->setAllowBlank(false);
+        $validation->setShowInputMessage(true);
+        $validation->setShowErrorMessage(true);
+        $validation->setShowDropDown(true);
+        $validation->setErrorTitle('Input error');
+        $validation->setError('Value is not in list.');
+        $validation->setPromptTitle('Pick from list');
+        $validation->setPrompt('Please pick a value from the drop-down list.');
+        $validation->setFormula1('"multiple_choice,essay,true_false,single_choice"');
+
+        // Apply validation to column B (rows 2 to 1000)
+        for ($i = 2; $i <= 1000; $i++) {
+            $sheet->getCell('B'.$i)->setDataValidation(clone $validation);
+        }
+
+        // Add some example data
+        $sheet->setCellValue('A2', 'Siapa penemu lampu pijar?');
+        $sheet->setCellValue('B2', 'multiple_choice');
+        $sheet->setCellValue('C2', 'Sejarah');
+        $sheet->setCellValue('D2', '5');
+        $sheet->setCellValue('E2', 'Thomas Alva Edison');
+        $sheet->setCellValue('F2', 'Ujian Seleksi 2026');
+        $sheet->setCellValue('G2', 'Alexander Graham Bell');
+        $sheet->setCellValue('H2', 'Thomas Alva Edison');
+        $sheet->setCellValue('I2', 'Nikola Tesla');
+        $sheet->setCellValue('J2', 'Albert Einstein');
+
+        $sheet->setCellValue('A3', 'Jelaskan pengertian dari Pancasila!');
+        $sheet->setCellValue('B3', 'essay');
+        $sheet->setCellValue('C3', 'PKN');
+        $sheet->setCellValue('D3', '10');
+
+        $sheet->setCellValue('A4', 'Ibukota Indonesia adalah Jakarta');
+        $sheet->setCellValue('B4', 'true_false');
+        $sheet->setCellValue('C4', 'Geografi');
+        $sheet->setCellValue('D4', '2');
+        $sheet->setCellValue('E4', 'True');
+
+        // Auto-size columns
+        foreach (range('A', 'K') as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        // Save to temporary file
+        $fileName = 'Template_Import_Soal.xlsx';
+        $tempPath = storage_path('app/temp/' . $fileName);
+
+        if (!File::exists(storage_path('app/temp'))) {
+            File::makeDirectory(storage_path('app/temp'), 0755, true);
+        }
+
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->save($tempPath);
+
+        return response()->download($tempPath, $fileName)->deleteFileAfterSend(true);
+    }
+
+    /**
      * Export question bank to Excel
      *
-     * @param  int|null  $examId
-     * @param  int|null  $questionGroupId
-     * @param  int|null  $categoryId
+     * @param  string|null  $examId
+     * @param  string|null  $questionGroupId
+     * @param  string|null  $categoryId
      */
     public function exportQuestionBank(?string $examId = null, ?string $questionGroupId = null, ?string $categoryId = null): array
     {

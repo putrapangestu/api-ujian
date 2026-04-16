@@ -925,10 +925,10 @@ class QuestionBankService extends BaseService
         // Add some example data
         $sheet->setCellValue('A2', 'Siapa penemu lampu pijar?');
         $sheet->setCellValue('B2', 'multiple_choice');
-        $sheet->setCellValue('C2', 'Sejarah');
+        $sheet->setCellValue('C2', 'TWK');
         $sheet->setCellValue('D2', '5');
         $sheet->setCellValue('E2', 'Thomas Alva Edison');
-        $sheet->setCellValue('F2', 'Ujian Seleksi 2026');
+        $sheet->setCellValue('F2', 'Grup Tes Wawasan Kebangsaan');
         $sheet->setCellValue('G2', 'Alexander Graham Bell');
         $sheet->setCellValue('H2', 'Thomas Alva Edison');
         $sheet->setCellValue('I2', 'Nikola Tesla');
@@ -936,14 +936,16 @@ class QuestionBankService extends BaseService
 
         $sheet->setCellValue('A3', 'Jelaskan pengertian dari Pancasila!');
         $sheet->setCellValue('B3', 'essay');
-        $sheet->setCellValue('C3', 'PKN');
+        $sheet->setCellValue('C3', 'TIU');
         $sheet->setCellValue('D3', '10');
+        $sheet->setCellValue('F3', 'Grup Tes Intelegensi Umum');
 
         $sheet->setCellValue('A4', 'Ibukota Indonesia adalah Jakarta');
         $sheet->setCellValue('B4', 'true_false');
-        $sheet->setCellValue('C4', 'Geografi');
+        $sheet->setCellValue('C4', 'TKP');
         $sheet->setCellValue('D4', '2');
         $sheet->setCellValue('E4', 'True');
+        $sheet->setCellValue('F4', 'Grup Tes Karakteristik Pribadi');
 
         // Auto-size columns
         foreach (range('A', 'K') as $columnID) {

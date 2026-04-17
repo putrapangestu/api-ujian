@@ -56,6 +56,14 @@ class QuestionBankService extends BaseService
                 foreach ($rows as $row) {
                     $rowNumber++;
 
+                    $row = array_filter($row, function ($value) {
+                        return $value !== '';
+                    });
+
+                    if (count($row) == 0) {
+                        break;
+                    }
+
                     try {
                         $result = $this->processQuestionRow($row, $rowNumber, $examId, $questionGroupId, $categoryId);
 

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use ZipArchive;
@@ -59,6 +60,8 @@ class QuestionBankService extends BaseService
                     $row = array_filter($row, function ($value) {
                         return $value !== '';
                     });
+
+                    Log::info("check row import", $row);
 
                     if (count($row) == 0) {
                         break;
@@ -942,7 +945,7 @@ class QuestionBankService extends BaseService
         $sheet->setCellValue('C2', 'TWK');
         $sheet->setCellValue('D2', '5');
         $sheet->setCellValue('E2', 'Thomas Alva Edison');
-        $sheet->setCellValue('F2', 'Grup Tes Wawasan Kebangsaan');
+        $sheet->setCellValue('F2', 'Nasionalisme');
         $sheet->setCellValue('G2', 'Alexander Graham Bell');
         $sheet->setCellValue('H2', 'Thomas Alva Edison');
         $sheet->setCellValue('I2', 'Nikola Tesla');
@@ -952,14 +955,14 @@ class QuestionBankService extends BaseService
         $sheet->setCellValue('B3', 'essay');
         $sheet->setCellValue('C3', 'TIU');
         $sheet->setCellValue('D3', '10');
-        $sheet->setCellValue('F3', 'Grup Tes Intelegensi Umum');
+        $sheet->setCellValue('F3', 'Nasionalisme');
 
         $sheet->setCellValue('A4', 'Ibukota Indonesia adalah Jakarta');
         $sheet->setCellValue('B4', 'true_false');
         $sheet->setCellValue('C4', 'TKP');
         $sheet->setCellValue('D4', '2');
         $sheet->setCellValue('E4', 'True');
-        $sheet->setCellValue('F4', 'Grup Tes Karakteristik Pribadi');
+        $sheet->setCellValue('F4', 'Nasionalisme');
 
         // Auto-size columns
         foreach (range('A', 'K') as $columnID) {

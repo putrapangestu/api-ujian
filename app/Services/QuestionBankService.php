@@ -61,7 +61,7 @@ class QuestionBankService extends BaseService
                         return $value !== '';
                     });
 
-                    Log::info("check row import", $row);
+                    // Log::info("check row import", $row);
 
                     if (count($row) == 0) {
                         break;

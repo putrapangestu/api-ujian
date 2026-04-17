@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ExamController;
 use App\Http\Controllers\Api\ExamMonitoringController;
 use App\Http\Controllers\Api\ExamRollingController;
@@ -143,6 +144,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin routes
     Route::middleware('role:admin')->prefix('admin')->group(function () {
+        // Dashboard
+        Route::prefix('dashboard')->group(function () {
+            Route::get('/summary', [DashboardController::class, 'getSummary'])->name('admin.dashboard.summary');
+            Route::get('/active-exams', [DashboardController::class, 'getActiveExams'])->name('admin.dashboard.active-exams');
+            Route::get('/charts/students', [DashboardController::class, 'getStudentChart'])->name('admin.dashboard.charts.students');
+            Route::get('/charts/exams', [DashboardController::class, 'getExamChart'])->name('admin.dashboard.charts.exams');
+        });
+
         // Exam management
         Route::post('/exams', [ExamController::class, 'store'])->name('admin.exams.store');
         Route::put('/exams/{id}', [ExamController::class, 'update'])->name('admin.exams.update');

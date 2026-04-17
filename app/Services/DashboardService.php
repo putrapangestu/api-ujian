@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Student;
 use App\Models\Question;
+use App\Models\QuestionGroup;
 use App\Models\Exam;
 use App\Models\UserExam;
 use Carbon\Carbon;
@@ -22,7 +23,7 @@ class DashboardService extends BaseService
             $data = Cache::remember('admin_dashboard_summary', 3600, function () {
                 return [
                     'total_students' => Student::count(),
-                    'total_questions' => Question::count(),
+                    'total_question_banks' => QuestionGroup::count(), // Menggunakan QuestionGroup
                     'total_exams' => Exam::count(),
                 ];
             });

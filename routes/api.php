@@ -94,13 +94,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/export', [QuestionGroupController::class, 'export'])->name('question-groups.export');
     });
 
-    // Question routes
-    Route::prefix('questions')->group(function () {
-        Route::get('/', [QuestionController::class, 'index'])->name('questions.index');
-        Route::post('/', [QuestionController::class, 'store'])->name('questions.store');
-        Route::put('/{id}', [QuestionController::class, 'update'])->name('questions.update');
-        Route::post('/import', [QuestionController::class, 'import'])->name('questions.import');
-    });
+    // Questions
+    Route::post('questions/import', [QuestionController::class, 'import'])->name('questions.import');
+    Route::apiResource('questions', QuestionController::class);
 
     // Question Bank routes
     Route::prefix('question-bank')->group(function () {

@@ -181,4 +181,29 @@ class QuestionController extends Controller
 
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
     }
+
+    /**
+     * Delete question
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Delete(
+        path: '/questions/{id}',
+        summary: 'Hapus soal',
+        tags: ['Questions'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        responses: [new OA\Response(response: 200, description: 'Success')]
+    )]
+    public function destroy($id)
+    {
+        $result = $this->questionService->deleteQuestion($id);
+
+        if ($result['success']) {
+            return $this->successResponse($result['data'], $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
 }

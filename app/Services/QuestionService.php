@@ -415,4 +415,49 @@ class QuestionService extends BaseService
             }
         });
     }
+
+    /**
+     * Delete question
+     *
+     * @param string $id
+     * @return array
+     */
+    public function deleteQuestion(string $id): array
+    {
+        return DB::transaction(function () use ($id) {
+            try {
+                // Find question
+                $question = Question::find($id);
+                if (! $question) {
+                    return $this->errorResponse('Soal tidak ditemukan', null, 404);
+                }
+
+                // Check if question is used in any exam
+                if ($question->hasBeenUsedInExam()) {
+                    return $this->errorResponse('Soal tidak dapat dihapus karena sudah pernah digunakan dalam ujian yang sedang atau sudah berjalan.');
+                }
+
+                $questionGroupId = $question->question_group_id;
+
+                // Delete options first (if not cascading)
+                $question->options()->delete();
+                
+                // Delete question
+                $question->delete();
+
+                // Update total questions for the group if needed
+                if ($questionGroupId) {
+                    $group = QuestionGroup::find($questionGroupId);
+                    if ($group) {
+                        $group->updateTotalQuestions();
+                    }
+                }
+
+                return $this->successResponse(null, 'Soal berhasil dihapus');
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return $this->errorResponse('Gagal menghapus soal: ' . $e->getMessage());
+            }
+        });
+    }
 }

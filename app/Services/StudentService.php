@@ -7,6 +7,7 @@ use App\Repositories\StudentRepositoryInterface;
 use App\Repositories\StudentGroupRepositoryInterface;
 use App\Repositories\UserRepositoryInterface;
 use App\Helpers\ResponseHelper;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -742,7 +743,7 @@ class StudentService extends BaseService
                 $sheet->setCellValue('A' . $row, $no);
                 $sheet->setCellValue('B' . $row, $student->name);
                 $sheet->setCellValue('C' . $row, $student->email);
-                $sheet->setCellValue('D' . $row, $student->birth_date);
+                $sheet->setCellValue('D' . $row, ($student->birth_date ? Carbon::parse($student->birth_date)->parse('DD-MM-YYYY') : ''));
                 $row++;
                 $no++;
             }

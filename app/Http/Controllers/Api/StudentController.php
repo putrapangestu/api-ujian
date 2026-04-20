@@ -362,24 +362,39 @@ class StudentController extends Controller
      * Export students to Excel file
      *
      * @param Request $request
-     * @param string $groupId
-     * @return \Illuminate\Http\JsonResponse
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse
      */
     #[OA\Get(
-        path: "/students/export/{groupId}",
+        path: "/admin/students/export",
         summary: "Export data siswa",
-        tags: ["Students"],
-        parameters: [new OA\Parameter(name: "groupId", in: "path", required: true, schema: new OA\Schema(type: "integer"))],
-        responses: [new OA\Response(response: 200, description: "Success")]
+        tags: ["Students", "Admin"],
+        parameters: [
+            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "group_id", in: "query", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "status", in: "query", schema: new OA\Schema(type: "string")),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "File Excel export siswa",
+                content: new OA\MediaType(
+                    mediaType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            )
+        ]
     )]
-    public function export(Request $request, $groupId)
+    public function export(Request $request)
     {
-        $result = $this->studentService->exportStudents($groupId);
+        $filters = $request->only(['search', 'group_id', 'status']);
+        $result = $this->studentService->exportStudents($filters);
 
-        if ($result['success']) {
-            return $this->successResponse($result['data'], $result['message']);
+        if (isset($result['success']) && $result['success'] === true && isset($result['file_path'])) {
+            return response()->download($result['file_path'], $result['file_name'], [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . $result['file_name'] . '"'
+            ])->deleteFileAfterSend(true);
         }
 
-        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+        return $this->errorResponse($result['message'] ?? 'Gagal melakukan export data siswa', 400, $result['errors'] ?? null);
     }
 }

@@ -680,67 +680,95 @@ class StudentService extends BaseService
     /**
      * Export students to Excel
      *
-     * @param string $groupId
+     * @param array $filters
      * @return array
      */
-    public function exportStudents(string $groupId): array
+    public function exportStudents(array $filters = []): array
     {
         try {
-            $group = $this->studentGroupRepository->find($groupId);
-            if (!$group) {
-                return $this->errorResponse('Grup tidak ditemukan', null, 404);
+            $query = Student::query()->with(['group', 'user']);
+
+            if (isset($filters['search'])) {
+                $search = $filters['search'];
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('nisn', 'like', "%{$search}%")
+                      ->orWhereHas('user', function ($q) use ($search) {
+                          $q->where('email', 'like', "%{$search}%");
+                      });
+                });
             }
 
-            $students = $this->studentRepository->getByGroup($groupId);
-            $students->load('user');
+            if (isset($filters['group_id'])) {
+                $query->where('group_id', $filters['group_id']);
+            }
+
+            if (isset($filters['status'])) {
+                $query->where('status', $filters['status']);
+            }
+
+            // Batasi jumlah row yang diekspor agar tidak OOM
+            $students = $query->limit(5000)->get();
+
+            if ($students->isEmpty()) {
+                return $this->errorResponse('Tidak ada data siswa untuk diekspor', null, 404);
+            }
 
             // Create Excel file
             $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
             $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('Data Siswa');
 
             // Set headers
-            $sheet->setCellValue('A1', 'NISN');
-            $sheet->setCellValue('B1', 'Nama');
-            $sheet->setCellValue('C1', 'Email');
-            $sheet->setCellValue('D1', 'Telepon');
-            $sheet->setCellValue('E1', 'Alamat');
-            $sheet->setCellValue('F1', 'Status');
+            $headers = [
+                'A1' => 'No',
+                'B1' => 'Nama Lengkap',
+                'C1' => 'Email',
+                'D1' => 'Tanggal Lahir'
+            ];
+
+            foreach ($headers as $cell => $value) {
+                $sheet->setCellValue($cell, $value);
+                $sheet->getStyle($cell)->getFont()->setBold(true);
+                $sheet->getStyle($cell)->getFill()
+                    ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                    ->getStartColor()->setARGB('FFE0E0E0');
+            }
 
             // Set data
             $row = 2;
+            $no = 1;
             foreach ($students as $student) {
-                $sheet->setCellValue('A' . $row, $student->nisn);
+                $sheet->setCellValue('A' . $row, $no);
                 $sheet->setCellValue('B' . $row, $student->name);
                 $sheet->setCellValue('C' . $row, $student->email);
-                $sheet->setCellValue('D' . $row, $student->phone ?? '');
-                $sheet->setCellValue('E' . $row, $student->address ?? '');
-                $sheet->setCellValue('F' . $row, $student->status);
+                $sheet->setCellValue('D' . $row, $student->birth_date);
                 $row++;
+                $no++;
             }
 
             // Auto size columns
-            foreach (range('A', 'F') as $column) {
+            foreach (range('A', 'D') as $column) {
                 $sheet->getColumnDimension($column)->setAutoSize(true);
             }
 
-            // Create file
-            $filename = 'students_' . $group->name . '_' . date('Y-m-d_H-i-s') . '.xlsx';
-            $filePath = 'exports/' . $filename;
-            $fullPath = storage_path('app/' . $filePath);
+            // Create temporary file
+            $filename = 'Data_Siswa_' . date('Ymd_His') . '.xlsx';
+            $tempPath = storage_path('app/temp/' . $filename);
 
             // Ensure directory exists
-            if (!file_exists(dirname($fullPath))) {
-                mkdir(dirname($fullPath), 0755, true);
+            if (!\Illuminate\Support\Facades\File::exists(storage_path('app/temp'))) {
+                \Illuminate\Support\Facades\File::makeDirectory(storage_path('app/temp'), 0755, true);
             }
 
-            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-            $writer->save($fullPath);
+            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+            $writer->save($tempPath);
 
-            return $this->successResponse([
-                'file_path' => $filePath,
-                'file_name' => $filename,
-                'download_url' => asset('storage/' . $filePath)
-            ], 'Export siswa berhasil');
+            return [
+                'success' => true,
+                'file_path' => $tempPath,
+                'file_name' => $filename
+            ];
 
         } catch (\Exception $e) {
             return $this->errorResponse('Gagal export siswa: ' . $e->getMessage());

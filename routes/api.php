@@ -79,7 +79,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}/exam-history', [StudentController::class, 'getExamHistory'])->name('students.exam-history');
         Route::get('/{id}/exam-history/export', [StudentController::class, 'exportExamHistory'])->name('students.exam-history-export');
         Route::post('/import', [StudentController::class, 'import'])->name('students.import');
-        Route::get('/export/{groupId}', [StudentController::class, 'export'])->name('students.export');
     });
 
     // Question Category routes
@@ -162,6 +161,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/student-groups/{id}', [StudentGroupController::class, 'destroy'])->name('admin.student-groups.destroy');
 
         // Student management
+        Route::get('/students/export', [StudentController::class, 'export'])->name('admin.students.export');
         Route::post('/students', [StudentController::class, 'store'])->name('admin.students.store');
         Route::put('/students/{id}', [StudentController::class, 'update'])->name('admin.students.update');
         Route::delete('/students/{id}', [StudentController::class, 'destroy'])->name('admin.students.destroy');

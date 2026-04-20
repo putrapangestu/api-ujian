@@ -244,10 +244,6 @@ class StudentService extends BaseService
 
             $userExams = $query->orderBy('start_time', 'desc')->get();
 
-            if ($userExams->isEmpty()) {
-                return $this->errorResponse('Tidak ada riwayat ujian untuk diexport');
-            }
-
             // Create Excel file
             $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
             $sheet = $spreadsheet->getActiveSheet();

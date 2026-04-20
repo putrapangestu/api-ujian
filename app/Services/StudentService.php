@@ -203,6 +203,143 @@ class StudentService extends BaseService
             return $this->errorResponse('Gagal mengambil riwayat ujian: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Export student exam history to Excel
+     *
+     * @param string $id
+     * @param array $filters
+     * @return array
+     */
+    public function exportStudentExamHistory(string $id, array $filters): array
+    {
+        try {
+            $student = $this->studentRepository->find($id);
+
+            if (!$student) {
+                return $this->errorResponse('Siswa tidak ditemukan', null, 404);
+            }
+
+            $query = \App\Models\UserExam::with(['exam'])
+                ->where('student_id', $id)
+                ->where('status', \App\Models\UserExam::STATUS_COMPLETED);
+
+            // Filter by search (exam name)
+            if (!empty($filters['search'])) {
+                $search = $filters['search'];
+                $query->whereHas('exam', function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%");
+                });
+            }
+
+            // Filter by start date
+            if (!empty($filters['start_date'])) {
+                $query->whereDate('start_time', '>=', $filters['start_date']);
+            }
+
+            // Filter by end date
+            if (!empty($filters['end_date'])) {
+                $query->whereDate('start_time', '<=', $filters['end_date']);
+            }
+
+            $userExams = $query->orderBy('start_time', 'desc')->get();
+
+            if ($userExams->isEmpty()) {
+                return $this->errorResponse('Tidak ada riwayat ujian untuk diexport');
+            }
+
+            // Create Excel file
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('Riwayat Ujian');
+
+            // Set headers
+            $headers = [
+                'A1' => 'Nama Ujian',
+                'B1' => 'Tanggal Mulai',
+                'C1' => 'Tanggal Selesai',
+                'D1' => 'Status Kelulusan',
+                'E1' => 'Total Skor',
+                'F1' => 'Skor TWK',
+                'G1' => 'Skor TIU',
+                'H1' => 'Skor TKP',
+            ];
+
+            foreach ($headers as $cell => $value) {
+                $sheet->setCellValue($cell, $value);
+                $sheet->getStyle($cell)->getFont()->setBold(true);
+                $sheet->getStyle($cell)->getFill()
+                    ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                    ->getStartColor()->setARGB('FFE0E0E0');
+            }
+
+            // Set data
+            $row = 2;
+            foreach ($userExams as $userExam) {
+                $scoreTwk = 0;
+                $scoreTiu = 0;
+                $scoreTkp = 0;
+
+                // Load answers with question category info
+                $userExam->load(['userAnswers.question.category']);
+
+                foreach ($userExam->userAnswers as $answer) {
+                    $categoryCode = strtolower($answer->question?->category?->code ?? '');
+
+                    if (str_contains($categoryCode, 'twk')) {
+                        $scoreTwk += $answer->score;
+                    } elseif (str_contains($categoryCode, 'tiu')) {
+                        $scoreTiu += $answer->score;
+                    } elseif (str_contains($categoryCode, 'tkp')) {
+                        $scoreTkp += $answer->score;
+                    }
+                }
+
+                $isPassed = $userExam->score >= ($userExam->exam->passing_grade ?? 0);
+                $statusKelulusan = $isPassed ? 'Lulus' : 'Tidak Lulus';
+
+                $sheet->setCellValue('A' . $row, $userExam->exam->title ?? 'Unknown Exam');
+                $sheet->setCellValue('B' . $row, $userExam->start_time ? $userExam->start_time->format('Y-m-d H:i:s') : '-');
+                $sheet->setCellValue('C' . $row, $userExam->end_time ? $userExam->end_time->format('Y-m-d H:i:s') : '-');
+                $sheet->setCellValue('D' . $row, $statusKelulusan);
+                $sheet->setCellValue('E' . $row, $userExam->score ?? 0);
+                $sheet->setCellValue('F' . $row, $scoreTwk);
+                $sheet->setCellValue('G' . $row, $scoreTiu);
+                $sheet->setCellValue('H' . $row, $scoreTkp);
+
+                $row++;
+            }
+
+            // Auto size columns
+            foreach (range('A', 'H') as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            // Create file
+            $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $student->name);
+            $filename = 'Riwayat_Ujian_' . $safeName . '_' . date('Y-m-d_H-i-s') . '.xlsx';
+            $filePath = 'exports/' . $filename;
+            // Saved to public disk to make it accessible via URL
+            $fullPath = storage_path('app/public/' . $filePath);
+
+            // Ensure directory exists
+            if (!file_exists(dirname($fullPath))) {
+                mkdir(dirname($fullPath), 0755, true);
+            }
+
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save($fullPath);
+
+            return $this->successResponse([
+                'file_path' => $filePath,
+                'file_name' => $filename,
+                'download_url' => asset('storage/' . $filePath)
+            ], 'Export riwayat ujian berhasil');
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal export riwayat ujian: ' . $e->getMessage());
+        }
+    }
     public function getStudentById(string $id): array
     {
         try {

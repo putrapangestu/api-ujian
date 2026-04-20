@@ -153,6 +153,37 @@ class StudentController extends Controller
     }
 
     /**
+     * Export student exam history to Excel file
+     *
+     * @param Request $request
+     * @param string $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Get(
+        path: "/students/{id}/exam-history/export",
+        summary: "Export riwayat ujian siswa",
+        tags: ["Students"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string"), description: "Cari nama ujian"),
+            new OA\Parameter(name: "start_date", in: "query", schema: new OA\Schema(type: "string", format: "date"), description: "Filter tanggal awal ujian"),
+            new OA\Parameter(name: "end_date", in: "query", schema: new OA\Schema(type: "string", format: "date"), description: "Filter tanggal akhir ujian"),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    public function exportExamHistory(Request $request, $id)
+    {
+        $filters = $request->only(['search', 'start_date', 'end_date']);
+        $result = $this->studentService->exportStudentExamHistory($id, $filters);
+
+        if ($result['success']) {
+            return $this->successResponse($result['data'], $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
+
+    /**
      * Create new student
      *
      * @param StudentRequest $request

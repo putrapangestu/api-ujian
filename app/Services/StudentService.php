@@ -348,8 +348,9 @@ class StudentService extends BaseService
                 }
 
                 // Process file
-                $filePath = $file->store('temp');
-                $fileFullPath = storage_path('app/' . $filePath);
+                $fileName = $file->getClientOriginalName();
+                $filePath = $file->storeAs('temp', 'import_student_' . uniqid() . '_' . $fileName, 'public');
+                $fileFullPath = storage_path('app/public/' . $filePath);
 
                 // Read Excel file
                 $spreadsheet = IOFactory::load($fileFullPath);
@@ -424,7 +425,7 @@ class StudentService extends BaseService
                 $result = $this->studentRepository->importStudents($students);
 
                 // Clean up file
-                Storage::delete($filePath);
+                Storage::disk('public')->delete($filePath);
 
                 return $this->successResponse([
                     'imported' => $result['imported'],
@@ -435,6 +436,9 @@ class StudentService extends BaseService
 
             } catch (\Exception $e) {
                 DB::rollBack();
+                if (isset($filePath)) {
+                    Storage::disk('public')->delete($filePath);
+                }
                 return $this->errorResponse('Gagal import siswa: ' . $e->getMessage());
             }
         });

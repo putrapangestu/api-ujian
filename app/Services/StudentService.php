@@ -459,6 +459,7 @@ class StudentService extends BaseService
             }
 
             $students = $this->studentRepository->getByGroup($groupId);
+            $students->load('user');
 
             // Create Excel file
             $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();

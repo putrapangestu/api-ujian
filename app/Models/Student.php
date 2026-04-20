@@ -52,7 +52,6 @@ class Student extends Model
     protected $fillable = [
         'nisn',
         'name',
-        'email',
         'phone',
         'address',
         'group_id',
@@ -60,6 +59,13 @@ class Student extends Model
         'status',
         'birth_date',
     ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = ['email'];
 
     /**
      * The attributes that should be cast.
@@ -101,6 +107,16 @@ class Student extends Model
     public function userExams()
     {
         return $this->hasMany(UserExam::class, 'student_id');
+    }
+
+    /**
+     * Get the user's email.
+     *
+     * @return string|null
+     */
+    public function getEmailAttribute()
+    {
+        return $this->user ? $this->user->email : null;
     }
 
     /**

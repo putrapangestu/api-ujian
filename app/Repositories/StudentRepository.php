@@ -48,7 +48,9 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
      */
     public function findByEmail(string $email): ?Student
     {
-        return $this->model->where('email', $email)->first();
+        return $this->model->whereHas('user', function ($q) use ($email) {
+            $q->where('email', $email);
+        })->first();
     }
 
     /**
@@ -85,7 +87,9 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
             ->where(function ($query) use ($search) {
                 $query->where('name', 'like', "%{$search}%")
                       ->orWhere('nisn', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+                      ->orWhereHas('user', function ($q) use ($search) {
+                          $q->where('email', 'like', "%{$search}%");
+                      });
             })
             ->limit($limit)
             ->get();
@@ -114,7 +118,7 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
                     // Cek duplikasi email
                     $originalEmail = $studentData['email'];
                     $emailCount = 1;
-                    while ($this->findByEmail($studentData['email']) || User::where('email', $studentData['email'])->exists()) {
+                    while (User::where('email', $studentData['email'])->exists()) {
                         $emailParts = explode('@', $originalEmail);
                         $studentData['email'] = $emailParts[0] . $emailCount . '@' . $emailParts[1];
                         $emailCount++;
@@ -129,8 +133,9 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
                     ]);
                     $studentData['user_id'] = $user->id;
 
-                    // Remove password_string before insert
+                    // Remove fields that do not exist on students table
                     unset($studentData['password_string']);
+                    unset($studentData['email']);
 
                     // Create student
                     $student = $this->create($studentData);

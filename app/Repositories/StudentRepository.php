@@ -106,30 +106,31 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
             foreach ($students as $index => $studentData) {
                 try {
                     // Validasi data
-                    if (empty($studentData['nisn']) || empty($studentData['name']) || empty($studentData['email'])) {
-                        $errors[] = "Baris " . ($index + 1) . ": NISN, nama, dan email wajib diisi";
+                    if (empty($studentData['name']) || empty($studentData['email'])) {
+                        $errors[] = "Baris " . ($index + 1) . ": Nama dan email wajib diisi";
                         continue;
                     }
 
-                    // Cek duplikasi
-                    if ($this->findByNisn($studentData['nisn'])) {
-                        $errors[] = "Baris " . ($index + 1) . ": NISN sudah digunakan";
-                        continue;
-                    }
-
-                    if ($this->findByEmail($studentData['email'])) {
-                        $errors[] = "Baris " . ($index + 1) . ": Email sudah digunakan";
-                        continue;
+                    // Cek duplikasi email
+                    $originalEmail = $studentData['email'];
+                    $emailCount = 1;
+                    while ($this->findByEmail($studentData['email']) || User::where('email', $studentData['email'])->exists()) {
+                        $emailParts = explode('@', $originalEmail);
+                        $studentData['email'] = $emailParts[0] . $emailCount . '@' . $emailParts[1];
+                        $emailCount++;
                     }
 
                     // Create User
                     $user = User::create([
                         'email' => $studentData['email'],
-                        'password' => Hash::make($studentData['birth_date']),
+                        'password' => Hash::make($studentData['password_string'] ?? $studentData['birth_date']),
                         'name' => $studentData['name'],
                         'role' => 'student'
                     ]);
                     $studentData['user_id'] = $user->id;
+
+                    // Remove password_string before insert
+                    unset($studentData['password_string']);
 
                     // Create student
                     $student = $this->create($studentData);

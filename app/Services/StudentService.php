@@ -280,6 +280,57 @@ class StudentService extends BaseService
     }
 
     /**
+     * Generate and download Excel template for importing students
+     *
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function downloadTemplate()
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Set column headers based on import logic
+        $headers = [
+            'A1' => 'Nama Lengkap (Wajib)',
+            'B1' => 'Tanggal Lahir (Wajib, Format: DD-MM-YYYY)',
+            'C1' => 'Asal Sekolah (Wajib)',
+            'D1' => 'No Telp (Opsional)'
+        ];
+
+        foreach ($headers as $cell => $value) {
+            $sheet->setCellValue($cell, $value);
+            $sheet->getStyle($cell)->getFont()->setBold(true);
+            $sheet->getStyle($cell)->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                ->getStartColor()->setARGB('FFE0E0E0');
+        }
+
+        // Add Example Data
+        $sheet->setCellValue('A2', 'John Doe');
+        $sheet->setCellValue('B2', '15-08-2000');
+        $sheet->setCellValue('C2', 'SMAN 1 Jakarta');
+        $sheet->setCellValue('D2', '081234567890');
+
+        // Auto-size columns
+        foreach (range('A', 'D') as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+        }
+
+        // Save to temporary file
+        $fileName = 'Template_Import_Siswa.xlsx';
+        $tempPath = storage_path('app/temp/' . $fileName);
+
+        if (!\Illuminate\Support\Facades\File::exists(storage_path('app/temp'))) {
+            \Illuminate\Support\Facades\File::makeDirectory(storage_path('app/temp'), 0755, true);
+        }
+
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->save($tempPath);
+
+        return response()->download($tempPath, $fileName)->deleteFileAfterSend(true);
+    }
+
+    /**
      * Import students from Excel/CSV file
      *
      * @param \Illuminate\Http\UploadedFile $file
@@ -321,29 +372,40 @@ class StudentService extends BaseService
                         continue;
                     }
 
-                    $nisn = trim($row[0]);
-                    $name = trim($row[1]);
-                    $email = trim($row[2]);
+                    $name = trim($row[0] ?? '');
+                    $birthDateRaw = trim($row[1] ?? '');
+                    $address = trim($row[2] ?? '');
                     $phone = trim($row[3] ?? '');
-                    $address = trim($row[4] ?? '');
-                    $birthDate = trim($row[5] ?? '');
 
-                    // Validate birth date format
-                    if (!empty($birthDate) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthDate)) {
-                        $errors[] = "Baris $rowNumber: Format tanggal lahir tidak valid (YYYY-MM-DD)";
+                    if (empty($name) || empty($birthDateRaw) || empty($address)) {
+                        $errors[] = "Baris $rowNumber: Nama, Tanggal Lahir, dan Asal Sekolah wajib diisi";
                         continue;
                     }
 
-                    if (empty($nisn) || empty($name) || empty($email)) {
-                        $errors[] = "Baris $rowNumber: NISN, nama, dan email wajib diisi";
+                    // Format tanggal lahir to YYYY-MM-DD
+                    $birthDateFormatted = null;
+                    $passwordString = null;
+
+                    if (preg_match('/^(\d{2})-(\d{2})-(\d{4})$/', $birthDateRaw, $matches) || preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $birthDateRaw, $matches)) {
+                        // Input: DD-MM-YYYY or DD/MM/YYYY
+                        $birthDateFormatted = $matches[3] . '-' . $matches[2] . '-' . $matches[1];
+                        $passwordString = $matches[1] . $matches[2] . $matches[3]; // DDMMYYYY
+                    } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthDateRaw)) {
+                        // Input: YYYY-MM-DD
+                        $birthDateFormatted = $birthDateRaw;
+                        $parts = explode('-', $birthDateRaw);
+                        $passwordString = $parts[2] . $parts[1] . $parts[0]; // DDMMYYYY
+                    } else {
+                        $errors[] = "Baris $rowNumber: Format tanggal lahir tidak valid (gunakan DD-MM-YYYY)";
                         continue;
                     }
 
-                    // Validate email format
-                    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                        $errors[] = "Baris $rowNumber: Format email tidak valid";
-                        continue;
-                    }
+                    // Generate email
+                    $baseEmail = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $name));
+                    $email = $baseEmail . '@siswa.com';
+
+                    // Generate NISN (sebagai unique identifier jika diperlukan)
+                    $nisn = 'NISN' . date('Ymd') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
 
                     $students[] = [
                         'nisn' => $nisn,
@@ -352,8 +414,9 @@ class StudentService extends BaseService
                         'phone' => $phone,
                         'address' => $address,
                         'group_id' => $groupId,
-                        'status' => Student::STATUS_ACTIVE,
-                        'birth_date' => $birthDate,
+                        'status' => \App\Models\Student::STATUS_ACTIVE,
+                        'birth_date' => $birthDateFormatted,
+                        'password_string' => $passwordString,
                     ];
                 }
 

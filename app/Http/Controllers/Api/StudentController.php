@@ -224,6 +224,34 @@ class StudentController extends Controller
     }
 
     /**
+     * Download Excel template for importing students
+     *
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse
+     */
+    #[OA\Get(
+        path: "/students/download-template",
+        summary: "Download template Excel untuk import siswa",
+        tags: ["Students"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "File Excel template berhasil diunduh",
+                content: new OA\MediaType(
+                    mediaType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            )
+        ]
+    )]
+    public function downloadTemplate()
+    {
+        try {
+            return $this->studentService->downloadTemplate();
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengunduh template: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Import students from Excel file
      *
      * @param Request $request

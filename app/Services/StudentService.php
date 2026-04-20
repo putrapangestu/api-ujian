@@ -743,7 +743,21 @@ class StudentService extends BaseService
                 $sheet->setCellValue('A' . $row, $no);
                 $sheet->setCellValue('B' . $row, $student->name);
                 $sheet->setCellValue('C' . $row, $student->email);
-                $sheet->setCellValue('D' . $row, ($student->birth_date ? Carbon::parse($student->birth_date)->parse('DD-MM-YYYY') : ''));
+
+                // Handle birth date safely
+                $birthDate = $student->birth_date;
+                if ($birthDate instanceof Carbon) {
+                    $birthDate = $birthDate->format('d-m-Y');
+                } elseif (is_string($birthDate)) {
+                    // Try to format if it's a valid date string, otherwise use raw
+                    try {
+                        $birthDate = Carbon::parse($birthDate)->format('d-m-Y');
+                    } catch (\Exception $e) {
+                        // Keep raw string if parsing fails
+                    }
+                }
+                $sheet->setCellValue('D' . $row, $birthDate ?? '');
+
                 $row++;
                 $no++;
             }

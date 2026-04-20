@@ -120,6 +120,39 @@ class StudentController extends Controller
     }
 
     /**
+     * Get student exam history with pagination and filtering
+     *
+     * @param Request $request
+     * @param string $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Get(
+        path: "/students/{id}/exam-history",
+        summary: "Riwayat ujian siswa",
+        tags: ["Students"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string"), description: "Cari nama ujian"),
+            new OA\Parameter(name: "start_date", in: "query", schema: new OA\Schema(type: "string", format: "date"), description: "Filter tanggal awal ujian"),
+            new OA\Parameter(name: "end_date", in: "query", schema: new OA\Schema(type: "string", format: "date"), description: "Filter tanggal akhir ujian"),
+            new OA\Parameter(name: "page", in: "query", schema: new OA\Schema(type: "integer")),
+            new OA\Parameter(name: "per_page", in: "query", schema: new OA\Schema(type: "integer")),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    public function getExamHistory(Request $request, $id)
+    {
+        $filters = $request->only(['search', 'start_date', 'end_date', 'per_page']);
+        $result = $this->studentService->getStudentExamHistory($id, $filters);
+
+        if ($result['success']) {
+            return $this->successResponse($result['data'], $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
+
+    /**
      * Create new student
      *
      * @param StudentRequest $request

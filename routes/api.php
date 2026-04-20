@@ -76,6 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/all', [StudentController::class, 'list'])->name('students.all');
         Route::get('/download-template', [StudentController::class, 'downloadTemplate'])->name('students.download-template');
         Route::get('/{id}', [StudentController::class, 'show'])->name('students.show');
+        Route::get('/{id}/exam-history', [StudentController::class, 'getExamHistory'])->name('students.exam-history');
         Route::post('/import', [StudentController::class, 'import'])->name('students.import');
         Route::get('/export/{groupId}', [StudentController::class, 'export'])->name('students.export');
     });

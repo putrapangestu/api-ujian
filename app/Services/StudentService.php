@@ -111,11 +111,98 @@ class StudentService extends BaseService
     }
 
     /**
-     * Get student by ID
+     * Get student exam history with pagination and filters
      *
      * @param string $id
+     * @param array $filters
      * @return array
      */
+    public function getStudentExamHistory(string $id, array $filters): array
+    {
+        try {
+            $student = $this->studentRepository->find($id);
+
+            if (!$student) {
+                return $this->errorResponse('Siswa tidak ditemukan', null, 404);
+            }
+
+            $query = \App\Models\UserExam::with(['exam'])
+                ->where('student_id', $id)
+                ->where('status', \App\Models\UserExam::STATUS_COMPLETED);
+
+            // Filter by search (exam name)
+            if (!empty($filters['search'])) {
+                $search = $filters['search'];
+                $query->whereHas('exam', function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%");
+                });
+            }
+
+            // Filter by start date
+            if (!empty($filters['start_date'])) {
+                $query->whereDate('start_time', '>=', $filters['start_date']);
+            }
+
+            // Filter by end date
+            if (!empty($filters['end_date'])) {
+                $query->whereDate('start_time', '<=', $filters['end_date']);
+            }
+
+            $perPage = $filters['per_page'] ?? 10;
+            $userExams = $query->orderBy('start_time', 'desc')->paginate($perPage);
+
+            // Mapping data to format expected by FE
+            $mappedData = [];
+            foreach ($userExams as $userExam) {
+                // Calculate category scores manually based on answers
+                $scoreTwk = 0;
+                $scoreTiu = 0;
+                $scoreTkp = 0;
+
+                // Load answers with question category info
+                $userExam->load(['userAnswers.question.category']);
+
+                foreach ($userExam->userAnswers as $answer) {
+                    $categoryCode = strtolower($answer->question?->category?->code ?? '');
+
+                    if (str_contains($categoryCode, 'twk')) {
+                        $scoreTwk += $answer->score;
+                    } elseif (str_contains($categoryCode, 'tiu')) {
+                        $scoreTiu += $answer->score;
+                    } elseif (str_contains($categoryCode, 'tkp')) {
+                        $scoreTkp += $answer->score;
+                    }
+                }
+
+                $mappedData[] = [
+                    'exam_history_id' => $userExam->id,
+                    'exam_id' => $userExam->exam_id,
+                    'exam_name' => $userExam->exam->title ?? 'Unknown Exam',
+                    'start_time' => $userExam->start_time,
+                    'end_time' => $userExam->end_time,
+                    'status' => $userExam->status,
+                    'is_passed' => $userExam->score >= ($userExam->exam->passing_grade ?? 0),
+                    'total_score' => $userExam->score ?? 0,
+                    'score_twk' => $scoreTwk,
+                    'score_tiu' => $scoreTiu,
+                    'score_tkp' => $scoreTkp,
+                ];
+            }
+
+            return $this->successResponse([
+                'data' => $mappedData,
+                'pagination' => [
+                    'current_page' => $userExams->currentPage(),
+                    'per_page' => $userExams->perPage(),
+                    'total_items' => $userExams->total(),
+                    'total_pages' => $userExams->lastPage(),
+                ]
+            ], 'Riwayat ujian berhasil diambil');
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengambil riwayat ujian: ' . $e->getMessage());
+        }
+    }
     public function getStudentById(string $id): array
     {
         try {
@@ -125,7 +212,20 @@ class StudentService extends BaseService
                 return $this->errorResponse('Siswa tidak ditemukan', null, 404);
             }
 
-            return $this->successResponse($student, 'Detail siswa berhasil diambil');
+            // Append additional statistics for UX
+            $completedExams = $student->userExams->where('status', \App\Models\UserExam::STATUS_COMPLETED);
+            $totalExamCompleted = $completedExams->count();
+
+            $averageScore = 0;
+            if ($totalExamCompleted > 0) {
+                $averageScore = round($completedExams->avg('score') ?? 0, 2);
+            }
+
+            $studentData = $student->toArray();
+            $studentData['total_exam_completed'] = $totalExamCompleted;
+            $studentData['average_score'] = $averageScore;
+
+            return $this->successResponse($studentData, 'Detail siswa berhasil diambil');
 
         } catch (\Exception $e) {
             return $this->errorResponse('Gagal mengambil detail siswa: ' . $e->getMessage());

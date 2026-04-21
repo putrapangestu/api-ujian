@@ -312,8 +312,8 @@ class ExamService extends BaseService
                 return $this->errorResponse('Ujian tidak ditemukan', null, 404);
             }
 
-            $query = UserExam::where('exam_id', $examId)
-                ->with(['user.student.group']);
+            $query = \App\Models\UserExam::where('exam_id', $examId)
+                ->with(['user.student.group', 'userAnswers.question.category']);
 
             if (isset($filters['status']) && $filters['status']) {
                 $query->where('status', $filters['status']);
@@ -329,7 +329,65 @@ class ExamService extends BaseService
 
             $userExams = $query->orderByDesc('created_at')->paginate($perPage);
 
-            return ResponseHelper::paginate($userExams, 'Daftar user exam berhasil diambil');
+            // Mapping data to include detailed scores and user info
+            $mappedData = [];
+            foreach ($userExams as $userExam) {
+                $scoreTwk = 0;
+                $scoreTiu = 0;
+                $scoreTkp = 0;
+
+                foreach ($userExam->userAnswers as $answer) {
+                    $categoryCode = strtolower($answer->question?->category?->code ?? '');
+
+                    if (str_contains($categoryCode, 'twk')) {
+                        $scoreTwk += $answer->score;
+                    } elseif (str_contains($categoryCode, 'tiu')) {
+                        $scoreTiu += $answer->score;
+                    } elseif (str_contains($categoryCode, 'tkp')) {
+                        $scoreTkp += $answer->score;
+                    }
+                }
+
+                $student = $userExam->user?->student;
+
+                $mappedData[] = [
+                    'id' => $userExam->id,
+                    'user_id' => $userExam->user_id,
+                    'student_id' => $userExam->student_id,
+                    'exam_id' => $userExam->exam_id,
+                    'start_time' => $userExam->start_time,
+                    'end_time' => $userExam->end_time,
+                    'status' => $userExam->status,
+                    'score' => $userExam->score,
+                    'total_score' => $userExam->score ?? 0,
+                    'score_twk' => $scoreTwk,
+                    'score_tiu' => $scoreTiu,
+                    'score_tkp' => $scoreTkp,
+                    'user' => [
+                        'name' => $userExam->user?->name,
+                        'email' => $userExam->user?->email,
+                        'nisn' => $student?->nisn,
+                        'group_name' => $student?->group?->name,
+                    ],
+                    'is_passed' => $userExam->score >= ($exam->passing_grade ?? 0),
+                ];
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Daftar user exam berhasil diambil',
+                'data' => \App\Helpers\ResponseHelper::formatDateTimes($mappedData),
+                'errors' => null,
+                'pagination' => [
+                    'current_page' => $userExams->currentPage(),
+                    'total_pages' => $userExams->lastPage(),
+                    'per_page' => $userExams->perPage(),
+                    'total_items' => $userExams->total(),
+                    'has_next_page' => $userExams->hasMorePages(),
+                    'has_previous_page' => $userExams->currentPage() > 1
+                ],
+                'code' => 200
+            ];
         } catch (\Exception $e) {
             return $this->errorResponse('Gagal mengambil daftar user exam: ' . $e->getMessage());
         }

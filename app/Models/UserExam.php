@@ -77,7 +77,7 @@ class UserExam extends Model
      */
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     /**
@@ -92,7 +92,7 @@ class UserExam extends Model
 
     public function student()
     {
-        return $this->belongsTo(Student::class, 'student_id');
+        return $this->belongsTo(Student::class, 'student_id')->withTrashed();
     }
 
     /**

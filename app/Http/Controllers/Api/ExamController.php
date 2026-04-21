@@ -463,6 +463,37 @@ class ExamController extends Controller
     }
 
     /**
+     * Export user exams to Excel
+     *
+     * @param  string  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Get(
+        path: '/exams/{id}/user-exams/export',
+        summary: 'Export data peserta ujian',
+        tags: ['Exams'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'status', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'student_id', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'user_id', in: 'query', schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'search', in: 'query', schema: new OA\Schema(type: 'string')),
+        ],
+        responses: [new OA\Response(response: 200, description: 'Success')]
+    )]
+    public function exportUserExams(Request $request, $id)
+    {
+        $filters = $request->only(['status', 'student_id', 'user_id', 'search']);
+        $result = $this->examService->exportUserExams($id, $filters);
+
+        if ($result['success']) {
+            return $this->successResponse($result['data'] ?? $result, $result['message'] ?? 'Berhasil export');
+        }
+
+        return $this->errorResponse($result['message'], 400);
+    }
+
+    /**
      * Start exam for authenticated user
      *
      * @param  string  $id

@@ -393,6 +393,160 @@ class ExamService extends BaseService
         }
     }
 
+    /**
+     * Export user exams to Excel
+     *
+     * @param string $examId
+     * @param array $filters
+     * @return array
+     */
+    public function exportUserExams(string $examId, array $filters = []): array
+    {
+        try {
+            $exam = $this->examRepository->find($examId);
+            if (! $exam) {
+                return $this->errorResponse('Ujian tidak ditemukan', null, 404);
+            }
+
+            $query = \App\Models\UserExam::where('exam_id', $examId)
+                ->with(['user.student.group', 'userAnswers.question.category']);
+
+            if (isset($filters['status']) && $filters['status']) {
+                $query->where('status', $filters['status']);
+            }
+
+            if (isset($filters['student_id']) && $filters['student_id']) {
+                $query->where('student_id', $filters['student_id']);
+            }
+
+            if (isset($filters['user_id']) && $filters['user_id']) {
+                $query->where('user_id', $filters['user_id']);
+            }
+
+            if (isset($filters['search']) && $filters['search']) {
+                $search = $filters['search'];
+                $query->whereHas('user', function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhereHas('student', function ($sq) use ($search) {
+                          $sq->where('nisn', 'like', "%{$search}%")
+                             ->orWhereHas('group', function ($gq) use ($search) {
+                                 $gq->where('name', 'like', "%{$search}%");
+                             });
+                      });
+                });
+            }
+
+            // Batasi jumlah row yang diekspor agar tidak OOM
+            $userExams = $query->orderByDesc('created_at')->limit(5000)->get();
+
+            if ($userExams->isEmpty()) {
+                return $this->errorResponse('Tidak ada data peserta ujian untuk diekspor', null, 404);
+            }
+
+            // Create Excel file
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('Data Peserta Ujian');
+
+            // Set headers
+            $headers = [
+                'A1' => 'Nama Peserta',
+                'B1' => 'Email',
+                'C1' => 'NISN',
+                'D1' => 'Grup Siswa',
+                'E1' => 'Waktu Mulai',
+                'F1' => 'Waktu Selesai',
+                'G1' => 'Status',
+                'H1' => 'Skor TWK',
+                'I1' => 'Skor TIU',
+                'J1' => 'Skor TKP',
+                'K1' => 'Total Skor',
+                'L1' => 'Status Kelulusan'
+            ];
+
+            foreach ($headers as $cell => $value) {
+                $sheet->setCellValue($cell, $value);
+                $sheet->getStyle($cell)->getFont()->setBold(true);
+                $sheet->getStyle($cell)->getFill()
+                    ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                    ->getStartColor()->setARGB('FFE0E0E0');
+            }
+
+            $row = 2;
+            foreach ($userExams as $userExam) {
+                $scoreTwk = 0;
+                $scoreTiu = 0;
+                $scoreTkp = 0;
+
+                foreach ($userExam->userAnswers as $answer) {
+                    $categoryCode = strtolower($answer->question?->category?->code ?? '');
+
+                    if (str_contains($categoryCode, 'twk')) {
+                        $scoreTwk += $answer->score;
+                    } elseif (str_contains($categoryCode, 'tiu')) {
+                        $scoreTiu += $answer->score;
+                    } elseif (str_contains($categoryCode, 'tkp')) {
+                        $scoreTkp += $answer->score;
+                    }
+                }
+
+                $student = $userExam->user?->student;
+                $isPassed = $userExam->score >= ($exam->passing_grade ?? 0) ? 'Lulus' : 'Tidak Lulus';
+
+                $sheet->setCellValue('A' . $row, $userExam->user?->name);
+                $sheet->setCellValue('B' . $row, $userExam->user?->email);
+                $sheet->setCellValueExplicit('C' . $row, $student?->nisn, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                $sheet->setCellValue('D' . $row, $student?->group?->name);
+                $sheet->setCellValue('E' . $row, $userExam->start_time ? date('Y-m-d H:i:s', strtotime($userExam->start_time)) : '-');
+                $sheet->setCellValue('F' . $row, $userExam->end_time ? date('Y-m-d H:i:s', strtotime($userExam->end_time)) : '-');
+                $sheet->setCellValue('G' . $row, ucfirst($userExam->status));
+                $sheet->setCellValue('H' . $row, $scoreTwk);
+                $sheet->setCellValue('I' . $row, $scoreTiu);
+                $sheet->setCellValue('J' . $row, $scoreTkp);
+                $sheet->setCellValue('K' . $row, $userExam->score ?? 0);
+                $sheet->setCellValue('L' . $row, $isPassed);
+
+                // Highlight kelulusan
+                if ($userExam->score >= ($exam->passing_grade ?? 0)) {
+                    $sheet->getStyle('L' . $row)->getFont()->getColor()->setARGB('FF008000'); // Green
+                } else {
+                    $sheet->getStyle('L' . $row)->getFont()->getColor()->setARGB('FFFF0000'); // Red
+                }
+
+                $row++;
+            }
+
+            // Auto size columns
+            foreach (range('A', 'L') as $column) {
+                $sheet->getColumnDimension($column)->setAutoSize(true);
+            }
+
+            // Create file
+            $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $exam->title);
+            $filename = 'Hasil_Ujian_' . $safeName . '_' . date('Y-m-d_H-i-s') . '.xlsx';
+            $filePath = 'exports/' . $filename;
+            $fullPath = storage_path('app/public/' . $filePath);
+
+            // Ensure directory exists
+            if (!file_exists(dirname($fullPath))) {
+                mkdir(dirname($fullPath), 0755, true);
+            }
+
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save($fullPath);
+
+            return $this->successResponse([
+                'file_path' => $filePath,
+                'file_name' => $filename,
+                'download_url' => asset('storage/' . $filePath)
+            ], 'Export data peserta ujian berhasil');
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal export data peserta ujian: ' . $e->getMessage());
+        }
+    }
+
     public function getExamHistoryForUser(string $userId, array $filters = [], int $perPage = 15): array
     {
         try {

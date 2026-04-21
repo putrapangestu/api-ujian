@@ -83,7 +83,7 @@ class QuestionService extends BaseService
     {
         try {
             $query = Question::query()
-            ->with(['options', 'questionGroup','category', 'questionExams']);
+            ->with(['options', 'questionGroup.questionCategory', 'questionExams']);
 
             if (isset($filters['exam_id']) && $filters['exam_id']) {
                 $query->whereRelation('questionExams','exam_id', $filters['exam_id'])->whereHas('questionExams');
@@ -378,7 +378,7 @@ class QuestionService extends BaseService
                             ->where('code', $code)
                             ->orWhere('name', $groupName)
                             ->first();
-                        
+
                         if ($group) {
                             $finalQuestionGroupId = $group->id;
                         }
@@ -394,7 +394,7 @@ class QuestionService extends BaseService
                             $optionText = trim($row[$optionIndex]);
                             $optionScore = trim($row[$optionIndex + 1] ?? '0');
                             if ($optionScore === '') $optionScore = '0';
-                            
+
                             $isCorrect = ($optionLabel === $correctAnswerLabel);
 
                             $optionsData[] = [
@@ -472,7 +472,7 @@ class QuestionService extends BaseService
 
                 // Delete options first (if not cascading)
                 $question->options()->delete();
-                
+
                 // Delete question
                 $question->delete();
 

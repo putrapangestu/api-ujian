@@ -57,7 +57,10 @@ class QuestionService extends BaseService
                 $search = $filters['search'];
                 $query->where(function ($q) use ($search) {
                     $q->where('question_text', 'like', "%{$search}%")
-                        ->orWhere('correct_answer', 'like', "%{$search}%");
+                        ->orWhere('correct_answer', 'like', "%{$search}%")
+                        ->orWhereHas('options', function ($opt) use ($search) {
+                            $opt->where('option_text', 'like', "%{$search}%");
+                        });
                 });
             }
 
@@ -99,7 +102,10 @@ class QuestionService extends BaseService
                 $search = $filters['search'];
                 $query->where(function ($q) use ($search) {
                     $q->where('question_text', 'like', "%{$search}%")
-                        ->orWhere('correct_answer', 'like', "%{$search}%");
+                        ->orWhere('correct_answer', 'like', "%{$search}%")
+                        ->orWhereHas('options', function ($opt) use ($search) {
+                            $opt->where('option_text', 'like', "%{$search}%");
+                        });
                 });
             }
 

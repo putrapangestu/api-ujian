@@ -539,7 +539,7 @@ class QuestionBankService extends BaseService
         $questionType = trim($row[1]);
         $categoryName = trim($row[2] ?? '');
         $score = trim($row[3] ?? '1');
-        $correctAnswer = trim($row[4] ?? '');
+        $correctAnswerLabel = trim($row[4] ?? '');
 
         // Validasi data wajib
         if (empty($questionText)) {
@@ -557,13 +557,13 @@ class QuestionBankService extends BaseService
         // Handle kategori
         $finalCategoryId = $categoryId;
         if ($questionGroupId) {
-            $group = QuestionGroup::find($questionGroupId);
+            $group = \App\Models\QuestionGroup::find($questionGroupId);
             if ($group && $group->question_category_id) {
                 $finalCategoryId = $group->question_category_id;
             }
         }
         if (! empty($categoryName) && ! $categoryId) {
-            $category = QuestionCategory::firstOrCreate(
+            $category = \App\Models\QuestionCategory::firstOrCreate(
                 ['name' => $categoryName],
                 ['code' => strtoupper(str_replace(' ', '_', $categoryName)), 'status' => 'active']
             );
@@ -574,8 +574,8 @@ class QuestionBankService extends BaseService
         $finalQuestionGroupId = $questionGroupId;
         if (isset($row[5]) && ! empty(trim($row[5]))) {
             $groupName = trim($row[5]);
-            $code = strtolower(Str::slug($groupName, '_'));
-            $group = QuestionGroup::query()
+            $code = strtolower(\Illuminate\Support\Str::slug($groupName, '_'));
+            $group = \App\Models\QuestionGroup::query()
                 ->where('code', $code)
                 ->orWhere('name', $groupName)
                 ->first();
@@ -591,18 +591,18 @@ class QuestionBankService extends BaseService
         }
 
         // Buat soal
-        $question = Question::create([
+        $question = \App\Models\Question::create([
             'exam_id' => $examId,
             'question_group_id' => $finalQuestionGroupId,
             'category_id' => $finalCategoryId,
             'question_text' => $questionText,
             'question_type' => $questionType,
             'score' => (int) $score,
-            'correct_answer' => $correctAnswer,
+            'correct_answer' => $correctAnswerLabel,
         ]);
 
         // Handle opsi untuk multiple choice
-        if ($questionType === 'multiple_choice') {
+        if ($questionType === 'multiple_choice' || $questionType === 'single_choice') {
             if (count($row) < 7) {
                 return $this->errorResponse("Baris $rowNumber: Opsi untuk multiple choice tidak ditemukan");
             }
@@ -613,26 +613,25 @@ class QuestionBankService extends BaseService
 
             while ($optionIndex < count($row) && ! empty(trim($row[$optionIndex]))) {
                 $optionText = trim($row[$optionIndex]);
-                $isCorrect = $optionText === $correctAnswer;
+                $optionScore = trim($row[$optionIndex + 1] ?? '0');
+                if ($optionScore === '') $optionScore = '0';
 
-                $options[] = QuestionOption::create([
+                $isCorrect = ($optionLabel === $correctAnswerLabel);
+
+                $options[] = \App\Models\QuestionOption::create([
                     'question_id' => $question->id,
                     'option_text' => $optionText,
                     'is_correct' => $isCorrect,
-                    'score' => $isCorrect ? (int) $score : 0,
+                    'score' => (int) $optionScore,
                     'option_label' => $optionLabel,
                 ]);
 
-                $optionIndex++;
+                $optionIndex += 2;
                 $optionLabel = chr(ord($optionLabel) + 1);
             }
 
             if (count($options) < 2) {
                 return $this->errorResponse("Baris $rowNumber: Minimal 2 opsi untuk multiple choice");
-            }
-
-            if (! $question->options->where('is_correct', true)->first()) {
-                return $this->errorResponse("Baris $rowNumber: Tidak ada opsi yang benar");
             }
         }
 
@@ -902,14 +901,19 @@ class QuestionBankService extends BaseService
             'A1' => 'Teks Soal (Wajib)',
             'B1' => 'Tipe Soal (Wajib)',
             'C1' => 'Kategori (Opsional)',
-            'D1' => 'Skor (Opsional, Default: 1)',
+            'D1' => 'Skor Soal (Khusus Essay/True-False)',
             'E1' => 'Jawaban Benar (Wajib untuk Pilihan Ganda)',
             'F1' => 'Grup Soal (Opsional)',
             'G1' => 'Opsi A',
-            'H1' => 'Opsi B',
-            'I1' => 'Opsi C',
-            'J1' => 'Opsi D',
-            'K1' => 'Opsi E',
+            'H1' => 'Skor A',
+            'I1' => 'Opsi B',
+            'J1' => 'Skor B',
+            'K1' => 'Opsi C',
+            'L1' => 'Skor C',
+            'M1' => 'Opsi D',
+            'N1' => 'Skor D',
+            'O1' => 'Opsi E',
+            'P1' => 'Skor E',
         ];
 
         foreach ($headers as $cell => $value) {
@@ -921,22 +925,66 @@ class QuestionBankService extends BaseService
         }
 
         // Add Data Validation for Question Type
-        $validation = $sheet->getCell('B2')->getDataValidation();
-        $validation->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
-        $validation->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_INFORMATION);
-        $validation->setAllowBlank(false);
-        $validation->setShowInputMessage(true);
-        $validation->setShowErrorMessage(true);
-        $validation->setShowDropDown(true);
-        $validation->setErrorTitle('Input error');
-        $validation->setError('Value is not in list.');
-        $validation->setPromptTitle('Pick from list');
-        $validation->setPrompt('Please pick a value from the drop-down list.');
-        $validation->setFormula1('"multiple_choice,essay,true_false,single_choice"');
+        $validationType = $sheet->getCell('B2')->getDataValidation();
+        $validationType->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
+        $validationType->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_INFORMATION);
+        $validationType->setAllowBlank(false);
+        $validationType->setShowInputMessage(true);
+        $validationType->setShowErrorMessage(true);
+        $validationType->setShowDropDown(true);
+        $validationType->setErrorTitle('Input error');
+        $validationType->setError('Value is not in list.');
+        $validationType->setPromptTitle('Pick from list');
+        $validationType->setPrompt('Please pick a value from the drop-down list.');
+        $validationType->setFormula1('"multiple_choice,essay,true_false,single_choice"');
 
-        // Apply validation to column B (rows 2 to 1000)
+        // Add Data Validation for Kategori
+        $validationCategory = $sheet->getCell('C2')->getDataValidation();
+        $validationCategory->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
+        $validationCategory->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_INFORMATION);
+        $validationCategory->setAllowBlank(true);
+        $validationCategory->setShowDropDown(true);
+        $validationCategory->setFormula1('"TWK,TIU,TKP"');
+
+        // Add Data Validation for Jawaban Benar
+        $validationAnswer = $sheet->getCell('E2')->getDataValidation();
+        $validationAnswer->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
+        $validationAnswer->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_INFORMATION);
+        $validationAnswer->setAllowBlank(true);
+        $validationAnswer->setShowDropDown(true);
+        $validationAnswer->setFormula1('"A,B,C,D,E"');
+
+        // Add Data Validation for Grup Soal
+        $groups = \App\Models\QuestionGroup::pluck('name')->toArray();
+        if (!empty($groups)) {
+            // Because Excel validation lists can't exceed 255 chars, we use a hidden sheet
+            $groupSheet = $spreadsheet->createSheet();
+            $groupSheet->setTitle('DataGrup');
+            $groupSheet->setSheetState(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet::SHEETSTATE_HIDDEN);
+
+            $row = 1;
+            foreach ($groups as $groupName) {
+                $groupSheet->setCellValue('A' . $row, $groupName);
+                $row++;
+            }
+
+            $validationGroup = $sheet->getCell('F2')->getDataValidation();
+            $validationGroup->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
+            $validationGroup->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_INFORMATION);
+            $validationGroup->setAllowBlank(true);
+            $validationGroup->setShowDropDown(true);
+            $validationGroup->setFormula1('DataGrup!$A$1:$A$' . count($groups));
+
+            for ($i = 2; $i <= 1000; $i++) {
+                $sheet->getCell('F'.$i)->setDataValidation(clone $validationGroup);
+            }
+        }
+
+        // Apply validation to rows 2 to 1000
         for ($i = 2; $i <= 1000; $i++) {
-            $sheet->getCell('B'.$i)->setDataValidation(clone $validation);
+            $sheet->getCell('B'.$i)->setDataValidation(clone $validationType);
+            $sheet->getCell('C'.$i)->setDataValidation(clone $validationCategory);
+            $sheet->getCell('E'.$i)->setDataValidation(clone $validationAnswer);
         }
 
         // Add some example data
@@ -944,28 +992,29 @@ class QuestionBankService extends BaseService
         $sheet->setCellValue('B2', 'multiple_choice');
         $sheet->setCellValue('C2', 'TWK');
         $sheet->setCellValue('D2', '5');
-        $sheet->setCellValue('E2', 'Thomas Alva Edison');
-        $sheet->setCellValue('F2', 'Nasionalisme');
-        $sheet->setCellValue('G2', 'Alexander Graham Bell');
-        $sheet->setCellValue('H2', 'Thomas Alva Edison');
-        $sheet->setCellValue('I2', 'Nikola Tesla');
-        $sheet->setCellValue('J2', 'Albert Einstein');
+        $sheet->setCellValue('E2', 'A');
+        if (!empty($groups)) {
+            $sheet->setCellValue('F2', $groups[0]);
+        }
+        $sheet->setCellValue('G2', 'Thomas Alva Edison');
+        $sheet->setCellValue('H2', '5');
+        $sheet->setCellValue('I2', 'Alexander Graham Bell');
+        $sheet->setCellValue('J2', '0');
+        $sheet->setCellValue('K2', 'Nikola Tesla');
+        $sheet->setCellValue('L2', '0');
+        $sheet->setCellValue('M2', 'Albert Einstein');
+        $sheet->setCellValue('N2', '0');
 
         $sheet->setCellValue('A3', 'Jelaskan pengertian dari Pancasila!');
         $sheet->setCellValue('B3', 'essay');
         $sheet->setCellValue('C3', 'TIU');
         $sheet->setCellValue('D3', '10');
-        $sheet->setCellValue('F3', 'Nasionalisme');
-
-        $sheet->setCellValue('A4', 'Ibukota Indonesia adalah Jakarta');
-        $sheet->setCellValue('B4', 'true_false');
-        $sheet->setCellValue('C4', 'TKP');
-        $sheet->setCellValue('D4', '2');
-        $sheet->setCellValue('E4', 'True');
-        $sheet->setCellValue('F4', 'Nasionalisme');
+        if (!empty($groups)) {
+            $sheet->setCellValue('F3', $groups[0]);
+        }
 
         // Auto-size columns
-        foreach (range('A', 'K') as $columnID) {
+        foreach (range('A', 'P') as $columnID) {
             $sheet->getColumnDimension($columnID)->setAutoSize(true);
         }
 
@@ -973,8 +1022,8 @@ class QuestionBankService extends BaseService
         $fileName = 'Template_Import_Soal_' . uniqid() . '.xlsx';
         $tempPath = storage_path('app/public/temp/' . $fileName);
 
-        if (!File::exists(storage_path('app/public/temp'))) {
-            File::makeDirectory(storage_path('app/public/temp'), 0755, true);
+        if (!\Illuminate\Support\Facades\File::exists(storage_path('app/public/temp'))) {
+            \Illuminate\Support\Facades\File::makeDirectory(storage_path('app/public/temp'), 0755, true);
         }
 
         $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
@@ -1021,14 +1070,19 @@ class QuestionBankService extends BaseService
             $sheet->setCellValue('A1', 'Teks Soal');
             $sheet->setCellValue('B1', 'Tipe Soal');
             $sheet->setCellValue('C1', 'Kategori');
-            $sheet->setCellValue('D1', 'Nilai');
+            $sheet->setCellValue('D1', 'Skor Soal');
             $sheet->setCellValue('E1', 'Jawaban Benar');
             $sheet->setCellValue('F1', 'Grup Soal');
             $sheet->setCellValue('G1', 'Opsi A');
-            $sheet->setCellValue('H1', 'Opsi B');
-            $sheet->setCellValue('I1', 'Opsi C');
-            $sheet->setCellValue('J1', 'Opsi D');
-            $sheet->setCellValue('K1', 'Opsi E');
+            $sheet->setCellValue('H1', 'Skor A');
+            $sheet->setCellValue('I1', 'Opsi B');
+            $sheet->setCellValue('J1', 'Skor B');
+            $sheet->setCellValue('K1', 'Opsi C');
+            $sheet->setCellValue('L1', 'Skor C');
+            $sheet->setCellValue('M1', 'Opsi D');
+            $sheet->setCellValue('N1', 'Skor D');
+            $sheet->setCellValue('O1', 'Opsi E');
+            $sheet->setCellValue('P1', 'Skor E');
 
             // Set data
             $row = 2;
@@ -1041,12 +1095,15 @@ class QuestionBankService extends BaseService
                 $sheet->setCellValue('F'.$row, $question->questionGroup->name ?? '');
 
                 // Set options for multiple choice
-                if ($question->question_type === 'multiple_choice') {
+                if ($question->question_type === 'multiple_choice' || $question->question_type === 'single_choice') {
                     $options = $question->options->sortBy('option_label');
                     $optionColumn = 'G';
                     foreach ($options as $option) {
                         $sheet->setCellValue($optionColumn.$row, $option->option_text);
-                        $optionColumn = chr(ord($optionColumn) + 1);
+                        $scoreColumn = chr(ord($optionColumn) + 1);
+                        $sheet->setCellValue($scoreColumn.$row, $option->score);
+
+                        $optionColumn = chr(ord($optionColumn) + 2);
                     }
                 }
 
@@ -1054,7 +1111,7 @@ class QuestionBankService extends BaseService
             }
 
             // Auto size columns
-            foreach (range('A', 'K') as $column) {
+            foreach (range('A', 'P') as $column) {
                 $sheet->getColumnDimension($column)->setAutoSize(true);
             }
 

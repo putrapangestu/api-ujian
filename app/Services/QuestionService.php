@@ -338,7 +338,7 @@ class QuestionService extends BaseService
                     $rowNumber++;
 
                     // Validasi row data
-                    if (count($row) < 6) {
+                    if (count($row) < 5) {
                         $errors[] = "Baris $rowNumber: Data tidak lengkap";
 
                         continue;
@@ -348,8 +348,7 @@ class QuestionService extends BaseService
                     $questionType = trim($row[1]);
                     $categoryId = trim($row[2]);
                     $score = trim($row[3]);
-                    $correctAnswer = trim($row[4]);
-                    $options = trim($row[5]);
+                    $correctAnswerLabel = trim($row[4]);
 
                     if (empty($questionText) || empty($questionType)) {
                         $errors[] = "Baris $rowNumber: Teks soal dan tipe soal wajib diisi";
@@ -364,28 +363,54 @@ class QuestionService extends BaseService
                         continue;
                     }
 
+                    // Handle grup soal
+                    $finalQuestionGroupId = $questionGroupId;
+                    if (isset($row[5]) && ! empty(trim($row[5]))) {
+                        $groupName = trim($row[5]);
+                        $code = strtolower(\Illuminate\Support\Str::slug($groupName, '_'));
+                        $group = \App\Models\QuestionGroup::query()
+                            ->where('code', $code)
+                            ->orWhere('name', $groupName)
+                            ->first();
+                        
+                        if ($group) {
+                            $finalQuestionGroupId = $group->id;
+                        }
+                    }
+
                     // Parse options untuk multiple choice
                     $optionsData = [];
-                    if ($questionType === 'multiple_choice' && ! empty($options)) {
-                        $optionTexts = explode('|', $options);
-                        foreach ($optionTexts as $index => $optionText) {
+                    if ($questionType === 'multiple_choice' || $questionType === 'single_choice') {
+                        $optionIndex = 6;
+                        $optionLabel = 'A';
+
+                        while ($optionIndex < count($row) && ! empty(trim($row[$optionIndex]))) {
+                            $optionText = trim($row[$optionIndex]);
+                            $optionScore = trim($row[$optionIndex + 1] ?? '0');
+                            if ($optionScore === '') $optionScore = '0';
+                            
+                            $isCorrect = ($optionLabel === $correctAnswerLabel);
+
                             $optionsData[] = [
-                                'text' => trim($optionText),
-                                'is_correct' => trim($optionText) === $correctAnswer,
-                                'score' => trim($optionText) === $correctAnswer ? $score : 0,
-                                'label' => chr(65 + $index), // A, B, C, D
+                                'text' => $optionText,
+                                'is_correct' => $isCorrect,
+                                'score' => (int) $optionScore,
+                                'label' => $optionLabel,
                             ];
+
+                            $optionIndex += 2;
+                            $optionLabel = chr(ord($optionLabel) + 1);
                         }
                     }
 
                     $questionData = [
                         'exam_id' => $examId,
-                        'question_group_id' => $questionGroupId,
+                        'question_group_id' => $finalQuestionGroupId,
                         'category_id' => $categoryId,
                         'question_text' => $questionText,
                         'question_type' => $questionType,
                         'score' => $score,
-                        'correct_answer' => $correctAnswer,
+                        'correct_answer' => $correctAnswerLabel,
                         'options' => $optionsData,
                     ];
 

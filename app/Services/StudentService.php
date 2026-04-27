@@ -653,7 +653,7 @@ class StudentService extends BaseService
                     $email = $baseEmail . '@bimbel.com';
 
                     // Generate NISN (sebagai unique identifier jika diperlukan)
-                    $nisn = 'NISN' . date('Ymd') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
+                    $nisn = 'NISN' . date('Ymdhis') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
 
                     $students[] = [
                         'nisn' => $nisn,

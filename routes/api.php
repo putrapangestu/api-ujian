@@ -165,6 +165,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/students/export', [StudentController::class, 'export'])->name('admin.students.export');
         Route::post('/students', [StudentController::class, 'store'])->name('admin.students.store');
         Route::put('/students/{id}', [StudentController::class, 'update'])->name('admin.students.update');
+        Route::post('/students/bulk-delete', [StudentController::class, 'destroyBulk'])->name('admin.students.destroy-bulk');
         Route::delete('/students/{id}', [StudentController::class, 'destroy'])->name('admin.students.destroy');
 
         // Question Category management

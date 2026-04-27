@@ -288,6 +288,46 @@ class StudentController extends Controller
     }
 
     /**
+     * Delete multiple students
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Post(
+        path: "/admin/students/bulk-delete",
+        summary: "Hapus banyak siswa sekaligus",
+        tags: ["Admin","Students"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: "student_ids",
+                        type: "array",
+                        items: new OA\Items(type: "string")
+                    ),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    public function destroyBulk(Request $request)
+    {
+        $request->validate([
+            'student_ids' => 'required|array|min:1',
+            'student_ids.*' => 'required|string|exists:students,id',
+        ]);
+
+        $result = $this->studentService->deleteMultipleStudents($request->student_ids);
+
+        if ($result['success']) {
+            return $this->successResponse($result['data'] ?? null, $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
+
+    /**
      * Download Excel template for importing students
      *
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse

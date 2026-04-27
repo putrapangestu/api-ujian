@@ -518,6 +518,48 @@ class StudentService extends BaseService
     }
 
     /**
+     * Delete multiple students
+     *
+     * @param array $studentIds
+     * @return array
+     */
+    public function deleteMultipleStudents(array $studentIds): array
+    {
+        return DB::transaction(function () use ($studentIds) {
+            try {
+                // Check if any student has exam history
+                $studentsWithExams = Student::whereIn('id', $studentIds)->whereHas('userExams')->exists();
+                if ($studentsWithExams) {
+                    return $this->errorResponse('Beberapa siswa tidak dapat dihapus karena memiliki riwayat ujian');
+                }
+
+                $students = Student::whereIn('id', $studentIds)->get();
+                $deletedCount = 0;
+
+                foreach ($students as $student) {
+                    // Delete associated user
+                    if ($student->user_id) {
+                        $this->userRepository->delete($student->user_id);
+                    }
+
+                    // Delete student
+                    $this->studentRepository->delete($student->id);
+                    $deletedCount++;
+                }
+
+                return $this->successResponse(
+                    ['deleted_count' => $deletedCount], 
+                    "{$deletedCount} siswa berhasil dihapus"
+                );
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return $this->errorResponse('Gagal menghapus beberapa siswa: ' . $e->getMessage());
+            }
+        });
+    }
+
+    /**
      * Generate and download Excel template for importing students
      *
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse

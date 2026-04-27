@@ -35,7 +35,7 @@ class StudentService extends BaseService
      */
     protected StudentGroupRepositoryInterface $studentGroupRepository;
 
-     /**
+    /**
      * @var UserRepositoryInterface
      */
     protected UserRepositoryInterface $userRepository;
@@ -67,7 +67,7 @@ class StudentService extends BaseService
     public function getAllStudents(array $filters = [], int $perPage = 15): array
     {
         try {
-            $query = Student::query()->with('group','user');
+            $query = Student::query()->with('group', 'user');
 
             if (isset($filters['search'])) {
                 $search = $filters['search'];
@@ -377,7 +377,7 @@ class StudentService extends BaseService
         return DB::transaction(function () use ($data) {
             try {
                 // Check if group exists and has available slots
-                if(isset($data['group_id'])) {
+                if (isset($data['group_id'])) {
                     $group = $this->studentGroupRepository->find($data['group_id']);
                     if (!$group) {
                         return $this->errorResponse('Grup tidak ditemukan', null, 404);
@@ -526,7 +526,7 @@ class StudentService extends BaseService
         // Set column headers based on import logic
         $headers = [
             'A1' => 'Nama Lengkap (Wajib)',
-            'B1' => 'Tanggal Lahir (Wajib, Format: DD-MM-YYYY)',
+            'B1' => 'Tanggal Lahir (Wajib, Format: DDMMYYYY)',
             'C1' => 'Asal Sekolah (Wajib)',
             'D1' => 'No Telp (Opsional)'
         ];
@@ -541,7 +541,7 @@ class StudentService extends BaseService
 
         // Add Example Data
         $sheet->setCellValue('A2', 'John Doe');
-        $sheet->setCellValue('B2', '15-08-2000');
+        $sheet->setCellValue('B2', '15082000');
         $sheet->setCellValue('C2', 'SMAN 1 Jakarta');
         $sheet->setCellValue('D2', '081234567890');
 
@@ -630,14 +630,19 @@ class StudentService extends BaseService
                         $birthDateFormatted = $birthDateRaw;
                         $parts = explode('-', $birthDateRaw);
                         $passwordString = $parts[2] . $parts[1] . $parts[0]; // DDMMYYYY
+                    } else if (preg_match('/^\d{8}$/', $birthDateRaw)) {
+                        // Input: DDMMYYYY
+                        $parts = str_split($birthDateRaw, 2);
+                        $birthDateFormatted = $parts[0] . '-' . $parts[1] . '-' . $parts[2];
+                        $passwordString = $birthDateRaw; // DDMMYYYY
                     } else {
-                        $errors[] = "Baris $rowNumber: Format tanggal lahir tidak valid (gunakan DD-MM-YYYY)";
+                        $errors[] = "Baris $rowNumber: Format tanggal lahir tidak valid (gunakan DD-MM-YYYY atau YYYY-MM-DD atau YYYYMMDD)";
                         continue;
                     }
 
                     // Generate email
                     $baseEmail = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $name));
-                    $email = $baseEmail . '@siswa.com';
+                    $email = $baseEmail . '@bimbel.com';
 
                     // Generate NISN (sebagai unique identifier jika diperlukan)
                     $nisn = 'NISN' . date('Ymd') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
@@ -693,10 +698,10 @@ class StudentService extends BaseService
                 $search = $filters['search'];
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('nisn', 'like', "%{$search}%")
-                      ->orWhereHas('user', function ($q) use ($search) {
-                          $q->where('email', 'like', "%{$search}%");
-                      });
+                        ->orWhere('nisn', 'like', "%{$search}%")
+                        ->orWhereHas('user', function ($q) use ($search) {
+                            $q->where('email', 'like', "%{$search}%");
+                        });
                 });
             }
 

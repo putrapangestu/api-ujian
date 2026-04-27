@@ -75,7 +75,7 @@ class Student extends Model
     protected function casts(): array
     {
         return [
-            'birth_date' => 'date',
+            'birth_date' => 'date:d-m-Y',
         ];
     }
 

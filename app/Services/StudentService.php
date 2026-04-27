@@ -453,6 +453,10 @@ class StudentService extends BaseService
                 }
 
                 // Update user if changed
+                if (isset($data['birth_date']) && $student->birth_date !== $data['birth_date']) {
+                    $payloadUser['password'] = bcrypt(Carbon::parse($data['birth_date'])->format('DDMMYYYY'));
+                }
+
                 if (!empty($payloadUser)) {
                     $this->userRepository->update($student->user_id, $payloadUser);
                 }

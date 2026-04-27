@@ -613,6 +613,10 @@ class StudentService extends BaseService
 
                     $name = trim($row[0] ?? '');
                     $birthDateRaw = trim($row[1] ?? '');
+                    if (strlen($birthDateRaw) == 7) {
+                        $birthDateRaw = '0' . $birthDateRaw;
+                    }
+
                     $address = trim($row[2] ?? '');
                     $phone = trim($row[3] ?? '');
 

@@ -53,7 +53,7 @@ class ExamService extends BaseService
     {
         try {
             $query = Exam::query()
-            ->withCount('questions');
+                ->withCount('questions');
 
             if (isset($filters['search'])) {
                 $search = $filters['search'];
@@ -103,7 +103,7 @@ class ExamService extends BaseService
     public function getExamById(string $id): array
     {
         try {
-            $exam = $this->examRepository->find($id, ['questions','questionGroups']);
+            $exam = $this->examRepository->find($id, ['questions', 'questionGroups']);
 
             if (!$exam) {
                 return $this->errorResponse('Ujian tidak ditemukan', null, 404);
@@ -127,7 +127,8 @@ class ExamService extends BaseService
         return DB::transaction(function () use ($data) {
             try {
                 // set total question
-                if(!isset($data["total_questions"])) $data["total_questions"] = 0;
+                if (!isset($data["total_questions"]))
+                    $data["total_questions"] = 0;
 
                 // Create exam
                 $exam = $this->examRepository->create($data);
@@ -169,7 +170,8 @@ class ExamService extends BaseService
                 }
 
                 // set total questions
-                if(!isset($data["total_questions"])) $data["total_questions"] = $exam->total_questions;
+                if (!isset($data["total_questions"]))
+                    $data["total_questions"] = $exam->total_questions;
 
                 // Update exam
                 $updated = $this->examRepository->update($id, $data);
@@ -269,7 +271,7 @@ class ExamService extends BaseService
                     ->where('status', UserExam::STATUS_PENDING)
                     ->first();
 
-                if($userExam) {
+                if ($userExam) {
                     $userExam->update([
                         'start_time' => Carbon::now(),
                         'status' => UserExam::STATUS_IN_PROGRESS,
@@ -308,7 +310,7 @@ class ExamService extends BaseService
     {
         try {
             $exam = $this->examRepository->find($examId);
-            if (! $exam) {
+            if (!$exam) {
                 return $this->errorResponse('Ujian tidak ditemukan', null, 404);
             }
 
@@ -404,7 +406,7 @@ class ExamService extends BaseService
     {
         try {
             $exam = $this->examRepository->find($examId);
-            if (! $exam) {
+            if (!$exam) {
                 return $this->errorResponse('Ujian tidak ditemukan', null, 404);
             }
 
@@ -427,13 +429,13 @@ class ExamService extends BaseService
                 $search = $filters['search'];
                 $query->whereHas('user', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhereHas('student', function ($sq) use ($search) {
-                          $sq->where('nisn', 'like', "%{$search}%")
-                             ->orWhereHas('group', function ($gq) use ($search) {
-                                 $gq->where('name', 'like', "%{$search}%");
-                             });
-                      });
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhereHas('student', function ($sq) use ($search) {
+                            $sq->where('nisn', 'like', "%{$search}%")
+                                ->orWhereHas('group', function ($gq) use ($search) {
+                                    $gq->where('name', 'like', "%{$search}%");
+                                });
+                        });
                 });
             }
 
@@ -581,13 +583,12 @@ class ExamService extends BaseService
                             'questionOption' => function ($q) {
                                 $q->withTrashed();
                             }
-                        ])
-                        ->orderBy('question_order');
+                        ]);
                     },
                 ])
                 ->first();
 
-            if (! $userExam) {
+            if (!$userExam) {
                 return $this->errorResponse('Riwayat ujian tidak ditemukan', null, 404);
             }
 
@@ -635,7 +636,7 @@ class ExamService extends BaseService
 
             $todaySummary = $todayUserExams
                 ->groupBy('status')
-                ->map(fn ($items) => $items->count());
+                ->map(fn($items) => $items->count());
 
             $overallSummary = UserExam::where('user_id', $userId)
                 ->selectRaw('status, COUNT(*) as total')

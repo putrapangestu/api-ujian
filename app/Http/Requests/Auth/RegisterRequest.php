@@ -6,9 +6,9 @@ use App\Http\Requests\BaseRequest;
 
 /**
  * Register Request Class
- * 
+ *
  * Request ini digunakan untuk validasi data registrasi user
- * 
+ *
  * @package App\Http\Requests\Auth
  * @author Development Team
  * @version 1.0.0
@@ -24,7 +24,7 @@ class RegisterRequest extends BaseRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => 'required|string|email|max:255|unique:users,deleted_at,NULL',
             'password' => 'required|string|min:8|confirmed',
             'password_confirmation' => 'required|string|min:8',
         ];

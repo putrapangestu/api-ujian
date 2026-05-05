@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $description
  * @property string $code
  * @property int $total_questions
+ * @property int $display_question_count
  * @property string $status
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
@@ -55,6 +56,7 @@ class QuestionGroup extends Model
         'description',
         'code',
         'total_questions',
+        'display_question_count',
         'status',
         'question_category_id',
     ];
@@ -67,7 +69,8 @@ class QuestionGroup extends Model
     protected function casts(): array
     {
         return [
-            'total_questions' => 'integer',
+            'total_questions'        => 'integer',
+            'display_question_count' => 'integer',
         ];
     }
 

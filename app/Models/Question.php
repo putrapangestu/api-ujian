@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $category_id
  * @property int|null $question_group_id
  * @property string $question_text
+ * @property string|null $image_path
  * @property string $question_type multiple_choice, essay, true_false
  * @property string|null $correct_answer
  * @property int $score Nilai soal
@@ -46,10 +47,18 @@ class Question extends Model
         'category_id',
         'question_group_id',
         'question_text',
+        'image_path',
         'question_type',
         'correct_answer',
         'score',
     ];
+
+    /**
+     * The attributes that should be appended to model's array form.
+     *
+     * @var array
+     */
+    protected $appends = ['image_url'];
 
     /**
      * The attributes that should be cast.
@@ -61,6 +70,20 @@ class Question extends Model
         return [
             'score' => 'integer',
         ];
+    }
+
+    /**
+     * Get the public URL of the question image.
+     *
+     * @return string|null
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        if (! $this->image_path) {
+            return null;
+        }
+
+        return asset('storage/' . $this->image_path);
     }
 
     /**

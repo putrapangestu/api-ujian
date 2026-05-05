@@ -98,6 +98,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Questions
+    Route::get('questions/download-template', [QuestionController::class, 'downloadTemplate'])->name('questions.download-template');
     Route::post('questions/import', [QuestionController::class, 'import'])->name('questions.import');
     Route::apiResource('questions', QuestionController::class);
 

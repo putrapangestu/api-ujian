@@ -27,8 +27,16 @@ class ExamQuestionSelectorService extends BaseService
     /**
      * Select questions from question banks for exam
      *
+     * Logika pemilihan soal:
+     * 1. Soal dikelompokkan berdasarkan QuestionGroup
+     * 2. Setiap grup memiliki display_question_count → jumlah soal yang diambil dari grup tsb
+     * 3. QuestionCategory memiliki range start_range s/d end_range → nomor urut soal dalam ujian
+     * 4. Soal diambil secara acak dari bank soal grup, sejumlah display_question_count
+     *    (atau semua jika display_question_count = 0)
+     * 5. Nomor soal diberikan berurutan sesuai range kategori
+     *
      * @param Exam $exam
-     * @param array $questionBanks Array of question bank selections
+     * @param array $questionBanks Array of question_ids
      * @return array
      */
     public function selectQuestionsForExam(Exam $exam, array $questionBanks): array
@@ -36,83 +44,70 @@ class ExamQuestionSelectorService extends BaseService
         return DB::transaction(function () use ($exam, $questionBanks) {
             try {
                 $selectedQuestions = [];
-                $questionNumber = 1;
+                $questionNumber    = 1;
 
-                $selectedQuestionsFromGroup = Question::with('category','questionGroup')
+                // Ambil semua soal yang dipilih beserta relasi group & category
+                $questions = Question::with(['category', 'questionGroup.questionCategory'])
                     ->whereIn('id', $questionBanks)
                     ->whereNull('deleted_at')
                     ->get();
 
-                // foreach ($questionBanks as $bankData) {
-                //     // $randomSelection = $bankData['random_selection'] ?? true;
+                // Kelompokkan soal berdasarkan question_group_id
+                $groupedByGroup = $questions->groupBy('question_group_id');
 
-                //     // Get available questions from this group
-                //     // $availableQuestions = Question::with('questionCategory')
-                //     //     ->where('question_category_id', $exam->question_category_id)
-                //     //     ->where('is_active', true)
-                //     //     ->whereNull('deleted_at')
-                //     //     ->get();
+                foreach ($groupedByGroup as $groupId => $questionsInGroup) {
+                    /** @var \App\Models\QuestionGroup|null $group */
+                    $group    = $questionsInGroup->first()?->questionGroup;
+                    $category = $group?->questionCategory;
 
-                //     // Select questions
-                //     // if ($randomSelection) {
-                //     //     $selectedQuestionsFromGroup = $availableQuestions->random($);
-                //     // } else {
-                //     //     $selectedQuestionsFromGroup = $availableQuestions->take($exam->total_questions);
-                //     // }
+                    // Tentukan starting number dari range kategori (start_range)
+                    if ($category && isset($category->start_range) && $category->start_range > 0) {
+                        $questionNumber = $category->start_range;
+                    }
 
-                //     // // Create question_exam entries
-                //     // foreach ($selectedQuestionsFromGroup as $question) {
-                //     //     QuestionExam::create([
-                //     //         'exam_id' => $exam->id,
-                //     //         'question_id' => $question->id,
-                //     //         'question_group_id' => $question->question_group_id,
-                //     //         'question_number' => $questionNumber,
-                //     //         'question_order' => $questionNumber, // Will be randomized per student later
-                //     //         'is_active' => true,
-                //     //     ]);
+                    // Tentukan berapa soal yang diambil dari grup ini
+                    $displayCount = $group?->display_question_count ?? 0;
 
-                //     //     $selectedQuestions[] = [
-                //     //         'question_id' => $question->id,
-                //     //         'question_group_id' => $question->question_group_id,
-                //     //         'question_number' => $questionNumber,
-                //     //         'question' => $question->question_text,
-                //     //         'group_name' => $question->questionGroup->name,
-                //     //     ];
+                    if ($displayCount > 0 && $questionsInGroup->count() > $displayCount) {
+                        // Ambil sejumlah display_question_count secara acak
+                        $selectedFromGroup = $questionsInGroup->shuffle()->take($displayCount);
+                    } else {
+                        // Tampilkan semua soal di grup ini (acak urutannya)
+                        $selectedFromGroup = $questionsInGroup->shuffle();
+                    }
 
-                //     //     $questionNumber++;
-                //     // }
-                // }
+                    // Buat question_exam entries
+                    foreach ($selectedFromGroup as $question) {
+                        QuestionExam::create([
+                            'exam_id'          => $exam->id,
+                            'question_id'      => $question->id,
+                            'question_group_id' => $question->question_group_id,
+                            'question_number'  => $questionNumber,
+                            'question_order'   => $questionNumber,
+                            'is_active'        => true,
+                        ]);
 
-                // Create question_exam entries
-                foreach ($selectedQuestionsFromGroup as $question) {
-                    QuestionExam::create([
-                        'exam_id' => $exam->id,
-                        'question_id' => $question->id,
-                        'question_group_id' => $question->question_group_id,
-                        'question_number' => $questionNumber,
-                        'question_order' => $questionNumber, // Will be randomized per student later
-                        'is_active' => true,
-                    ]);
+                        $selectedQuestions[] = [
+                            'question_id'       => $question->id,
+                            'question_group_id' => $question->question_group_id,
+                            'question_number'   => $questionNumber,
+                            'question'          => $question->question_text,
+                            'group_name'        => $group?->name,
+                            'category_name'     => $category?->name,
+                        ];
 
-                    $selectedQuestions[] = [
-                        'question_id' => $question->id,
-                        'question_group_id' => $question->question_group_id,
-                        'question_number' => $questionNumber,
-                        'question' => $question->question_text,
-                        'group_name' => $question->questionGroup->name,
-                    ];
-
-                    $questionNumber++;
+                        $questionNumber++;
+                    }
                 }
 
                 // Update exam total questions
                 $exam->update(['total_questions' => count($selectedQuestions)]);
 
                 return $this->successResponse([
-                    'exam_id' => $exam->id,
-                    'total_questions' => count($selectedQuestions),
+                    'exam_id'            => $exam->id,
+                    'total_questions'    => count($selectedQuestions),
                     'selected_questions' => $selectedQuestions,
-                    'question_banks' => $questionBanks,
+                    'question_banks'     => $questionBanks,
                 ], 'Questions successfully selected for exam');
 
             } catch (\Exception $e) {

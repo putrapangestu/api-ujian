@@ -21,11 +21,12 @@ class QuestionGroupRequest extends BaseRequest
     public function rules(): array
     {
         $rules = [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'code' => 'required|string|max:50',
-            'status' => 'nullable|in:active,inactive,draft',
-            'question_category_id' => 'required|uuid|exists:question_categories,id',
+            'name'                   => 'required|string|max:255',
+            'description'            => 'nullable|string',
+            'code'                   => 'required|string|max:50',
+            'status'                 => 'nullable|in:active,inactive,draft',
+            'question_category_id'  => 'required|uuid|exists:question_categories,id',
+            'display_question_count' => 'nullable|integer|min:0',
         ];
 
         // Jika update, tambahkan unique rule untuk code
@@ -47,11 +48,12 @@ class QuestionGroupRequest extends BaseRequest
     public function attributes(): array
     {
         return [
-            'name' => 'Nama Grup Soal',
-            'description' => 'Deskripsi',
-            'code' => 'Kode Grup',
-            'status' => 'Status',
-            'question_category_id' => 'Kategori Soal',
+            'name'                   => 'Nama Grup Soal',
+            'description'            => 'Deskripsi',
+            'code'                   => 'Kode Grup',
+            'status'                 => 'Status',
+            'question_category_id'  => 'Kategori Soal',
+            'display_question_count' => 'Jumlah Soal Ditampilkan',
         ];
     }
 }

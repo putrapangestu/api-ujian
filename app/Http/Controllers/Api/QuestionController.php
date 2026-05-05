@@ -140,21 +140,32 @@ class QuestionController extends Controller
     /**
      * Import questions from Excel file
      *
+     * Gambar soal dicocokkan berdasarkan URUTAN upload (index), bukan nama file.
+     * Kolom G di Excel cukup diisi angka: 1 = gambar pertama, 2 = gambar kedua, dst.
+     * Upload gambar sebagai array biasa: images[] (tanpa perlu memberi nama spesifik).
+     *
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Post(
         path: '/questions/import',
-        summary: 'Import soal',
+        summary: 'Import soal dari Excel',
         tags: ['Questions'],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\MediaType(
                 mediaType: 'multipart/form-data',
                 schema: new OA\Schema(
+                    required: ['file', 'exam_id'],
                     properties: [
-                        new OA\Property(property: 'file', type: 'string', format: 'binary'),
-                        new OA\Property(property: 'exam_id', type: 'integer'),
-                        new OA\Property(property: 'question_group_id', type: 'integer'),
+                        new OA\Property(property: 'file', type: 'string', format: 'binary', description: 'File Excel (.xlsx/.xls/.csv)'),
+                        new OA\Property(property: 'exam_id', type: 'string'),
+                        new OA\Property(property: 'question_group_id', type: 'string', description: 'Opsional, bisa juga diisi dari kolom F Excel'),
+                        new OA\Property(
+                            property: 'images[]',
+                            type: 'array',
+                            items: new OA\Items(type: 'string', format: 'binary'),
+                            description: 'Gambar soal. Upload sebagai array biasa — urutan upload menentukan nomor di kolom G Excel. Gambar ke-1 = kolom G berisi "1", gambar ke-2 = "2", dst.'
+                        ),
                     ]
                 )
             )
@@ -164,22 +175,56 @@ class QuestionController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
-            'exam_id' => 'required|exists:exams,id',
+            'file'              => 'required|file|mimes:xlsx,xls,csv|max:10240',
+            'exam_id'           => 'required|exists:exams,id',
             'question_group_id' => 'nullable|exists:question_groups,id',
+            'images'            => 'nullable|array',
+            'images.*'          => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:5120',
         ]);
 
-        $file = $request->file('file');
-        $examId = $request->exam_id;
+        $file            = $request->file('file');
+        $examId          = $request->exam_id;
         $questionGroupId = $request->question_group_id;
 
-        $result = $this->questionService->importQuestions($file, $examId, $questionGroupId);
+        // Simpan gambar sebagai array berindex (0-based).
+        // Kolom G di Excel berisi angka 1-based, jadi index = G_value - 1.
+        $uploadedImages = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $imageFile) {
+                $storedPath              = $imageFile->store('questions/' . date('Y/m'), 'public');
+                $uploadedImages[$index]  = $storedPath; // key = 0, 1, 2, ...
+            }
+        }
+
+        $result = $this->questionService->importQuestions($file, $examId, $questionGroupId, $uploadedImages);
 
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
         }
 
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
+
+    /**
+     * Download Excel template for importing questions
+     *
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse
+     */
+    #[OA\Get(
+        path: '/questions/download-template',
+        summary: 'Download template Excel import soal',
+        tags: ['Questions'],
+        responses: [
+            new OA\Response(response: 200, description: 'File Excel template berhasil diunduh'),
+        ]
+    )]
+    public function downloadTemplate()
+    {
+        try {
+            return $this->questionService->downloadTemplate();
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengunduh template: ' . $e->getMessage(), 500);
+        }
     }
 
     /**

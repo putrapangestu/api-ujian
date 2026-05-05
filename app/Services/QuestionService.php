@@ -313,10 +313,11 @@ class QuestionService extends BaseService
      * Import questions from file
      *
      * @param  \Illuminate\Http\UploadedFile  $file
+     * @param  array  $uploadedImages  Gambar yang sudah disimpan, key = nama file asli
      */
-    public function importQuestions($file, string $examId, ?string $questionGroupId = null): array
+    public function importQuestions($file, string $examId, ?string $questionGroupId = null, array $uploadedImages = []): array
     {
-        return DB::transaction(function () use ($file, $examId, $questionGroupId) {
+        return DB::transaction(function () use ($file, $examId, $questionGroupId, $uploadedImages) {
             try {
                 // Validate exam
                 $exam = Exam::find($examId);
@@ -350,10 +351,10 @@ class QuestionService extends BaseService
                         continue;
                     }
 
-                    $questionText = trim($row[0]);
-                    $questionType = trim($row[1]);
-                    $categoryId = trim($row[2]);
-                    $score = trim($row[3]);
+                    $questionText      = trim($row[0]);
+                    $questionType      = trim($row[1]);
+                    $categoryId        = trim($row[2]);
+                    $score             = trim($row[3]);
                     $correctAnswerLabel = trim($row[4]);
 
                     if (empty($questionText) || empty($questionType)) {
@@ -369,7 +370,7 @@ class QuestionService extends BaseService
                         continue;
                     }
 
-                    // Handle grup soal
+                    // Handle grup soal (kolom F = index 5)
                     $finalQuestionGroupId = $questionGroupId;
                     if (isset($row[5]) && ! empty(trim($row[5]))) {
                         $groupName = trim($row[5]);
@@ -384,10 +385,21 @@ class QuestionService extends BaseService
                         }
                     }
 
-                    // Parse options untuk multiple choice
+                    // Cocokkan gambar soal (kolom G = index 6) berdasarkan URUTAN upload
+                    // Kolom G berisi angka 1-based (1, 2, 3...) sesuai urutan gambar yang diupload.
+                    // 0 atau kosong = tidak ada gambar untuk soal ini.
+                    $imagePath = null;
+                    if (isset($row[6]) && trim($row[6]) !== '' && trim($row[6]) !== '0') {
+                        $imageIndex = (int) trim($row[6]) - 1; // konversi ke 0-based index
+                        if ($imageIndex >= 0 && isset($uploadedImages[$imageIndex])) {
+                            $imagePath = $uploadedImages[$imageIndex];
+                        }
+                    }
+
+                    // Parse options untuk multiple choice (mulai kolom H = index 7)
                     $optionsData = [];
                     if ($questionType === 'multiple_choice' || $questionType === 'single_choice') {
-                        $optionIndex = 6;
+                        $optionIndex = 7;
                         $optionLabel = 'A';
 
                         while ($optionIndex < count($row) && ! empty(trim($row[$optionIndex]))) {
@@ -398,10 +410,10 @@ class QuestionService extends BaseService
                             $isCorrect = ($optionLabel === $correctAnswerLabel);
 
                             $optionsData[] = [
-                                'text' => $optionText,
+                                'text'       => $optionText,
                                 'is_correct' => $isCorrect,
-                                'score' => (int) $optionScore,
-                                'label' => $optionLabel,
+                                'score'      => (int) $optionScore,
+                                'label'      => $optionLabel,
                             ];
 
                             $optionIndex += 2;
@@ -410,14 +422,15 @@ class QuestionService extends BaseService
                     }
 
                     $questionData = [
-                        'exam_id' => $examId,
+                        'exam_id'           => $examId,
                         'question_group_id' => $finalQuestionGroupId,
-                        'category_id' => $categoryId,
-                        'question_text' => $questionText,
-                        'question_type' => $questionType,
-                        'score' => $score,
-                        'correct_answer' => $correctAnswerLabel,
-                        'options' => $optionsData,
+                        'category_id'       => $categoryId,
+                        'question_text'     => $questionText,
+                        'question_type'     => $questionType,
+                        'score'             => $score,
+                        'correct_answer'    => $correctAnswerLabel,
+                        'image_path'        => $imagePath,
+                        'options'           => $optionsData,
                     ];
 
                     $result = $this->createQuestion($questionData);
@@ -433,10 +446,10 @@ class QuestionService extends BaseService
                 \Illuminate\Support\Facades\Storage::delete($filePath);
 
                 return $this->successResponse([
-                    'imported' => $questions,
-                    'errors' => $errors,
+                    'imported'       => $questions,
+                    'errors'         => $errors,
                     'total_imported' => count($questions),
-                    'total_errors' => count($errors),
+                    'total_errors'   => count($errors),
                 ], 'Import soal selesai');
 
             } catch (\Exception $e) {
@@ -490,5 +503,204 @@ class QuestionService extends BaseService
                 return $this->errorResponse('Gagal menghapus soal: ' . $e->getMessage());
             }
         });
+    }
+
+    /**
+     * Generate and download Excel template for importing questions
+     *
+     * Kolom template:
+     * A = Teks Soal | B = Tipe Soal | C = Kategori | D = Skor | E = Jawaban Benar
+     * F = Grup Soal | G = Nomor Gambar (1-based index) | H+ = Opsi A, Skor A, Opsi B, Skor B, ...
+     *
+     * Kolom G diisi ANGKA (1, 2, 3...) yang sesuai urutan gambar yang di-upload via images[].
+     * Tidak perlu tahu nama file — cukup upload gambar berurutan lalu tuliskan nomornya.
+     *
+     * Untuk gambar opsi jawaban, embed base64 langsung di teks opsi.
+     *
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function downloadTemplate()
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Template Import Soal');
+
+        // ── Header Row ──────────────────────────────────────────────────────────
+        $headers = [
+            'A1' => 'Teks Soal (Wajib)',
+            'B1' => 'Tipe Soal (Wajib)',
+            'C1' => 'Kategori (Opsional)',
+            'D1' => 'Skor Soal',
+            'E1' => 'Jawaban Benar',
+            'F1' => 'Grup Soal (Opsional)',
+            'G1' => 'No. Gambar Soal (Opsional)',
+            'H1' => 'Opsi A',
+            'I1' => 'Skor A',
+            'J1' => 'Opsi B',
+            'K1' => 'Skor B',
+            'L1' => 'Opsi C',
+            'M1' => 'Skor C',
+            'N1' => 'Opsi D',
+            'O1' => 'Skor D',
+            'P1' => 'Opsi E',
+            'Q1' => 'Skor E',
+        ];
+
+        $headerStyle = [
+            'font'    => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+            'fill'    => [
+                'fillType'   => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'FF4A90D9'],
+            ],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
+        ];
+
+        // Kolom gambar (G) diberi warna berbeda agar mudah dikenali
+        $imageColStyle = [
+            'font'    => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+            'fill'    => [
+                'fillType'   => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'FF27AE60'],
+            ],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
+        ];
+
+        foreach ($headers as $cell => $value) {
+            $sheet->setCellValue($cell, $value);
+            $col = preg_replace('/\d/', '', $cell);
+            $style = ($col === 'G') ? $imageColStyle : $headerStyle;
+            $sheet->getStyle($cell)->applyFromArray($style);
+        }
+
+        // ── Data Validation ─────────────────────────────────────────────────────
+        // Tipe soal
+        $validationType = $sheet->getCell('B2')->getDataValidation();
+        $validationType->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
+        $validationType->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_INFORMATION);
+        $validationType->setAllowBlank(false);
+        $validationType->setShowDropDown(true);
+        $validationType->setFormula1('"multiple_choice,essay,true_false,single_choice"');
+
+        // Jawaban benar
+        $validationAnswer = $sheet->getCell('E2')->getDataValidation();
+        $validationAnswer->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
+        $validationAnswer->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_INFORMATION);
+        $validationAnswer->setAllowBlank(true);
+        $validationAnswer->setShowDropDown(true);
+        $validationAnswer->setFormula1('"A,B,C,D,E"');
+
+        // Grup soal (dari hidden sheet agar bisa >255 karakter)
+        $groups = \App\Models\QuestionGroup::pluck('name')->toArray();
+        if (! empty($groups)) {
+            $groupSheet = $spreadsheet->createSheet();
+            $groupSheet->setTitle('DataGrup');
+            $groupSheet->setSheetState(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet::SHEETSTATE_HIDDEN);
+            $row = 1;
+            foreach ($groups as $groupName) {
+                $groupSheet->setCellValue('A' . $row, $groupName);
+                $row++;
+            }
+
+            $validationGroup = $sheet->getCell('F2')->getDataValidation();
+            $validationGroup->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
+            $validationGroup->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_INFORMATION);
+            $validationGroup->setAllowBlank(true);
+            $validationGroup->setShowDropDown(true);
+            $validationGroup->setFormula1('DataGrup!$A$1:$A$' . count($groups));
+
+            for ($i = 2; $i <= 1000; $i++) {
+                $sheet->getCell('F' . $i)->setDataValidation(clone $validationGroup);
+            }
+        }
+
+        // Apply validation ke baris 2 s/d 1000
+        for ($i = 2; $i <= 1000; $i++) {
+            $sheet->getCell('B' . $i)->setDataValidation(clone $validationType);
+            $sheet->getCell('E' . $i)->setDataValidation(clone $validationAnswer);
+        }
+
+        // Kolom G: validasi hanya boleh angka positif (nomor urut gambar)
+        $validationImageNum = $sheet->getCell('G2')->getDataValidation();
+        $validationImageNum->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_WHOLE);
+        $validationImageNum->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_WARNING);
+        $validationImageNum->setAllowBlank(true);
+        $validationImageNum->setShowErrorMessage(true);
+        $validationImageNum->setErrorTitle('Input tidak valid');
+        $validationImageNum->setError('Kolom G hanya boleh diisi angka positif (nomor urut gambar, mulai dari 1). Kosongkan jika tidak ada gambar.');
+        $validationImageNum->setOperator(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::OPERATOR_GREATERTHANOREQUAL);
+        $validationImageNum->setFormula1('1');
+        for ($i = 2; $i <= 1000; $i++) {
+            $sheet->getCell('G' . $i)->setDataValidation(clone $validationImageNum);
+        }
+
+        // ── Contoh Data ──────────────────────────────────────────────────────────
+        // Baris 2: multiple_choice dengan gambar soal
+        $sheet->setCellValue('A2', 'Manakah gambar di bawah ini yang menunjukkan segitiga sama sisi?');
+        $sheet->setCellValue('B2', 'multiple_choice');
+        $sheet->setCellValue('C2', 'TWK');
+        $sheet->setCellValue('D2', '5');
+        $sheet->setCellValue('E2', 'A');
+        $sheet->setCellValue('G2', 1);  // gambar pertama yang diupload (images[0])
+        $sheet->setCellValue('H2', 'Gambar A');
+        $sheet->setCellValue('I2', '5');
+        $sheet->setCellValue('J2', 'Gambar B');
+        $sheet->setCellValue('K2', '0');
+        $sheet->setCellValue('L2', 'Gambar C');
+        $sheet->setCellValue('M2', '0');
+
+        // Baris 3: essay tanpa gambar
+        $sheet->setCellValue('A3', 'Jelaskan pengertian dari Pancasila!');
+        $sheet->setCellValue('B3', 'essay');
+        $sheet->setCellValue('C3', 'TIU');
+        $sheet->setCellValue('D3', '10');
+
+        // ── Keterangan di sheet terpisah ─────────────────────────────────────────
+        $infoSheet = $spreadsheet->createSheet();
+        $infoSheet->setTitle('Petunjuk');
+        $infoSheet->setCellValue('A1', 'PETUNJUK PENGISIAN TEMPLATE');
+        $infoSheet->getStyle('A1')->getFont()->setBold(true)->setSize(13);
+        $infos = [
+            ['Kolom', 'Keterangan'],
+            ['A - Teks Soal', 'Teks pertanyaan. Wajib diisi.'],
+            ['B - Tipe Soal', 'Pilih dari dropdown: multiple_choice, essay, true_false, single_choice'],
+            ['C - Kategori', 'Nama kategori soal. Opsional.'],
+            ['D - Skor Soal', 'Nilai numerik untuk soal.'],
+            ['E - Jawaban Benar', 'Label opsi yang benar (A/B/C/D/E). Wajib untuk pilihan ganda.'],
+            ['F - Grup Soal', 'Pilih dari dropdown grup soal yang tersedia. Opsional.'],
+            ['G - No. Gambar Soal', "Isi dengan ANGKA urutan gambar yang di-upload (1, 2, 3...).
+".
+                "Kosongkan jika soal tidak memiliki gambar.
+".
+                "Contoh: soal baris 2 pakai gambar ke-1 → isi 1, soal baris 5 pakai gambar ke-3 → isi 3.
+".
+                "Saat upload, gambar di-attach sebagai images[] (array biasa, tanpa nama khusus)."],
+            ['H,J,L,N,P - Opsi A,B,C,D,E', 'Teks opsi jawaban. Untuk pilihan ganda, minimal 2 opsi.\nUntuk opsi bergambar: embed base64 HTML, misal: <img src="data:image/png;base64,..." />'],
+            ['I,K,M,O,Q - Skor A,B,C,D,E', 'Nilai numerik tiap opsi. Tulis 0 untuk opsi yang salah.'],
+        ];
+        $infoSheet->fromArray($infos, null, 'A3');
+        $infoSheet->getColumnDimension('A')->setWidth(35);
+        $infoSheet->getColumnDimension('B')->setWidth(80);
+        $infoSheet->getStyle('A3:B3')->getFont()->setBold(true);
+        $infoSheet->getStyle('B3:B' . (count($infos) + 2))->getAlignment()->setWrapText(true);
+
+        // ── Auto-size & freeze pane ──────────────────────────────────────────────
+        $spreadsheet->setActiveSheetIndex(0);
+        foreach (range('A', 'Q') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+        $sheet->freezePane('A2'); // freeze header row
+
+        // ── Simpan ke file temp dan return sebagai download ──────────────────────
+        $fileName = 'Template_Import_Soal_' . uniqid() . '.xlsx';
+        $tempDir  = storage_path('app/public/temp');
+        if (! \Illuminate\Support\Facades\File::exists($tempDir)) {
+            \Illuminate\Support\Facades\File::makeDirectory($tempDir, 0755, true);
+        }
+        $tempPath = $tempDir . '/' . $fileName;
+
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->save($tempPath);
+
+        return response()->download($tempPath, 'Template_Import_Soal.xlsx')->deleteFileAfterSend(true);
     }
 }

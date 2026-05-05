@@ -536,10 +536,25 @@ class QuestionBankService extends BaseService
         }
 
         $questionText = trim($row[0]);
-        $questionType = trim($row[1]);
+        $questionTypeLabel = trim($row[1]);
         $categoryName = trim($row[2] ?? '');
         $score = trim($row[3] ?? '1');
         $correctAnswerLabel = trim($row[4] ?? '');
+
+        // Map label bahasa Indonesia kembali ke system value
+        $typeMapping = [
+            'Pilihan Ganda' => 'single_choice',
+            'Checkbox (Banyak Pilihan)' => 'multiple_choice',
+            'Essay' => 'essay',
+            'Benar/Salah' => 'true_false',
+            // fallback jika user pake format lama
+            'single_choice' => 'single_choice',
+            'multiple_choice' => 'multiple_choice',
+            'essay' => 'essay',
+            'true_false' => 'true_false',
+        ];
+
+        $questionType = $typeMapping[$questionTypeLabel] ?? $questionTypeLabel;
 
         // Validasi data wajib
         if (empty($questionText)) {
@@ -936,7 +951,7 @@ class QuestionBankService extends BaseService
         $validationType->setError('Value is not in list.');
         $validationType->setPromptTitle('Pick from list');
         $validationType->setPrompt('Please pick a value from the drop-down list.');
-        $validationType->setFormula1('"multiple_choice,essay,true_false,single_choice"');
+        $validationType->setFormula1('"Pilihan Ganda,Checkbox (Banyak Pilihan),Essay,Benar/Salah"');
 
         // Add Data Validation for Kategori
         $validationCategory = $sheet->getCell('C2')->getDataValidation();
@@ -989,7 +1004,7 @@ class QuestionBankService extends BaseService
 
         // Add some example data
         $sheet->setCellValue('A2', 'Siapa penemu lampu pijar?');
-        $sheet->setCellValue('B2', 'multiple_choice');
+        $sheet->setCellValue('B2', 'Checkbox (Banyak Pilihan)');
         $sheet->setCellValue('C2', 'TWK');
         $sheet->setCellValue('D2', '5');
         $sheet->setCellValue('E2', 'A');
@@ -1006,7 +1021,7 @@ class QuestionBankService extends BaseService
         $sheet->setCellValue('N2', '0');
 
         $sheet->setCellValue('A3', 'Jelaskan pengertian dari Pancasila!');
-        $sheet->setCellValue('B3', 'essay');
+        $sheet->setCellValue('B3', 'Essay');
         $sheet->setCellValue('C3', 'TIU');
         $sheet->setCellValue('D3', '10');
         if (!empty($groups)) {

@@ -670,14 +670,10 @@ class QuestionService extends BaseService
 
         // Kolom G: validasi hanya boleh angka positif (nomor urut gambar)
         $validationImageNum = $sheet->getCell('G2')->getDataValidation();
-        $validationImageNum->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_WHOLE);
-        $validationImageNum->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_WARNING);
-        $validationImageNum->setAllowBlank(true);
-        $validationImageNum->setShowErrorMessage(true);
-        $validationImageNum->setErrorTitle('Input tidak valid');
-        $validationImageNum->setError('Kolom G hanya boleh diisi angka positif (nomor urut gambar, mulai dari 1). Kosongkan jika tidak ada gambar.');
-        $validationImageNum->setOperator(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::OPERATOR_GREATERTHANOREQUAL);
-        $validationImageNum->setFormula1('1');
+        $validationImageNum->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_NONE);
+        $validationImageNum->setShowInputMessage(true);
+        $validationImageNum->setPromptTitle('Nomor Urut Gambar');
+        $validationImageNum->setPrompt('Bisa ketik urutan gambar (1,2) ATAU langsung Copy-Paste/Insert gambar ke sel ini.');
         for ($i = 2; $i <= 1000; $i++) {
             $sheet->getCell('G' . $i)->setDataValidation(clone $validationImageNum);
         }
@@ -734,8 +730,19 @@ class QuestionService extends BaseService
 
         // ── Auto-size & freeze pane ──────────────────────────────────────────────
         $spreadsheet->setActiveSheetIndex(0);
+        
+        // Set fixed row height for better image UX
+        for ($i = 2; $i <= 1000; $i++) {
+            $sheet->getRowDimension($i)->setRowHeight(60);
+        }
+
         foreach (range('A', 'Q') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
+            if ($col === 'G') {
+                $sheet->getColumnDimension('G')->setAutoSize(false);
+                $sheet->getColumnDimension('G')->setWidth(25);
+            } else {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
         }
         $sheet->freezePane('A2'); // freeze header row
 

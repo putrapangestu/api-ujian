@@ -1050,13 +1050,8 @@ class QuestionBankService extends BaseService
             
             // Validasi kolom G (No. Gambar Soal) hanya angka positif
             $validationImage = $sheet->getCell('G'.$i)->getDataValidation();
-            $validationImage->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_WHOLE);
-            $validationImage->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_STOP);
-            $validationImage->setAllowBlank(true);
+            $validationImage->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_NONE);
             $validationImage->setShowInputMessage(true);
-            $validationImage->setShowErrorMessage(true);
-            $validationImage->setErrorTitle('Input tidak valid');
-            $validationImage->setError('Nomor gambar harus berupa angka positif.');
             $validationImage->setPromptTitle('Nomor Urut Gambar');
             $validationImage->setPrompt('Bisa ketik urutan gambar (1,2) ATAU langsung Copy-Paste/Insert gambar ke sel ini.');
             $validationImage->setOperator(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::OPERATOR_GREATERTHAN);
@@ -1090,9 +1085,19 @@ class QuestionBankService extends BaseService
             $sheet->setCellValue('F3', $groups[0]);
         }
 
-        // Auto-size columns
+        // Set fixed row height for better image UX
+        for ($i = 2; $i <= 1000; $i++) {
+            $sheet->getRowDimension($i)->setRowHeight(60);
+        }
+
+        // Auto-size columns except G
         foreach (range('A', 'Q') as $columnID) {
-            $sheet->getColumnDimension($columnID)->setAutoSize(true);
+            if ($columnID === 'G') {
+                $sheet->getColumnDimension('G')->setAutoSize(false);
+                $sheet->getColumnDimension('G')->setWidth(25);
+            } else {
+                $sheet->getColumnDimension($columnID)->setAutoSize(true);
+            }
         }
 
         // Save to temporary file

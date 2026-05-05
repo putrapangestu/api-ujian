@@ -337,6 +337,40 @@ class QuestionService extends BaseService
                 // Remove header row
                 array_shift($rows);
 
+                // Extract embedded images from Column G
+                $extractedImages = [];
+                $drawings = $worksheet->getDrawingCollection();
+                foreach ($drawings as $drawing) {
+                    $coordinates = $drawing->getCoordinates();
+                    preg_match('/([A-Z]+)(\d+)/', $coordinates, $matches);
+                    if (count($matches) === 3) {
+                        $col = $matches[1];
+                        $row = $matches[2];
+                        
+                        if ($col === 'G') {
+                            $imageContents = null;
+                            $extension = 'png';
+                            if ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing) {
+                                ob_start();
+                                call_user_func($drawing->getRenderingFunction(), $drawing->getImageResource());
+                                $imageContents = ob_get_contents();
+                                ob_end_clean();
+                                $extension = strtolower(str_replace('image/', '', $drawing->getMimeType()));
+                                if ($extension === 'jpeg') $extension = 'jpg';
+                            } elseif ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\Drawing) {
+                                $imageContents = file_get_contents($drawing->getPath());
+                                $extension = $drawing->getExtension();
+                            }
+                            
+                            if ($imageContents) {
+                                $fileName = 'questions/' . date('Y/m') . '/' . uniqid() . '.' . $extension;
+                                \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageContents);
+                                $extractedImages[$row] = $fileName;
+                            }
+                        }
+                    }
+                }
+
                 $questions = [];
                 $errors = [];
                 $rowNumber = 1;
@@ -400,11 +434,11 @@ class QuestionService extends BaseService
                         }
                     }
 
-                    // Cocokkan gambar soal (kolom G = index 6) berdasarkan URUTAN upload
-                    // Kolom G berisi angka 1-based (1, 2, 3...) sesuai urutan gambar yang diupload.
-                    // 0 atau kosong = tidak ada gambar untuk soal ini.
-                    $imagePath = null;
-                    if (isset($row[6]) && trim($row[6]) !== '' && trim($row[6]) !== '0') {
+                    // Prioritaskan gambar yang di-embed langsung di Excel (dari $extractedImages)
+                    $imagePath = $extractedImages[$rowNumber] ?? null;
+
+                    // Fallback: Cocokkan gambar soal (kolom G = index 6) berdasarkan URUTAN upload
+                    if (!$imagePath && isset($row[6]) && trim($row[6]) !== '' && trim($row[6]) !== '0') {
                         $imageIndex = (int) trim($row[6]) - 1; // konversi ke 0-based index
                         if ($imageIndex >= 0 && isset($uploadedImages[$imageIndex])) {
                             $imagePath = $uploadedImages[$imageIndex];
@@ -682,7 +716,7 @@ class QuestionService extends BaseService
             ['D - Skor Soal', 'Nilai numerik untuk soal.'],
             ['E - Jawaban Benar', 'Label opsi yang benar (A/B/C/D/E). Wajib untuk pilihan ganda.'],
             ['F - Grup Soal', 'Pilih dari dropdown grup soal yang tersedia. Opsional.'],
-            ['G - No. Gambar Soal', "Isi dengan ANGKA urutan gambar yang di-upload (1, 2, 3...).
+            ['G - No. Gambar Soal', "Bisa ketik urutan gambar (1,2) ATAU langsung Copy-Paste/Insert gambar ke sel ini.
 ".
                 "Kosongkan jika soal tidak memiliki gambar.
 ".

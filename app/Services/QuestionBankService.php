@@ -50,6 +50,40 @@ class QuestionBankService extends BaseService
                 // Remove header row
                 array_shift($rows);
 
+                // Extract embedded images from Column G
+                $extractedImages = [];
+                $drawings = $worksheet->getDrawingCollection();
+                foreach ($drawings as $drawing) {
+                    $coordinates = $drawing->getCoordinates();
+                    preg_match('/([A-Z]+)(\d+)/', $coordinates, $matches);
+                    if (count($matches) === 3) {
+                        $col = $matches[1];
+                        $row = $matches[2];
+                        
+                        if ($col === 'G') {
+                            $imageContents = null;
+                            $extension = 'png';
+                            if ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing) {
+                                ob_start();
+                                call_user_func($drawing->getRenderingFunction(), $drawing->getImageResource());
+                                $imageContents = ob_get_contents();
+                                ob_end_clean();
+                                $extension = strtolower(str_replace('image/', '', $drawing->getMimeType()));
+                                if ($extension === 'jpeg') $extension = 'jpg';
+                            } elseif ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\Drawing) {
+                                $imageContents = file_get_contents($drawing->getPath());
+                                $extension = $drawing->getExtension();
+                            }
+                            
+                            if ($imageContents) {
+                                $fileName = 'questions/' . date('Y/m') . '/' . uniqid() . '.' . $extension;
+                                \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageContents);
+                                $extractedImages[$row] = $fileName;
+                            }
+                        }
+                    }
+                }
+
                 $questions = [];
                 $errors = [];
                 $rowNumber = 1;
@@ -68,7 +102,7 @@ class QuestionBankService extends BaseService
                     }
 
                     try {
-                        $result = $this->processQuestionRow($row, $rowNumber, $examId, $questionGroupId, $categoryId, $uploadedImages);
+                        $result = $this->processQuestionRow($row, $rowNumber, $examId, $questionGroupId, $categoryId, $uploadedImages, $extractedImages);
 
                         if ($result['success']) {
                             $questions[] = $result['data'];
@@ -528,7 +562,7 @@ class QuestionBankService extends BaseService
      * @param  int|null  $questionGroupId
      * @param  int|null  $categoryId
      */
-    private function processQuestionRow(array $row, int $rowNumber, ?string $examId, ?string $questionGroupId, ?string $categoryId, array $uploadedImages = []): array
+    private function processQuestionRow(array $row, int $rowNumber, ?string $examId, ?string $questionGroupId, ?string $categoryId, array $uploadedImages = [], array $extractedImages = []): array
     {
         // Validasi minimal data
         if (count($row) < 5) {
@@ -605,9 +639,11 @@ class QuestionBankService extends BaseService
             }
         }
 
-        // Cocokkan gambar soal (kolom G = index 6) berdasarkan URUTAN upload
-        $imagePath = null;
-        if (isset($row[6]) && trim($row[6]) !== '' && trim($row[6]) !== '0') {
+        // Prioritaskan gambar yang di-embed langsung di Excel (dari $extractedImages)
+        $imagePath = $extractedImages[$rowNumber] ?? null;
+
+        // Fallback: Cocokkan gambar soal (kolom G = index 6) berdasarkan URUTAN upload
+        if (!$imagePath && isset($row[6]) && trim($row[6]) !== '' && trim($row[6]) !== '0') {
             $imageIndex = (int) trim($row[6]) - 1; // konversi ke 0-based index
             if ($imageIndex >= 0 && isset($uploadedImages[$imageIndex])) {
                 $imagePath = $uploadedImages[$imageIndex];
@@ -1022,7 +1058,7 @@ class QuestionBankService extends BaseService
             $validationImage->setErrorTitle('Input tidak valid');
             $validationImage->setError('Nomor gambar harus berupa angka positif.');
             $validationImage->setPromptTitle('Nomor Urut Gambar');
-            $validationImage->setPrompt('Isi dengan urutan file gambar yang diupload (contoh: 1, 2, 3)');
+            $validationImage->setPrompt('Bisa ketik urutan gambar (1,2) ATAU langsung Copy-Paste/Insert gambar ke sel ini.');
             $validationImage->setOperator(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::OPERATOR_GREATERTHAN);
             $validationImage->setFormula1('0');
         }

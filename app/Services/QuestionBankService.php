@@ -33,9 +33,9 @@ class QuestionBankService extends BaseService
      *
      * @param  \Illuminate\Http\UploadedFile  $file
      */
-    public function importQuestionBank($file, ?string $examId = null, ?string $questionGroupId = null, ?string $categoryId = null): array
+    public function importQuestionBank($file, ?string $examId = null, ?string $questionGroupId = null, ?string $categoryId = null, array $uploadedImages = []): array
     {
-        return DB::transaction(function () use ($file, $examId, $questionGroupId, $categoryId) {
+        return DB::transaction(function () use ($file, $examId, $questionGroupId, $categoryId, $uploadedImages) {
             try {
                 // Process file
                 $fileName = $file->getClientOriginalName();
@@ -68,7 +68,7 @@ class QuestionBankService extends BaseService
                     }
 
                     try {
-                        $result = $this->processQuestionRow($row, $rowNumber, $examId, $questionGroupId, $categoryId);
+                        $result = $this->processQuestionRow($row, $rowNumber, $examId, $questionGroupId, $categoryId, $uploadedImages);
 
                         if ($result['success']) {
                             $questions[] = $result['data'];
@@ -528,7 +528,7 @@ class QuestionBankService extends BaseService
      * @param  int|null  $questionGroupId
      * @param  int|null  $categoryId
      */
-    private function processQuestionRow(array $row, int $rowNumber, ?string $examId, ?string $questionGroupId, ?string $categoryId): array
+    private function processQuestionRow(array $row, int $rowNumber, ?string $examId, ?string $questionGroupId, ?string $categoryId, array $uploadedImages = []): array
     {
         // Validasi minimal data
         if (count($row) < 5) {
@@ -605,6 +605,15 @@ class QuestionBankService extends BaseService
             }
         }
 
+        // Cocokkan gambar soal (kolom G = index 6) berdasarkan URUTAN upload
+        $imagePath = null;
+        if (isset($row[6]) && trim($row[6]) !== '' && trim($row[6]) !== '0') {
+            $imageIndex = (int) trim($row[6]) - 1; // konversi ke 0-based index
+            if ($imageIndex >= 0 && isset($uploadedImages[$imageIndex])) {
+                $imagePath = $uploadedImages[$imageIndex];
+            }
+        }
+
         // Buat soal
         $question = \App\Models\Question::create([
             'exam_id' => $examId,
@@ -614,6 +623,7 @@ class QuestionBankService extends BaseService
             'question_type' => $questionType,
             'score' => (int) $score,
             'correct_answer' => $correctAnswerLabel,
+            'image_path' => $imagePath,
         ]);
 
         // Handle opsi untuk multiple choice
@@ -623,7 +633,7 @@ class QuestionBankService extends BaseService
             }
 
             $options = [];
-            $optionIndex = 6;
+            $optionIndex = 7;
             $optionLabel = 'A';
 
             while ($optionIndex < count($row) && ! empty(trim($row[$optionIndex]))) {
@@ -919,16 +929,17 @@ class QuestionBankService extends BaseService
             'D1' => 'Skor Soal (Khusus Essay/True-False)',
             'E1' => 'Jawaban Benar (Wajib untuk Pilihan Ganda)',
             'F1' => 'Grup Soal (Opsional)',
-            'G1' => 'Opsi A',
-            'H1' => 'Skor A',
-            'I1' => 'Opsi B',
-            'J1' => 'Skor B',
-            'K1' => 'Opsi C',
-            'L1' => 'Skor C',
-            'M1' => 'Opsi D',
-            'N1' => 'Skor D',
-            'O1' => 'Opsi E',
-            'P1' => 'Skor E',
+            'G1' => 'No. Gambar Soal (Opsional)',
+            'H1' => 'Opsi A',
+            'I1' => 'Skor A',
+            'J1' => 'Opsi B',
+            'K1' => 'Skor B',
+            'L1' => 'Opsi C',
+            'M1' => 'Skor C',
+            'N1' => 'Opsi D',
+            'O1' => 'Skor D',
+            'P1' => 'Opsi E',
+            'Q1' => 'Skor E',
         ];
 
         foreach ($headers as $cell => $value) {
@@ -1000,6 +1011,20 @@ class QuestionBankService extends BaseService
             $sheet->getCell('B'.$i)->setDataValidation(clone $validationType);
             $sheet->getCell('C'.$i)->setDataValidation(clone $validationCategory);
             $sheet->getCell('E'.$i)->setDataValidation(clone $validationAnswer);
+            
+            // Validasi kolom G (No. Gambar Soal) hanya angka positif
+            $validationImage = $sheet->getCell('G'.$i)->getDataValidation();
+            $validationImage->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_WHOLE);
+            $validationImage->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_STOP);
+            $validationImage->setAllowBlank(true);
+            $validationImage->setShowInputMessage(true);
+            $validationImage->setShowErrorMessage(true);
+            $validationImage->setErrorTitle('Input tidak valid');
+            $validationImage->setError('Nomor gambar harus berupa angka positif.');
+            $validationImage->setPromptTitle('Nomor Urut Gambar');
+            $validationImage->setPrompt('Isi dengan urutan file gambar yang diupload (contoh: 1, 2, 3)');
+            $validationImage->setOperator(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::OPERATOR_GREATERTHAN);
+            $validationImage->setFormula1('0');
         }
 
         // Add some example data
@@ -1011,14 +1036,15 @@ class QuestionBankService extends BaseService
         if (!empty($groups)) {
             $sheet->setCellValue('F2', $groups[0]);
         }
-        $sheet->setCellValue('G2', 'Thomas Alva Edison');
-        $sheet->setCellValue('H2', '5');
-        $sheet->setCellValue('I2', 'Alexander Graham Bell');
-        $sheet->setCellValue('J2', '0');
-        $sheet->setCellValue('K2', 'Nikola Tesla');
-        $sheet->setCellValue('L2', '0');
-        $sheet->setCellValue('M2', 'Albert Einstein');
-        $sheet->setCellValue('N2', '0');
+        $sheet->setCellValue('G2', ''); // No. Gambar
+        $sheet->setCellValue('H2', 'Thomas Alva Edison');
+        $sheet->setCellValue('I2', '5');
+        $sheet->setCellValue('J2', 'Alexander Graham Bell');
+        $sheet->setCellValue('K2', '0');
+        $sheet->setCellValue('L2', 'Nikola Tesla');
+        $sheet->setCellValue('M2', '0');
+        $sheet->setCellValue('N2', 'Albert Einstein');
+        $sheet->setCellValue('O2', '0');
 
         $sheet->setCellValue('A3', 'Jelaskan pengertian dari Pancasila!');
         $sheet->setCellValue('B3', 'Essay');
@@ -1029,7 +1055,7 @@ class QuestionBankService extends BaseService
         }
 
         // Auto-size columns
-        foreach (range('A', 'P') as $columnID) {
+        foreach (range('A', 'Q') as $columnID) {
             $sheet->getColumnDimension($columnID)->setAutoSize(true);
         }
 

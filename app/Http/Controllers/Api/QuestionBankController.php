@@ -47,6 +47,12 @@ class QuestionBankController extends Controller
                         new OA\Property(property: 'exam_id', type: 'integer'),
                         new OA\Property(property: 'question_group_id', type: 'integer'),
                         new OA\Property(property: 'category_id', type: 'integer'),
+                        new OA\Property(
+                            property: 'images[]',
+                            type: 'array',
+                            items: new OA\Items(type: 'string', format: 'binary'),
+                            description: 'Gambar soal. Upload sebagai array biasa — urutan upload menentukan nomor di kolom G Excel.'
+                        ),
                     ]
                 )
             )
@@ -60,6 +66,8 @@ class QuestionBankController extends Controller
             'exam_id' => 'nullable|exists:exams,id',
             'question_group_id' => 'nullable|exists:question_groups,id',
             'category_id' => 'nullable|exists:question_categories,id',
+            'images'            => 'nullable|array',
+            'images.*'          => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:5120',
         ]);
 
         $file = $request->file('file');
@@ -67,7 +75,15 @@ class QuestionBankController extends Controller
         $questionGroupId = $request->question_group_id;
         $categoryId = $request->category_id;
 
-        $result = $this->questionBankService->importQuestionBank($file, $examId, $questionGroupId, $categoryId);
+        $uploadedImages = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $imageFile) {
+                $storedPath              = $imageFile->store('questions/' . date('Y/m'), 'public');
+                $uploadedImages[$index]  = $storedPath;
+            }
+        }
+
+        $result = $this->questionBankService->importQuestionBank($file, $examId, $questionGroupId, $categoryId, $uploadedImages);
 
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);

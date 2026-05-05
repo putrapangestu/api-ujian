@@ -352,10 +352,25 @@ class QuestionService extends BaseService
                     }
 
                     $questionText      = trim($row[0]);
-                    $questionType      = trim($row[1]);
+                    $questionTypeLabel = trim($row[1]);
                     $categoryId        = trim($row[2]);
                     $score             = trim($row[3]);
                     $correctAnswerLabel = trim($row[4]);
+
+                    // Map label bahasa Indonesia kembali ke system value
+                    $typeMapping = [
+                        'Pilihan Ganda' => 'single_choice',
+                        'Checkbox (Banyak Pilihan)' => 'multiple_choice',
+                        'Essay' => 'essay',
+                        'Benar/Salah' => 'true_false',
+                        // fallback jika user pake format lama
+                        'single_choice' => 'single_choice',
+                        'multiple_choice' => 'multiple_choice',
+                        'essay' => 'essay',
+                        'true_false' => 'true_false',
+                    ];
+
+                    $questionType = $typeMapping[$questionTypeLabel] ?? $questionTypeLabel;
 
                     if (empty($questionText) || empty($questionType)) {
                         $errors[] = "Baris $rowNumber: Teks soal dan tipe soal wajib diisi";
@@ -579,7 +594,7 @@ class QuestionService extends BaseService
         $validationType->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_INFORMATION);
         $validationType->setAllowBlank(false);
         $validationType->setShowDropDown(true);
-        $validationType->setFormula1('"multiple_choice,essay,true_false,single_choice"');
+        $validationType->setFormula1('"Pilihan Ganda,Checkbox (Banyak Pilihan),Essay,Benar/Salah"');
 
         // Jawaban benar
         $validationAnswer = $sheet->getCell('E2')->getDataValidation();
@@ -636,7 +651,7 @@ class QuestionService extends BaseService
         // ── Contoh Data ──────────────────────────────────────────────────────────
         // Baris 2: multiple_choice dengan gambar soal
         $sheet->setCellValue('A2', 'Manakah gambar di bawah ini yang menunjukkan segitiga sama sisi?');
-        $sheet->setCellValue('B2', 'multiple_choice');
+        $sheet->setCellValue('B2', 'Checkbox (Banyak Pilihan)');
         $sheet->setCellValue('C2', 'TWK');
         $sheet->setCellValue('D2', '5');
         $sheet->setCellValue('E2', 'A');
@@ -650,7 +665,7 @@ class QuestionService extends BaseService
 
         // Baris 3: essay tanpa gambar
         $sheet->setCellValue('A3', 'Jelaskan pengertian dari Pancasila!');
-        $sheet->setCellValue('B3', 'essay');
+        $sheet->setCellValue('B3', 'Essay');
         $sheet->setCellValue('C3', 'TIU');
         $sheet->setCellValue('D3', '10');
 
@@ -662,7 +677,7 @@ class QuestionService extends BaseService
         $infos = [
             ['Kolom', 'Keterangan'],
             ['A - Teks Soal', 'Teks pertanyaan. Wajib diisi.'],
-            ['B - Tipe Soal', 'Pilih dari dropdown: multiple_choice, essay, true_false, single_choice'],
+            ['B - Tipe Soal', 'Pilih dari dropdown: Pilihan Ganda, Checkbox (Banyak Pilihan), Essay, Benar/Salah'],
             ['C - Kategori', 'Nama kategori soal. Opsional.'],
             ['D - Skor Soal', 'Nilai numerik untuk soal.'],
             ['E - Jawaban Benar', 'Label opsi yang benar (A/B/C/D/E). Wajib untuk pilihan ganda.'],

@@ -108,4 +108,4 @@ deploy_socket:
     # npm ci dengan PATH eksplisit agar `node` tersedia untuk post-install scripts (esbuild, dll)
     - sudo -u www bash -c "export PATH=/www/server/nodejs/v20.19.5/bin:\$PATH && cd $DEPLOY_DIR_SOCKET && npm ci"
 
-    - pm2 restart socket_ujian
+    - /www/server/nodejs/v20.19.5/bin/pm2 restart socket_ujian

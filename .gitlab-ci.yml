@@ -62,7 +62,7 @@ deploy_dev:
     - cd $DEPLOY_DIR
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $REGISTRY_URL
     - docker compose -f docker-compose-development.yml pull
-    - docker compose -f docker-compose-development.yml -p $CONTAINER_NAME up -d
+    - docker compose -f docker-compose-development.yml -p $CONTAINER_NAME up -d --scale worker=1
     - docker exec $CONTAINER_NAME chown -R www-data:www-data storage bootstrap/cache
     - docker exec $CONTAINER_NAME php artisan storage:link
     - docker exec $CONTAINER_NAME php artisan migrate --force

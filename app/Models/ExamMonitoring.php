@@ -34,6 +34,13 @@ class ExamMonitoring extends Model
     use HasFactory, SoftDeletes, HasUuids;
 
     /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'exam_monitoring';
+
+    /**
      * Action constants
      */
     const ACTION_START = 'start';

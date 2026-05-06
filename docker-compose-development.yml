@@ -12,6 +12,16 @@ services:
       - /www/wwwroot/apidev-ujian.hummatech.com/storage:/var/www/html/storage
     network_mode: "host"
 
+  worker:
+    image: registry.hummatech.com/proyek/ujian-cnps/api-ujian:latest
+    restart: unless-stopped
+    env_file:
+        - .env
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
+    volumes:
+        - /www/wwwroot/apidev-ujian.hummatech.com/storage:/var/www/html/storage
+    network_mode: "host"
+
   # socket-io-ujian:
   #   image: node:20-alpine
   #   container_name: socket-io-ujian

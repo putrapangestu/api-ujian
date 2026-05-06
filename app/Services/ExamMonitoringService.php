@@ -14,6 +14,7 @@ use App\Repositories\StudentRepositoryInterface;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * ExamMonitoring Service Class
@@ -96,6 +97,7 @@ class ExamMonitoringService extends BaseService
                     // Validasi atau persiapkan data monitoring jika perlu
                     $monitoringRows = array_map(function ($monitoring) {
                         return array_merge($monitoring, [
+                            'id' => Str::uuid()->toString(),
                             'created_at' => $monitoring['created_at'] ?? now(),
                             'updated_at' => $monitoring['updated_at'] ?? now(),
                         ]);

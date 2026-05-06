@@ -650,6 +650,14 @@ class QuestionBankService extends BaseService
             }
         }
 
+        // Embed gambar ke dalam question_text sebagai <img> tag
+        // agar konsisten dengan tampilan di web (rich editor)
+        if ($imagePath) {
+            $imageUrl = asset('storage/' . $imagePath);
+            $questionText .= '<br><img src="' . $imageUrl . '" style="max-width:100%;height:auto;" />';
+            $imagePath = null; // tidak simpan di image_path karena sudah ada di question_text
+        }
+
         // Buat soal
         $question = \App\Models\Question::create([
             'exam_id' => $examId,
@@ -659,7 +667,7 @@ class QuestionBankService extends BaseService
             'question_type' => $questionType,
             'score' => (int) $score,
             'correct_answer' => $correctAnswerLabel,
-            'image_path' => $imagePath,
+            'image_path' => null, // gambar sudah di-embed di question_text
         ]);
 
         // Handle opsi untuk multiple choice

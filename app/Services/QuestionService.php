@@ -445,6 +445,14 @@ class QuestionService extends BaseService
                         }
                     }
 
+                    // Embed gambar ke dalam question_text sebagai <img> tag
+                    // agar konsisten dengan tampilan di web (rich editor)
+                    if ($imagePath) {
+                        $imageUrl = asset('storage/' . $imagePath);
+                        $questionText .= '<br><img src="' . $imageUrl . '" style="max-width:100%;height:auto;" />';
+                        $imagePath = null; // tidak simpan di image_path karena sudah ada di question_text
+                    }
+
                     // Parse options untuk multiple choice (mulai kolom H = index 7)
                     $optionsData = [];
                     if ($questionType === 'multiple_choice' || $questionType === 'single_choice') {
@@ -478,7 +486,7 @@ class QuestionService extends BaseService
                         'question_type'     => $questionType,
                         'score'             => $score,
                         'correct_answer'    => $correctAnswerLabel,
-                        'image_path'        => $imagePath,
+                        'image_path'        => null, // gambar sudah di-embed di question_text
                         'options'           => $optionsData,
                     ];
 

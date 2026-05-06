@@ -627,6 +627,7 @@ class ExamService extends BaseService
                             $q->whereNull('end_date')->orWhere('end_date', '>=', $startOfDay);
                         });
                 })
+                ->whereIn('status', [UserExam::STATUS_PENDING, UserExam::STATUS_IN_PROGRESS])
                 ->with(['exam'])
                 ->get()
                 ->sortBy(function ($userExam) {

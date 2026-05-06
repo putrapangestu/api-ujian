@@ -96,5 +96,7 @@ deploy_socket:
 
     - sudo -u www bash -lc "
         cd '$DEPLOY_DIR_SOCKET' &&
-        composer install --no-interaction --prefer-dist --optimize-autoloader
+        composer install --no-interaction --prefer-dist --optimize-autoloader &&
+        npm ci &&
+        pm2 restart socket_ujian
       "

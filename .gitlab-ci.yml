@@ -108,4 +108,5 @@ deploy_socket:
     # npm ci dengan PATH eksplisit agar `node` tersedia untuk post-install scripts (esbuild, dll)
     - sudo -u www bash -c "export PATH=/www/server/nodejs/v20.19.5/bin:\$PATH && cd $DEPLOY_DIR_SOCKET && npm ci"
 
-    - export PATH=/www/server/nodejs/v20.19.5/bin:$PATH && pm2 restart socket_ujian
+    # pm2 restart sebagai www karena socket_ujian terdaftar di PM2 instance user www (aaPanel)
+    - sudo -u www bash -c "export PATH=/www/server/nodejs/v20.19.5/bin:\$PATH && pm2 restart socket_ujian"

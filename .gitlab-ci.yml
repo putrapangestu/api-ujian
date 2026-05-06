@@ -99,7 +99,13 @@ deploy_socket:
         composer install --no-interaction --prefer-dist --optimize-autoloader
       "
 
-    # npm ci dijalankan sebagai www (pemilik node_modules) dengan path absolut aaPanel
+    # Fix ownership npm cache (seringkali dimiliki root karena pernah dijalankan sebagai root)
+    - sudo chown -R www:www /www/server/nodejs/cache
+
+    # Hapus node_modules lama agar npm ci berjalan bersih
+    - sudo rm -rf $DEPLOY_DIR_SOCKET/node_modules
+
+    # npm ci dijalankan sebagai www dengan path absolut aaPanel
     - sudo -u www bash -c "cd $DEPLOY_DIR_SOCKET && /www/server/nodejs/v20.19.5/bin/npm ci"
 
     - pm2 restart socket_ujian

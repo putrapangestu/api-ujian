@@ -251,4 +251,44 @@ class QuestionController extends Controller
 
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
     }
+
+    /**
+     * Delete multiple questions
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Post(
+        path: '/questions/bulk-delete',
+        summary: 'Hapus banyak soal sekaligus',
+        tags: ['Questions'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: 'question_ids',
+                        type: 'array',
+                        items: new OA\Items(type: 'integer')
+                    ),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: 'Success')]
+    )]
+    public function destroyBulk(Request $request)
+    {
+        $request->validate([
+            'question_ids'   => 'required|array|min:1',
+            'question_ids.*' => 'required|integer|exists:questions,id',
+        ]);
+
+        $result = $this->questionService->deleteMultipleQuestions($request->question_ids);
+
+        if ($result['success']) {
+            return $this->successResponse($result['data'] ?? null, $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
 }

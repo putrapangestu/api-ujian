@@ -563,6 +563,62 @@ class QuestionService extends BaseService
     }
 
     /**
+     * Delete multiple questions
+     *
+     * @param array $ids
+     * @return array
+     */
+    public function deleteMultipleQuestions(array $ids): array
+    {
+        return DB::transaction(function () use ($ids) {
+            try {
+                $questions = Question::whereIn('id', $ids)->get();
+                $deletedCount = 0;
+                $skippedCount = 0;
+                $groupIds = [];
+
+                foreach ($questions as $question) {
+                    if ($question->hasBeenUsedInExam()) {
+                        $skippedCount++;
+                        continue;
+                    }
+
+                    if ($question->question_group_id) {
+                        $groupIds[] = $question->question_group_id;
+                    }
+
+                    $question->options()->delete();
+                    $question->delete();
+                    $deletedCount++;
+                }
+
+                if ($deletedCount === 0 && $skippedCount > 0) {
+                    return $this->errorResponse('Semua soal yang dipilih tidak dapat dihapus karena sudah pernah digunakan dalam ujian.');
+                }
+
+                // Update total questions for affected groups
+                $groupIds = array_unique($groupIds);
+                foreach ($groupIds as $groupId) {
+                    $group = QuestionGroup::find($groupId);
+                    if ($group) {
+                        $group->updateTotalQuestions();
+                    }
+                }
+
+                $message = "Berhasil menghapus $deletedCount soal.";
+                if ($skippedCount > 0) {
+                    $message .= " $skippedCount soal dilewati karena sudah pernah digunakan dalam ujian.";
+                }
+
+                return $this->successResponse(null, $message);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return $this->errorResponse('Gagal menghapus soal: ' . $e->getMessage());
+            }
+        });
+    }
+
+    /**
      * Generate and download Excel template for importing questions
      *
      * Kolom template:

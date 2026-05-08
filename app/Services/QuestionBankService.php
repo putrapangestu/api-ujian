@@ -50,7 +50,7 @@ class QuestionBankService extends BaseService
                 // Remove header row
                 array_shift($rows);
 
-                // Extract embedded images from Column G
+                // Extract embedded images from any column
                 $extractedImages = [];
                 $drawings = $worksheet->getDrawingCollection();
                 foreach ($drawings as $drawing) {
@@ -60,27 +60,25 @@ class QuestionBankService extends BaseService
                         $col = $matches[1];
                         $row = $matches[2];
 
-                        if ($col === 'G') {
-                            $imageContents = null;
-                            $extension = 'png';
-                            if ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing) {
-                                ob_start();
-                                call_user_func($drawing->getRenderingFunction(), $drawing->getImageResource());
-                                $imageContents = ob_get_contents();
-                                ob_end_clean();
-                                $extension = strtolower(str_replace('image/', '', $drawing->getMimeType()));
-                                if ($extension === 'jpeg')
-                                    $extension = 'jpg';
-                            } elseif ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\Drawing) {
-                                $imageContents = file_get_contents($drawing->getPath());
-                                $extension = $drawing->getExtension();
-                            }
+                        $imageContents = null;
+                        $extension = 'png';
+                        if ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing) {
+                            ob_start();
+                            call_user_func($drawing->getRenderingFunction(), $drawing->getImageResource());
+                            $imageContents = ob_get_contents();
+                            ob_end_clean();
+                            $extension = strtolower(str_replace('image/', '', $drawing->getMimeType()));
+                            if ($extension === 'jpeg')
+                                $extension = 'jpg';
+                        } elseif ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\Drawing) {
+                            $imageContents = file_get_contents($drawing->getPath());
+                            $extension = $drawing->getExtension();
+                        }
 
-                            if ($imageContents) {
-                                $fileName = 'questions/' . date('Y/m') . '/' . uniqid() . '.' . $extension;
-                                \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageContents);
-                                $extractedImages[$row] = $fileName;
-                            }
+                        if ($imageContents) {
+                            $fileName = 'questions/' . date('Y/m') . '/' . uniqid() . '.' . $extension;
+                            \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageContents);
+                            $extractedImages[$row][$col] = $fileName;
                         }
                     }
                 }
@@ -92,13 +90,11 @@ class QuestionBankService extends BaseService
                 foreach ($rows as $row) {
                     $rowNumber++;
 
-                    $row = array_filter($row, function ($value) {
-                        return $value !== '';
-                    });
+                    $isEmptyRow = count(array_filter($row, function ($value) {
+                        return trim($value ?? '') !== '';
+                    })) === 0;
 
-                    // Log::info("check row import", $row);
-
-                    if (count($row) == 0) {
+                    if ($isEmptyRow && empty($extractedImages[$rowNumber])) {
                         break;
                     }
 
@@ -579,7 +575,7 @@ class QuestionBankService extends BaseService
         $score = trim($row[3] ?? '1');
         $correctAnswerLabel = trim($row[4] ?? '');
 
-        if (!$questionText && !$questionTypeLabel && !$categoryName && !$score && !$correctAnswerLabel) {
+        if (empty($questionText) && empty($questionTypeLabel) && empty($categoryName) && empty($score) && empty($correctAnswerLabel)) {
             return $this->errorResponse("Berhenti");
         }
 
@@ -648,7 +644,7 @@ class QuestionBankService extends BaseService
         }
 
         // Prioritaskan gambar yang di-embed langsung di Excel (dari $extractedImages)
-        $imagePath = $extractedImages[$rowNumber] ?? null;
+        $imagePath = $extractedImages[$rowNumber]['G'] ?? null;
 
         // Fallback: Cocokkan gambar soal (kolom G = index 6) berdasarkan URUTAN upload
         if (!$imagePath && isset($row[6]) && trim($row[6]) !== '' && trim($row[6]) !== '0') {
@@ -680,21 +676,34 @@ class QuestionBankService extends BaseService
 
         // Handle opsi untuk multiple choice
         if ($questionType === 'multiple_choice' || $questionType === 'single_choice') {
-            if (count($row) < 7) {
-                return $this->errorResponse("Baris $rowNumber: Opsi untuk multiple choice tidak ditemukan");
-            }
-
             $options = [];
             $optionIndex = 7;
             $optionLabel = 'A';
+            $maxOptionIndex = max(count($row), 17); // Cek setidaknya sampai kolom Q (index 16) untuk antisipasi image saja tanpa text
 
-            while ($optionIndex < count($row) && !empty(trim($row[$optionIndex]))) {
-                $optionText = trim($row[$optionIndex]);
+            while ($optionIndex < $maxOptionIndex) {
+                $optionText = trim($row[$optionIndex] ?? '');
                 $optionScore = trim($row[$optionIndex + 1] ?? '0');
+                $optColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($optionIndex + 1);
+                $optImagePath = $extractedImages[$rowNumber][$optColLetter] ?? null;
+
+                if ($optionText === '' && !$optImagePath) {
+                    // Berhenti jika tidak ada teks dan tidak ada gambar di cell opsi ini
+                    break;
+                }
+
                 if ($optionScore === '')
                     $optionScore = '0';
 
                 $isCorrect = ($optionLabel === $correctAnswerLabel);
+
+                if ($optImagePath) {
+                    $optImageUrl = asset('storage/' . $optImagePath);
+                    if ($optionText !== '') {
+                        $optionText .= '<br>';
+                    }
+                    $optionText .= '<img src="' . $optImageUrl . '" style="max-width:100%;height:auto;" />';
+                }
 
                 $options[] = \App\Models\QuestionOption::create([
                     'question_id' => $question->id,

@@ -337,7 +337,7 @@ class QuestionService extends BaseService
                 // Remove header row
                 array_shift($rows);
 
-                // Extract embedded images from Column G
+                // Extract embedded images from any column
                 $extractedImages = [];
                 $drawings = $worksheet->getDrawingCollection();
                 foreach ($drawings as $drawing) {
@@ -347,26 +347,24 @@ class QuestionService extends BaseService
                         $col = $matches[1];
                         $row = $matches[2];
                         
-                        if ($col === 'G') {
-                            $imageContents = null;
-                            $extension = 'png';
-                            if ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing) {
-                                ob_start();
-                                call_user_func($drawing->getRenderingFunction(), $drawing->getImageResource());
-                                $imageContents = ob_get_contents();
-                                ob_end_clean();
-                                $extension = strtolower(str_replace('image/', '', $drawing->getMimeType()));
-                                if ($extension === 'jpeg') $extension = 'jpg';
-                            } elseif ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\Drawing) {
-                                $imageContents = file_get_contents($drawing->getPath());
-                                $extension = $drawing->getExtension();
-                            }
-                            
-                            if ($imageContents) {
-                                $fileName = 'questions/' . date('Y/m') . '/' . uniqid() . '.' . $extension;
-                                \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageContents);
-                                $extractedImages[$row] = $fileName;
-                            }
+                        $imageContents = null;
+                        $extension = 'png';
+                        if ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing) {
+                            ob_start();
+                            call_user_func($drawing->getRenderingFunction(), $drawing->getImageResource());
+                            $imageContents = ob_get_contents();
+                            ob_end_clean();
+                            $extension = strtolower(str_replace('image/', '', $drawing->getMimeType()));
+                            if ($extension === 'jpeg') $extension = 'jpg';
+                        } elseif ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\Drawing) {
+                            $imageContents = file_get_contents($drawing->getPath());
+                            $extension = $drawing->getExtension();
+                        }
+                        
+                        if ($imageContents) {
+                            $fileName = 'questions/' . date('Y/m') . '/' . uniqid() . '.' . $extension;
+                            \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageContents);
+                            $extractedImages[$row][$col] = $fileName;
                         }
                     }
                 }
@@ -435,7 +433,7 @@ class QuestionService extends BaseService
                     }
 
                     // Prioritaskan gambar yang di-embed langsung di Excel (dari $extractedImages)
-                    $imagePath = $extractedImages[$rowNumber] ?? null;
+                    $imagePath = $extractedImages[$rowNumber]['G'] ?? null;
 
                     // Fallback: Cocokkan gambar soal (kolom G = index 6) berdasarkan URUTAN upload
                     if (!$imagePath && isset($row[6]) && trim($row[6]) !== '' && trim($row[6]) !== '0') {
@@ -458,13 +456,29 @@ class QuestionService extends BaseService
                     if ($questionType === 'multiple_choice' || $questionType === 'single_choice') {
                         $optionIndex = 7;
                         $optionLabel = 'A';
+                        $maxOptionIndex = max(count($row), 17); // Cek setidaknya sampai kolom Q (index 16) untuk antisipasi image saja tanpa text
 
-                        while ($optionIndex < count($row) && ! empty(trim($row[$optionIndex]))) {
-                            $optionText = trim($row[$optionIndex]);
+                        while ($optionIndex < $maxOptionIndex) {
+                            $optionText = trim($row[$optionIndex] ?? '');
                             $optionScore = trim($row[$optionIndex + 1] ?? '0');
-                            if ($optionScore === '') $optionScore = '0';
+                            $optColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($optionIndex + 1);
+                            $optImagePath = $extractedImages[$rowNumber][$optColLetter] ?? null;
 
+                            if ($optionText === '' && !$optImagePath) {
+                                // Berhenti jika tidak ada teks dan tidak ada gambar di cell opsi ini
+                                break;
+                            }
+
+                            if ($optionScore === '') $optionScore = '0';
                             $isCorrect = ($optionLabel === $correctAnswerLabel);
+
+                            if ($optImagePath) {
+                                $optImageUrl = asset('storage/' . $optImagePath);
+                                if ($optionText !== '') {
+                                    $optionText .= '<br>';
+                                }
+                                $optionText .= '<img src="' . $optImageUrl . '" style="max-width:100%;height:auto;" />';
+                            }
 
                             $optionsData[] = [
                                 'text'       => $optionText,
@@ -475,6 +489,17 @@ class QuestionService extends BaseService
 
                             $optionIndex += 2;
                             $optionLabel = chr(ord($optionLabel) + 1);
+                        }
+                    }
+
+                    // Hitung skor otomatis jika tidak diisi
+                    if ($score === '') {
+                        if ($questionType === 'single_choice' || $questionType === 'true_false') {
+                            $score = empty($optionsData) ? 0 : max(array_column($optionsData, 'score'));
+                        } else if ($questionType === 'multiple_choice') {
+                            $score = array_sum(array_column($optionsData, 'score'));
+                        } else {
+                            $score = 0;
                         }
                     }
 
@@ -643,7 +668,7 @@ class QuestionService extends BaseService
             'A1' => 'Teks Soal (Wajib)',
             'B1' => 'Tipe Soal (Wajib)',
             'C1' => 'Kategori (Opsional)',
-            'D1' => 'Skor Soal',
+            'D1' => 'Skor Soal (Opsional)',
             'E1' => 'Jawaban Benar',
             'F1' => 'Grup Soal (Opsional)',
             'G1' => 'No. Gambar Soal (Opsional)',
@@ -773,17 +798,14 @@ class QuestionService extends BaseService
             ['A - Teks Soal', 'Teks pertanyaan. Wajib diisi.'],
             ['B - Tipe Soal', 'Pilih dari dropdown: Pilihan Ganda, Checkbox (Banyak Pilihan), Essay, Benar/Salah'],
             ['C - Kategori', 'Nama kategori soal. Opsional.'],
-            ['D - Skor Soal', 'Nilai numerik untuk soal.'],
+            ['D - Skor Soal', 'Nilai numerik untuk soal. Opsional, jika dikosongkan akan otomatis dihitung dari total skor opsi.'],
             ['E - Jawaban Benar', 'Label opsi yang benar (A/B/C/D/E). Wajib untuk pilihan ganda.'],
             ['F - Grup Soal', 'Pilih dari dropdown grup soal yang tersedia. Opsional.'],
-            ['G - No. Gambar Soal', "Bisa ketik urutan gambar (1,2) ATAU langsung Copy-Paste/Insert gambar ke sel ini.
-".
-                "Kosongkan jika soal tidak memiliki gambar.
-".
-                "Contoh: soal baris 2 pakai gambar ke-1 → isi 1, soal baris 5 pakai gambar ke-3 → isi 3.
-".
+            ['G - No. Gambar Soal', "Bisa ketik urutan gambar (1,2) ATAU langsung Copy-Paste/Insert gambar ke sel ini.\n" .
+                "Kosongkan jika soal tidak memiliki gambar.\n" .
+                "Contoh: soal baris 2 pakai gambar ke-1 → isi 1, soal baris 5 pakai gambar ke-3 → isi 3.\n" .
                 "Saat upload, gambar di-attach sebagai images[] (array biasa, tanpa nama khusus)."],
-            ['H,J,L,N,P - Opsi A,B,C,D,E', 'Teks opsi jawaban. Untuk pilihan ganda, minimal 2 opsi.\nUntuk opsi bergambar: embed base64 HTML, misal: <img src="data:image/png;base64,..." />'],
+            ['H,J,L,N,P - Opsi A,B,C,D,E', "Teks opsi jawaban. Bisa ketik teks, atau langsung Copy-Paste/Insert gambar ke sel opsi ini."],
             ['I,K,M,O,Q - Skor A,B,C,D,E', 'Nilai numerik tiap opsi. Tulis 0 untuk opsi yang salah.'],
         ];
         $infoSheet->fromArray($infos, null, 'A3');

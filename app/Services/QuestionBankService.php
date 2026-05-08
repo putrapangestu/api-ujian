@@ -40,7 +40,7 @@ class QuestionBankService extends BaseService
                 // Process file
                 $fileName = $file->getClientOriginalName();
                 $filePath = $file->storeAs('temp', 'import_' . uniqid() . '_' . $fileName, 'public');
-                $fileFullPath = storage_path('app/public/'.$filePath);
+                $fileFullPath = storage_path('app/public/' . $filePath);
 
                 // Read Excel file
                 $spreadsheet = IOFactory::load($fileFullPath);
@@ -59,7 +59,7 @@ class QuestionBankService extends BaseService
                     if (count($matches) === 3) {
                         $col = $matches[1];
                         $row = $matches[2];
-                        
+
                         if ($col === 'G') {
                             $imageContents = null;
                             $extension = 'png';
@@ -69,12 +69,13 @@ class QuestionBankService extends BaseService
                                 $imageContents = ob_get_contents();
                                 ob_end_clean();
                                 $extension = strtolower(str_replace('image/', '', $drawing->getMimeType()));
-                                if ($extension === 'jpeg') $extension = 'jpg';
+                                if ($extension === 'jpeg')
+                                    $extension = 'jpg';
                             } elseif ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\Drawing) {
                                 $imageContents = file_get_contents($drawing->getPath());
                                 $extension = $drawing->getExtension();
                             }
-                            
+
                             if ($imageContents) {
                                 $fileName = 'questions/' . date('Y/m') . '/' . uniqid() . '.' . $extension;
                                 \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageContents);
@@ -107,11 +108,14 @@ class QuestionBankService extends BaseService
                         if ($result['success']) {
                             $questions[] = $result['data'];
                         } else {
+                            if ($result['message'] == 'Berhenti') {
+                                break;
+                            }
                             $errors[] = $result['message'];
                         }
 
                     } catch (\Exception $e) {
-                        $errors[] = "Baris $rowNumber: ".$e->getMessage();
+                        $errors[] = "Baris $rowNumber: " . $e->getMessage();
                     }
                 }
 
@@ -139,7 +143,7 @@ class QuestionBankService extends BaseService
                     Storage::disk('public')->delete($filePath);
                 }
 
-                return $this->errorResponse('Gagal import bank soal: '.$e->getMessage());
+                return $this->errorResponse('Gagal import bank soal: ' . $e->getMessage());
             }
         });
     }
@@ -148,12 +152,12 @@ class QuestionBankService extends BaseService
     {
         return DB::transaction(function () use ($file, $examId) {
             try {
-                if ($examId && ! Exam::find($examId)) {
+                if ($examId && !Exam::find($examId)) {
                     return $this->errorResponse('Ujian tidak ditemukan');
                 }
 
                 $filePath = $file->store('temp');
-                $fileFullPath = storage_path('app/'.$filePath);
+                $fileFullPath = storage_path('app/' . $filePath);
 
                 $xmlContent = file_get_contents($fileFullPath);
                 if ($xmlContent === false || trim($xmlContent) === '') {
@@ -163,7 +167,7 @@ class QuestionBankService extends BaseService
                 }
 
                 $xml = simplexml_load_string($xmlContent, 'SimpleXMLElement', LIBXML_NOCDATA);
-                if (! $xml) {
+                if (!$xml) {
                     Storage::delete($filePath);
 
                     return $this->errorResponse('Format XML tidak valid');
@@ -190,7 +194,7 @@ class QuestionBankService extends BaseService
                             $errors[] = $result['message'];
                         }
                     } catch (\Exception $e) {
-                        $errors[] = 'Item '.$itemNumber.': '.$e->getMessage();
+                        $errors[] = 'Item ' . $itemNumber . ': ' . $e->getMessage();
                     }
                 }
 
@@ -221,7 +225,7 @@ class QuestionBankService extends BaseService
             } catch (\Exception $e) {
                 DB::rollBack();
 
-                return $this->errorResponse('Gagal import Moodle XML: '.$e->getMessage());
+                return $this->errorResponse('Gagal import Moodle XML: ' . $e->getMessage());
             }
         });
     }
@@ -237,8 +241,8 @@ class QuestionBankService extends BaseService
             default => null,
         };
 
-        if (! $questionType) {
-            return $this->errorResponse('Item '.$itemNumber.': tipe soal tidak didukung ('.$type.')');
+        if (!$questionType) {
+            return $this->errorResponse('Item ' . $itemNumber . ': tipe soal tidak didukung (' . $type . ')');
         }
 
         $defaultMark = $this->getMoodleNumber($questionNode->defaultmark) ?? $this->getMoodleNumber($questionNode->defaultgrade) ?? 1;
@@ -246,23 +250,23 @@ class QuestionBankService extends BaseService
 
         $questionText = $this->getMoodleHtmlText($questionNode->questiontext);
         if (trim(strip_tags($questionText)) === '') {
-            return $this->errorResponse('Item '.$itemNumber.': teks soal kosong');
+            return $this->errorResponse('Item ' . $itemNumber . ': teks soal kosong');
         }
 
         $filesByName = $this->extractMoodleFiles($questionNode);
 
         $tags = $this->getMoodleTags($questionNode);
         if (empty($tags)) {
-            return $this->errorResponse('Item '.$itemNumber.': tags wajib diisi untuk menentukan grup soal');
+            return $this->errorResponse('Item ' . $itemNumber . ': tags wajib diisi untuk menentukan grup soal');
         }
 
         $group = $this->findQuestionGroupFromTags($tags);
         if (!$group) {
-            return $this->errorResponse('Item '.$itemNumber.': tag tidak ditemukan di QuestionGroup ('.implode(', ', $tags).')');
+            return $this->errorResponse('Item ' . $itemNumber . ': tag tidak ditemukan di QuestionGroup (' . implode(', ', $tags) . ')');
         }
 
         if (!$group->question_category_id) {
-            return $this->errorResponse('Item '.$itemNumber.': category dari tag tidak ditemukan di QuestionGroup ('.implode(', ', $tags).')');
+            return $this->errorResponse('Item ' . $itemNumber . ': category dari tag tidak ditemukan di QuestionGroup (' . implode(', ', $tags) . ')');
         }
 
         $finalQuestionGroupId = $group->id;
@@ -291,7 +295,7 @@ class QuestionBankService extends BaseService
 
         if ($questionType === 'true_false') {
             $tfResult = $this->createTrueFalseOptions($question, $questionNode, $filesByName);
-            if (! $tfResult['success']) {
+            if (!$tfResult['success']) {
                 return $tfResult;
             }
 
@@ -302,7 +306,7 @@ class QuestionBankService extends BaseService
 
         if ($questionType === 'single_choice') {
             $scResult = $this->createTrueFalseOptions($question, $questionNode, $filesByName);
-            if (! $scResult['success']) {
+            if (!$scResult['success']) {
                 return $scResult;
             }
 
@@ -312,7 +316,7 @@ class QuestionBankService extends BaseService
         }
 
         $mcResult = $this->createMultipleChoiceOptions($question, $questionNode, $filesByName, $score);
-        if (! $mcResult['success']) {
+        if (!$mcResult['success']) {
             return $mcResult;
         }
 
@@ -323,12 +327,12 @@ class QuestionBankService extends BaseService
 
     private function getMoodleHtmlText(?\SimpleXMLElement $node): string
     {
-        if (! $node) {
+        if (!$node) {
             return '';
         }
 
         $textNode = $node->text ?? null;
-        if (! $textNode) {
+        if (!$textNode) {
             return '';
         }
 
@@ -337,7 +341,7 @@ class QuestionBankService extends BaseService
 
     private function getMoodleNumber(?\SimpleXMLElement $node): ?float
     {
-        if (! $node) {
+        if (!$node) {
             return null;
         }
 
@@ -386,17 +390,17 @@ class QuestionBankService extends BaseService
             return $html;
         }
 
-        $storageDir = 'questions/moodle/'.$questionId;
+        $storageDir = 'questions/moodle/' . $questionId;
 
         foreach ($filesByName as $name => $content) {
             $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', $name) ?: Str::random(12);
-            $relativePath = $storageDir.'/'.$safeName;
+            $relativePath = $storageDir . '/' . $safeName;
 
             Storage::disk('public')->put($relativePath, $content);
-            $url = asset('storage/'.$relativePath);
+            $url = asset('storage/' . $relativePath);
 
-            $html = str_replace('@@PLUGINFILE@@/'.$name, $url, $html);
-            $html = str_replace('@@PLUGINFILE@@/'.$safeName, $url, $html);
+            $html = str_replace('@@PLUGINFILE@@/' . $name, $url, $html);
+            $html = str_replace('@@PLUGINFILE@@/' . $safeName, $url, $html);
         }
 
         return $html;
@@ -414,7 +418,7 @@ class QuestionBankService extends BaseService
 
     private function getMoodleTags(\SimpleXMLElement $questionNode): array
     {
-        if (! isset($questionNode->tags)) {
+        if (!isset($questionNode->tags)) {
             return [];
         }
 
@@ -451,7 +455,7 @@ class QuestionBankService extends BaseService
     private function createTrueFalseOptions(Question $question, \SimpleXMLElement $questionNode, array $filesByName): array
     {
         $answers = $questionNode->answer ?? null;
-        if (! $answers || count($answers) < 2) {
+        if (!$answers || count($answers) < 2) {
             return $this->errorResponse('Jawaban yang di set harus lebih dari 1');
         }
 
@@ -486,7 +490,7 @@ class QuestionBankService extends BaseService
         }
 
         $correct = collect($createdOptions)->firstWhere('is_correct', true);
-        if (! $correct) {
+        if (!$correct) {
             return $this->errorResponse('Soal true/false harus memiliki jawaban yang benar');
         }
 
@@ -500,7 +504,7 @@ class QuestionBankService extends BaseService
     private function createMultipleChoiceOptions(Question $question, \SimpleXMLElement $questionNode, array $filesByName, int $questionScore): array
     {
         $answers = $questionNode->answer ?? null;
-        if (! $answers || count($answers) < 2) {
+        if (!$answers || count($answers) < 2) {
             return $this->errorResponse('Soal pilihan ganda minimal memiliki 2 jawaban');
         }
 
@@ -534,7 +538,7 @@ class QuestionBankService extends BaseService
         }
 
         $correct = collect($options)->firstWhere('is_correct', true);
-        if (! $correct) {
+        if (!$correct) {
             return $this->errorResponse('Soal pilihan ganda harus memiliki jawaban benar');
         }
 
@@ -575,6 +579,10 @@ class QuestionBankService extends BaseService
         $score = trim($row[3] ?? '1');
         $correctAnswerLabel = trim($row[4] ?? '');
 
+        if (!$questionText && !$questionTypeLabel && !$categoryName && !$score && !$correctAnswerLabel) {
+            return $this->errorResponse("Berhenti");
+        }
+
         // Map label bahasa Indonesia kembali ke system value
         $typeMapping = [
             'Pilihan Ganda' => 'single_choice',
@@ -599,7 +607,7 @@ class QuestionBankService extends BaseService
             return $this->errorResponse("Baris $rowNumber: Tipe soal wajib diisi");
         }
 
-        if (! in_array($questionType, ['multiple_choice', 'essay', 'true_false', 'single_choice'])) {
+        if (!in_array($questionType, ['multiple_choice', 'essay', 'true_false', 'single_choice'])) {
             return $this->errorResponse("Baris $rowNumber: Tipe soal tidak valid");
         }
 
@@ -611,7 +619,7 @@ class QuestionBankService extends BaseService
                 $finalCategoryId = $group->question_category_id;
             }
         }
-        if (! empty($categoryName) && ! $categoryId) {
+        if (!empty($categoryName) && !$categoryId) {
             $category = \App\Models\QuestionCategory::firstOrCreate(
                 ['name' => $categoryName],
                 ['code' => strtoupper(str_replace(' ', '_', $categoryName)), 'status' => 'active']
@@ -621,7 +629,7 @@ class QuestionBankService extends BaseService
 
         // Handle grup soal
         $finalQuestionGroupId = $questionGroupId;
-        if (isset($row[5]) && ! empty(trim($row[5]))) {
+        if (isset($row[5]) && !empty(trim($row[5]))) {
             $groupName = trim($row[5]);
             $code = strtolower(\Illuminate\Support\Str::slug($groupName, '_'));
             $group = \App\Models\QuestionGroup::query()
@@ -629,7 +637,7 @@ class QuestionBankService extends BaseService
                 ->orWhere('name', $groupName)
                 ->first();
 
-            if (! $group) {
+            if (!$group) {
                 return $this->errorResponse("Baris $rowNumber: Grup soal tidak ditemukan ($groupName)");
             }
 
@@ -680,10 +688,11 @@ class QuestionBankService extends BaseService
             $optionIndex = 7;
             $optionLabel = 'A';
 
-            while ($optionIndex < count($row) && ! empty(trim($row[$optionIndex]))) {
+            while ($optionIndex < count($row) && !empty(trim($row[$optionIndex]))) {
                 $optionText = trim($row[$optionIndex]);
                 $optionScore = trim($row[$optionIndex + 1] ?? '0');
-                if ($optionScore === '') $optionScore = '0';
+                if ($optionScore === '')
+                    $optionScore = '0';
 
                 $isCorrect = ($optionLabel === $correctAnswerLabel);
 
@@ -714,7 +723,7 @@ class QuestionBankService extends BaseService
     {
         return DB::transaction(function () use ($file, $examId, $questionGroupId, $categoryId) {
             try {
-                if ($examId && ! Exam::find($examId)) {
+                if ($examId && !Exam::find($examId)) {
                     return $this->errorResponse('Ujian tidak ditemukan');
                 }
 
@@ -812,7 +821,7 @@ class QuestionBankService extends BaseService
         // Deteksi Tipe Soal
         $questionTypeStr = '';
         if (isset($item->itemmetadata->bbmd_questiontype)) {
-            $questionTypeStr = (string)$item->itemmetadata->bbmd_questiontype;
+            $questionTypeStr = (string) $item->itemmetadata->bbmd_questiontype;
         }
 
         // Mapping tipe soal
@@ -827,7 +836,7 @@ class QuestionBankService extends BaseService
         // Ambil teks soal dari presentation > material > mattext
         $questionText = '';
         if (isset($item->presentation->flow->material->mattext)) {
-            $questionText = (string)$item->presentation->flow->material->mattext;
+            $questionText = (string) $item->presentation->flow->material->mattext;
         }
 
         if (trim(strip_tags($questionText)) === '' && strpos($questionText, '<img') === false) {
@@ -859,7 +868,8 @@ class QuestionBankService extends BaseService
 
     private function processBlackboardImages(string $text, string $tempDir): string
     {
-        if (empty($text)) return $text;
+        if (empty($text))
+            return $text;
 
         preg_match_all('/<img[^>]+src=([\'"])(?<src>[^\1]+)\1[^>]*>/i', $text, $matches);
 
@@ -879,7 +889,8 @@ class QuestionBankService extends BaseService
 
                 if (File::exists($sourceFilePath)) {
                     $extension = pathinfo($sourceFilePath, PATHINFO_EXTENSION);
-                    if (!$extension) $extension = 'png';
+                    if (!$extension)
+                        $extension = 'png';
                     $newFilename = 'q_img_' . uniqid() . '.' . $extension;
                     $storagePath = 'questions/' . date('Y/m');
 
@@ -907,8 +918,8 @@ class QuestionBankService extends BaseService
 
         if (isset($item->resprocessing->respcondition)) {
             foreach ($item->resprocessing->respcondition as $resp) {
-                if (isset($resp->setvar) && (string)$resp->setvar > 0 && isset($resp->conditionvar->varequal)) {
-                    $correctIdent = (string)$resp->conditionvar->varequal;
+                if (isset($resp->setvar) && (string) $resp->setvar > 0 && isset($resp->conditionvar->varequal)) {
+                    $correctIdent = (string) $resp->conditionvar->varequal;
                     break;
                 }
             }
@@ -919,11 +930,11 @@ class QuestionBankService extends BaseService
             $index = 0;
 
             foreach ($item->presentation->response_lid->render_choice->response_label as $labelNode) {
-                $ident = (string)$labelNode['ident'];
+                $ident = (string) $labelNode['ident'];
 
                 $optionText = '';
                 if (isset($labelNode->material->mattext)) {
-                    $optionText = (string)$labelNode->material->mattext;
+                    $optionText = (string) $labelNode->material->mattext;
                 }
 
                 $optionText = $this->processBlackboardImages($optionText, $tempDir);
@@ -1046,18 +1057,18 @@ class QuestionBankService extends BaseService
             $validationGroup->setFormula1('DataGrup!$A$1:$A$' . count($groups));
 
             for ($i = 2; $i <= 1000; $i++) {
-                $sheet->getCell('F'.$i)->setDataValidation(clone $validationGroup);
+                $sheet->getCell('F' . $i)->setDataValidation(clone $validationGroup);
             }
         }
 
         // Apply validation to rows 2 to 1000
         for ($i = 2; $i <= 1000; $i++) {
-            $sheet->getCell('B'.$i)->setDataValidation(clone $validationType);
-            $sheet->getCell('C'.$i)->setDataValidation(clone $validationCategory);
-            $sheet->getCell('E'.$i)->setDataValidation(clone $validationAnswer);
-            
+            $sheet->getCell('B' . $i)->setDataValidation(clone $validationType);
+            $sheet->getCell('C' . $i)->setDataValidation(clone $validationCategory);
+            $sheet->getCell('E' . $i)->setDataValidation(clone $validationAnswer);
+
             // Validasi kolom G (No. Gambar Soal) hanya angka positif
-            $validationImage = $sheet->getCell('G'.$i)->getDataValidation();
+            $validationImage = $sheet->getCell('G' . $i)->getDataValidation();
             $validationImage->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_NONE);
             $validationImage->setShowInputMessage(true);
             $validationImage->setPromptTitle('Nomor Urut Gambar');
@@ -1177,21 +1188,21 @@ class QuestionBankService extends BaseService
             // Set data
             $row = 2;
             foreach ($questions as $question) {
-                $sheet->setCellValue('A'.$row, $question->question_text);
-                $sheet->setCellValue('B'.$row, $question->question_type);
-                $sheet->setCellValue('C'.$row, $question->category->name ?? '');
-                $sheet->setCellValue('D'.$row, $question->score);
-                $sheet->setCellValue('E'.$row, $question->correct_answer ?? '');
-                $sheet->setCellValue('F'.$row, $question->questionGroup->name ?? '');
+                $sheet->setCellValue('A' . $row, $question->question_text);
+                $sheet->setCellValue('B' . $row, $question->question_type);
+                $sheet->setCellValue('C' . $row, $question->category->name ?? '');
+                $sheet->setCellValue('D' . $row, $question->score);
+                $sheet->setCellValue('E' . $row, $question->correct_answer ?? '');
+                $sheet->setCellValue('F' . $row, $question->questionGroup->name ?? '');
 
                 // Set options for multiple choice
                 if ($question->question_type === 'multiple_choice' || $question->question_type === 'single_choice') {
                     $options = $question->options->sortBy('option_label');
                     $optionColumn = 'G';
                     foreach ($options as $option) {
-                        $sheet->setCellValue($optionColumn.$row, $option->option_text);
+                        $sheet->setCellValue($optionColumn . $row, $option->option_text);
                         $scoreColumn = chr(ord($optionColumn) + 1);
-                        $sheet->setCellValue($scoreColumn.$row, $option->score);
+                        $sheet->setCellValue($scoreColumn . $row, $option->score);
 
                         $optionColumn = chr(ord($optionColumn) + 2);
                     }
@@ -1206,12 +1217,12 @@ class QuestionBankService extends BaseService
             }
 
             // Create file
-            $filename = 'question_bank_'.date('Y-m-d_H-i-s').'.xlsx';
-            $filePath = 'exports/'.$filename;
-            $fullPath = storage_path('app/'.$filePath);
+            $filename = 'question_bank_' . date('Y-m-d_H-i-s') . '.xlsx';
+            $filePath = 'exports/' . $filename;
+            $fullPath = storage_path('app/' . $filePath);
 
             // Ensure directory exists
-            if (! file_exists(dirname($fullPath))) {
+            if (!file_exists(dirname($fullPath))) {
                 mkdir(dirname($fullPath), 0755, true);
             }
 
@@ -1221,12 +1232,12 @@ class QuestionBankService extends BaseService
             return $this->successResponse([
                 'file_path' => $filePath,
                 'file_name' => $filename,
-                'download_url' => asset('storage/'.$filePath),
+                'download_url' => asset('storage/' . $filePath),
                 'total_questions' => $questions->count(),
             ], 'Export bank soal berhasil');
 
         } catch (\Exception $e) {
-            return $this->errorResponse('Gagal export bank soal: '.$e->getMessage());
+            return $this->errorResponse('Gagal export bank soal: ' . $e->getMessage());
         }
     }
 }

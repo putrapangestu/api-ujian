@@ -175,15 +175,15 @@ class QuestionController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file'              => 'required|file|mimes:xlsx,xls,csv|max:10240',
-            'exam_id'           => 'required|exists:exams,id',
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+            'exam_id' => 'required|exists:exams,id',
             'question_group_id' => 'nullable|exists:question_groups,id',
-            'images'            => 'nullable|array',
-            'images.*'          => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:5120',
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:5120',
         ]);
 
-        $file            = $request->file('file');
-        $examId          = $request->exam_id;
+        $file = $request->file('file');
+        $examId = $request->exam_id;
         $questionGroupId = $request->question_group_id;
 
         // Simpan gambar sebagai array berindex (0-based).
@@ -191,8 +191,8 @@ class QuestionController extends Controller
         $uploadedImages = [];
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $imageFile) {
-                $storedPath              = $imageFile->store('questions/' . date('Y/m'), 'public');
-                $uploadedImages[$index]  = $storedPath; // key = 0, 1, 2, ...
+                $storedPath = $imageFile->store('questions/' . date('Y/m'), 'public');
+                $uploadedImages[$index] = $storedPath; // key = 0, 1, 2, ...
             }
         }
 
@@ -269,7 +269,7 @@ class QuestionController extends Controller
                     new OA\Property(
                         property: 'question_ids',
                         type: 'array',
-                        items: new OA\Items(type: 'integer')
+                        items: new OA\Items(type: 'string')
                     ),
                 ]
             )
@@ -279,8 +279,8 @@ class QuestionController extends Controller
     public function destroyBulk(Request $request)
     {
         $request->validate([
-            'question_ids'   => 'required|array|min:1',
-            'question_ids.*' => 'required|integer|exists:questions,id',
+            'question_ids' => 'required|array|min:1',
+            'question_ids.*' => 'required|string|exists:questions,id',
         ]);
 
         $result = $this->questionService->deleteMultipleQuestions($request->question_ids);

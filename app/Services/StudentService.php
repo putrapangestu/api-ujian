@@ -548,7 +548,7 @@ class StudentService extends BaseService
                 }
 
                 return $this->successResponse(
-                    ['deleted_count' => $deletedCount], 
+                    ['deleted_count' => $deletedCount],
                     "{$deletedCount} siswa berhasil dihapus"
                 );
 
@@ -779,8 +779,8 @@ class StudentService extends BaseService
             $headers = [
                 'A1' => 'No',
                 'B1' => 'Nama Lengkap',
-                'C1' => 'Email',
-                'D1' => 'Tanggal Lahir'
+                'C1' => 'Asal Sekolah',
+                'D1' => 'Password'
             ];
 
             foreach ($headers as $cell => $value) {
@@ -797,16 +797,16 @@ class StudentService extends BaseService
             foreach ($students as $student) {
                 $sheet->setCellValue('A' . $row, $no);
                 $sheet->setCellValue('B' . $row, $student->name);
-                $sheet->setCellValue('C' . $row, $student->email);
+                $sheet->setCellValue('C' . $row, $student->address);
 
                 // Handle birth date safely
                 $birthDate = $student->birth_date;
                 if ($birthDate instanceof Carbon) {
-                    $birthDate = $birthDate->format('d-m-Y');
+                    $birthDate = $birthDate->format('DDMMYYYY');
                 } elseif (is_string($birthDate)) {
                     // Try to format if it's a valid date string, otherwise use raw
                     try {
-                        $birthDate = Carbon::parse($birthDate)->format('d-m-Y');
+                        $birthDate = Carbon::parse($birthDate)->format('DDMMYYYY');
                     } catch (\Exception $e) {
                         // Keep raw string if parsing fails
                     }

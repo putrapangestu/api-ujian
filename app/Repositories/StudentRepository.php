@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Student Repository Class
@@ -86,10 +87,10 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
         return $this->model
             ->where(function ($query) use ($search) {
                 $query->where('name', 'like', "%{$search}%")
-                      ->orWhere('nisn', 'like', "%{$search}%")
-                      ->orWhereHas('user', function ($q) use ($search) {
-                          $q->where('email', 'like', "%{$search}%");
-                      });
+                    ->orWhere('nisn', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($q) use ($search) {
+                        $q->where('email', 'like', "%{$search}%");
+                    });
             })
             ->limit($limit)
             ->get();
@@ -124,10 +125,13 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
                         $emailCount++;
                     }
 
+                    $password = Hash::make($studentData['password_string'] ?? $studentData['birth_date']);
+                    Log::info("password user : ", ['string' => $studentData['password_string'], 'password' => $password]);
+
                     // Create User
                     $user = User::create([
                         'email' => $studentData['email'],
-                        'password' => Hash::make($studentData['password_string'] ?? $studentData['birth_date']),
+                        'password' => $password,
                         'name' => $studentData['name'],
                         'role' => 'student'
                     ]);

@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Repositories\UserRepositoryInterface;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Auth Service Class
@@ -73,17 +74,21 @@ class AuthService extends BaseService
         try {
             // Cek username yang berupa nama lengkap tanpa spasi (lowercase)
             $usernameInput = strtolower(str_replace(' ', '', $credentials['username']));
-            
+
             /** @var \App\Models\User|null $user */
             $user = User::whereRaw("LOWER(REPLACE(name, ' ', '')) = ?", [$usernameInput])->first();
+            Log::info($user);
 
             // Attempt login check password
-            if (!$user || !Hash::check($credentials['password'], $user->password)) {
-                return $this->errorResponse('Username atau password salah', null, 401);
+            if (!$user) {
+                return $this->errorResponse('Username salah', null, 401);
             }
 
-            // Log the user in
-            Auth::login($user);
+            if (!Auth::attempt(['email' => $user->email, 'password' => $credentials['password']])) {
+                return $this->errorResponse('Password salah', null, 401);
+            }
+
+            $user = Auth::user();
 
             // Generate token
             $token = $user->createToken('auth_token')->plainTextToken;

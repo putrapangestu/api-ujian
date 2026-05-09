@@ -778,7 +778,7 @@ class StudentService extends BaseService
             // Set headers
             $headers = [
                 'A1' => 'No',
-                'B1' => 'Nama Lengkap',
+                'B1' => 'Username',
                 'C1' => 'Asal Sekolah',
                 'D1' => 'Password'
             ];
@@ -796,17 +796,17 @@ class StudentService extends BaseService
             $no = 1;
             foreach ($students as $student) {
                 $sheet->setCellValue('A' . $row, $no);
-                $sheet->setCellValue('B' . $row, $student->name);
+                $sheet->setCellValue('B' . $row, strtolower(str_replace(' ', '', $student->name)));
                 $sheet->setCellValue('C' . $row, $student->address);
 
                 // Handle birth date safely
                 $birthDate = $student->birth_date;
                 if ($birthDate instanceof Carbon) {
-                    $birthDate = $birthDate->format('DDMMYYYY');
+                    $birthDate = $birthDate->format('dmY');
                 } elseif (is_string($birthDate)) {
                     // Try to format if it's a valid date string, otherwise use raw
                     try {
-                        $birthDate = Carbon::parse($birthDate)->format('DDMMYYYY');
+                        $birthDate = Carbon::parse($birthDate)->format('dmY');
                     } catch (\Exception $e) {
                         // Keep raw string if parsing fails
                     }

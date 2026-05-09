@@ -23,7 +23,7 @@ class LoginRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|string|email|max:255',
+            'username' => 'required|string',
             'password' => 'required|string|min:6',
         ];
     }
@@ -36,7 +36,7 @@ class LoginRequest extends BaseRequest
     public function attributes(): array
     {
         return [
-            'email' => 'Email',
+            'username' => 'Username',
             'password' => 'Password',
         ];
     }

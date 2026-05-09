@@ -71,13 +71,19 @@ class AuthService extends BaseService
     public function login(array $credentials): array
     {
         try {
-            // Attempt login
-            if (!Auth::attempt($credentials)) {
-                return $this->errorResponse('Email atau password salah', null, 401);
+            // Cek username yang berupa nama lengkap tanpa spasi (lowercase)
+            $usernameInput = strtolower(str_replace(' ', '', $credentials['username']));
+            
+            /** @var \App\Models\User|null $user */
+            $user = User::whereRaw("LOWER(REPLACE(name, ' ', '')) = ?", [$usernameInput])->first();
+
+            // Attempt login check password
+            if (!$user || !Hash::check($credentials['password'], $user->password)) {
+                return $this->errorResponse('Username atau password salah', null, 401);
             }
 
-            /** @var \App\Models\User $user */
-            $user = Auth::user();
+            // Log the user in
+            Auth::login($user);
 
             // Generate token
             $token = $user->createToken('auth_token')->plainTextToken;

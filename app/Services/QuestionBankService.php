@@ -660,6 +660,7 @@ class QuestionBankService extends BaseService
             $imageUrl = asset('storage/' . $imagePath);
             $questionText .= '<br><img src="' . $imageUrl . '" style="max-width:100%;height:auto;" />';
             $imagePath = null; // tidak simpan di image_path karena sudah ada di question_text
+            unset($extractedImages[$rowNumber]['G']);
         }
 
         // Buat soal
@@ -685,11 +686,28 @@ class QuestionBankService extends BaseService
                 $optionText = trim($row[$optionIndex] ?? '');
                 $optionScore = trim($row[$optionIndex + 1] ?? '0');
                 $optColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($optionIndex + 1);
+                $scoreColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($optionIndex + 2);
+                $prevColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($optionIndex);
+
+                // Cek gambar di kolom opsi, skor, atau kolom sebelumnya
                 $optImagePath = $extractedImages[$rowNumber][$optColLetter] ?? null;
+                if ($optImagePath) unset($extractedImages[$rowNumber][$optColLetter]);
+
+                if (!$optImagePath) {
+                    $optImagePath = $extractedImages[$rowNumber][$scoreColLetter] ?? null;
+                    if ($optImagePath) unset($extractedImages[$rowNumber][$scoreColLetter]);
+                }
+
+                if (!$optImagePath) {
+                    $optImagePath = $extractedImages[$rowNumber][$prevColLetter] ?? null;
+                    if ($optImagePath) unset($extractedImages[$rowNumber][$prevColLetter]);
+                }
 
                 if ($optionText === '' && !$optImagePath) {
-                    // Berhenti jika tidak ada teks dan tidak ada gambar di cell opsi ini
-                    break;
+                    // Lewati jika tidak ada teks dan tidak ada gambar, lanjut ke opsi berikutnya
+                    $optionIndex += 2;
+                    $optionLabel = chr(ord($optionLabel) + 1);
+                    continue;
                 }
 
                 if ($optionScore === '')

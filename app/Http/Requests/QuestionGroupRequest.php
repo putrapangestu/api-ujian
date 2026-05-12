@@ -25,8 +25,10 @@ class QuestionGroupRequest extends BaseRequest
             'description'            => 'nullable|string',
             'code'                   => 'required|string|max:50',
             'status'                 => 'nullable|in:active,inactive,draft',
-            'question_category_id'  => 'required|uuid|exists:question_categories,id',
+            'question_category_id'   => 'required|uuid|exists:question_categories,id',
             'display_question_count' => 'nullable|integer|min:0',
+            'number_start'           => 'nullable|integer|min:0',
+            'number_end'             => 'nullable|integer|min:0',
         ];
 
         // Jika update, tambahkan unique rule untuk code
@@ -52,8 +54,10 @@ class QuestionGroupRequest extends BaseRequest
             'description'            => 'Deskripsi',
             'code'                   => 'Kode Grup',
             'status'                 => 'Status',
-            'question_category_id'  => 'Kategori Soal',
+            'question_category_id'   => 'Kategori Soal',
             'display_question_count' => 'Jumlah Soal Ditampilkan',
+            'number_start'           => 'Soal Pertama',
+            'number_end'             => 'Soal Terakhir',
         ];
     }
 }

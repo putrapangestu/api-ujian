@@ -10,6 +10,8 @@ use App\Services\ExamService;
 use App\Services\QuestionService;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
+use Illuminate\Support\Facades\DB;
+use App\Models\UserExam;
 
 /**
  * Exam Controller
@@ -385,6 +387,38 @@ class ExamController extends Controller
     )]
     public function getExamQuestionsForStudent(Request $request, $examId, $userId)
     {
+        $exam = Exam::find($examId);
+        $userExam = UserExam::where('exam_id', $examId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if ($exam && $userExam) {
+            // Cek apakah soal spesifik untuk user ini sudah pernah di-generate
+            $hasQuestions = DB::table('user_exam_questions')
+                ->where('user_exam_id', $userExam->id)
+                ->exists();
+
+            if (!$hasQuestions) {
+                // Generate soal sesuai aturan kategori dan rentang untuk siswa ini
+                $questions = $this->questionSelectorService->generateExamQuestions($exam);
+
+                $userExamQuestions = [];
+                foreach ($questions as $index => $question) {
+                    $userExamQuestions[] = [
+                        'user_exam_id'   => $userExam->id,
+                        'question_id'    => $question->id,
+                        'question_order' => $index + 1,
+                        'created_at'     => now(),
+                        'updated_at'     => now(),
+                    ];
+                }
+
+                if (!empty($userExamQuestions)) {
+                    DB::table('user_exam_questions')->insert($userExamQuestions);
+                }
+            }
+        }
+
         $result = $this->questionSelectorService->getExamQuestionsForStudent($examId, $userId);
 
         if ($result['success']) {

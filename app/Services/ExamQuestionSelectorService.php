@@ -319,4 +319,86 @@ class ExamQuestionSelectorService extends BaseService
             return $this->errorResponse('Validation error: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Generate exam questions based on categories, ranges, and question groups.
+     * Dipanggil ketika pengacakan soal siswa saat start ujian.
+     *
+     * @param Exam $exam
+     * @return \Illuminate\Support\Collection
+     */
+    public function generateExamQuestions(Exam $exam)
+    {
+        // Catatan: Pastikan model Exam memiliki relasi categories() atau questionCategories()
+        // yang mengarah ke QuestionCategory dengan membawa pivot 'question_count'.
+        $examCategories = $exam->categories ?? $exam->questionCategories ?? collect();
+        $selectedQuestions = collect();
+
+        if ($examCategories->isEmpty()) {
+            return $selectedQuestions;
+        }
+
+        foreach ($examCategories as $category) {
+            $categoryStartRange = $category->start_range;
+            $categoryEndRange = $category->end_range;
+            $neededQuestionCount = $category->pivot->question_count ?? 0;
+
+            // Ambil semua grup soal untuk kategori ini yang berstatus aktif
+            $groups = QuestionGroup::where('question_category_id', $category->id)
+                        ->where('status', QuestionGroup::STATUS_ACTIVE)
+                        ->get();
+
+            $categoryQuestions = collect();
+            $validGroups = collect();
+            $invalidGroups = collect();
+
+            // Pisahkan grup yang valid sesuai rentang (range) dengan yang tidak
+            foreach ($groups as $group) {
+                $isValidRange = !is_null($group->number_start) && !is_null($group->number_end) &&
+                                !is_null($categoryStartRange) && !is_null($categoryEndRange) &&
+                                ($group->number_start >= $categoryStartRange) &&
+                                ($group->number_end <= $categoryEndRange);
+
+                if ($isValidRange) {
+                    $validGroups->push($group);
+                } else {
+                    $invalidGroups->push($group);
+                }
+            }
+
+            // Urutkan grup yang valid berdasarkan number_start
+            $validGroups = $validGroups->sortBy('number_start');
+
+            // Proses grup yang valid: ambil soal secara acak sesuai dengan display_question_count
+            foreach ($validGroups as $group) {
+                $questions = $group->questions()
+                    ->inRandomOrder()
+                    ->take($group->display_question_count)
+                    ->get();
+                $categoryQuestions = $categoryQuestions->merge($questions);
+            }
+
+            // Proses grup yang tidak valid (tidak memiliki number_start/end atau di luar rentang)
+            foreach ($invalidGroups as $group) {
+                // Cari question group lain di kategori yang sama
+                $otherGroups = $groups->where('id', '!=', $group->id);
+
+                // Ganti dengan question group lain secara acak jika ada, jika tidak tetap pakai yang awal
+                $replacementGroup = $otherGroups->isNotEmpty() ? $otherGroups->random() : $group;
+
+                $questions = $replacementGroup->questions()
+                    ->inRandomOrder()
+                    ->take($group->display_question_count) // Tetap dibatasi dengan display_question_count dari group asli
+                    ->get();
+
+                $categoryQuestions = $categoryQuestions->merge($questions);
+            }
+
+            // Batasi total soal yang diambil agar pas dengan alokasi question_count yang dibutuhkan pada kategori
+            $finalCategoryQuestions = $categoryQuestions->take($neededQuestionCount);
+            $selectedQuestions = $selectedQuestions->merge($finalCategoryQuestions);
+        }
+
+        return $selectedQuestions;
+    }
 }

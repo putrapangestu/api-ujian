@@ -136,6 +136,8 @@ class QuestionGroupController extends Controller
                     new OA\Property(property: "status", type: "string"),
                     new OA\Property(property: "question_category_id", type: "string"),
                     new OA\Property(property: "display_question_count", type: "integer", description: "Jumlah soal yang ditampilkan saat ujian. 0 = tampilkan semua."),
+                    new OA\Property(property: "number_start", type: "integer", description: "Start soal nya. 0 = tampilkan semua."),
+                    new OA\Property(property: "number_end", type: "integer", description: "Jumlah soal yang ditampilkan saat ujian. 0 = tampilkan semua."),
                 ]
             )
         ),

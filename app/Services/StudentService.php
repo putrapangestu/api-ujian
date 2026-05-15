@@ -806,6 +806,8 @@ class StudentService extends BaseService
                 $sheet->setCellValue('B' . $row, strtolower(str_replace(' ', '', $student->name)));
                 $sheet->setCellValue('C' . $row, $student->address);
 
+                Log::info("raw => ", [$student->birth_date]);
+                Log::info("raw => ", [str_replace("-", "", $student->birth_date)]);
                 // Handle birth date safely
                 $birthDate = Carbon::parse($student->birth_date)->format('dmY');
                 $sheet->setCellValue('D' . $row, $birthDate ?? '');

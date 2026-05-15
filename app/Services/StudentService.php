@@ -687,8 +687,8 @@ class StudentService extends BaseService
                     } else if (preg_match('/^\d{8}$/', $birthDateRaw)) {
                         // Input: DDMMYYYY
                         $parts = str_split($birthDateRaw, 2);
-                        Log::info("Baris check 3 $rowNumber: Tanggal Lahir $birthDateRaw diubah menjadi $parts[0]-$parts[1]-$parts[2]");
-                        $birthDateFormatted = $parts[0] . '-' . $parts[1] . '-' . $parts[2];
+                        Log::info("Baris check 3 $rowNumber: Tanggal Lahir $birthDateRaw diubah menjadi $parts[2]-$parts[1]-$parts[0]");
+                        $birthDateFormatted = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
                         $passwordString = $birthDateRaw; // DDMMYYYY
                     } else {
                         $errors[] = "Baris $rowNumber: Format tanggal lahir tidak valid (gunakan DD-MM-YYYY atau YYYY-MM-DD atau YYYYMMDD)";

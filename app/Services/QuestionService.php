@@ -346,7 +346,7 @@ class QuestionService extends BaseService
                     if (count($matches) === 3) {
                         $col = $matches[1];
                         $row = $matches[2];
-                        
+
                         $imageContents = null;
                         $extension = 'png';
                         if ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing) {
@@ -360,7 +360,7 @@ class QuestionService extends BaseService
                             $imageContents = file_get_contents($drawing->getPath());
                             $extension = $drawing->getExtension();
                         }
-                        
+
                         if ($imageContents) {
                             $fileName = 'questions/' . date('Y/m') . '/' . uniqid() . '.' . $extension;
                             \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageContents);
@@ -577,9 +577,9 @@ class QuestionService extends BaseService
                 }
 
                 // Check if question is used in any exam
-                if ($question->hasBeenUsedInExam()) {
-                    return $this->errorResponse('Soal tidak dapat dihapus karena sudah pernah digunakan dalam ujian yang sedang atau sudah berjalan.');
-                }
+                // if ($question->hasBeenUsedInExam()) {
+                //     return $this->errorResponse('Soal tidak dapat dihapus karena sudah pernah digunakan dalam ujian yang sedang atau sudah berjalan.');
+                // }
 
                 $questionGroupId = $question->question_group_id;
 
@@ -621,10 +621,10 @@ class QuestionService extends BaseService
                 $groupIds = [];
 
                 foreach ($questions as $question) {
-                    if ($question->hasBeenUsedInExam()) {
-                        $skippedCount++;
-                        continue;
-                    }
+                    // if ($question->hasBeenUsedInExam()) {
+                    //     $skippedCount++;
+                    //     continue;
+                    // }
 
                     if ($question->question_group_id) {
                         $groupIds[] = $question->question_group_id;
@@ -635,9 +635,9 @@ class QuestionService extends BaseService
                     $deletedCount++;
                 }
 
-                if ($deletedCount === 0 && $skippedCount > 0) {
-                    return $this->errorResponse('Semua soal yang dipilih tidak dapat dihapus karena sudah pernah digunakan dalam ujian.');
-                }
+                // if ($deletedCount === 0 && $skippedCount > 0) {
+                //     return $this->errorResponse('Semua soal yang dipilih tidak dapat dihapus karena sudah pernah digunakan dalam ujian.');
+                // }
 
                 // Update total questions for affected groups
                 $groupIds = array_unique($groupIds);
@@ -648,10 +648,10 @@ class QuestionService extends BaseService
                     }
                 }
 
-                $message = "Berhasil menghapus $deletedCount soal.";
-                if ($skippedCount > 0) {
-                    $message .= " $skippedCount soal dilewati karena sudah pernah digunakan dalam ujian.";
-                }
+                // $message = "Berhasil menghapus $deletedCount soal.";
+                // if ($skippedCount > 0) {
+                //     $message .= " $skippedCount soal dilewati karena sudah pernah digunakan dalam ujian.";
+                // }
 
                 return $this->successResponse(null, $message);
             } catch (\Exception $e) {
@@ -834,7 +834,7 @@ class QuestionService extends BaseService
 
         // ── Auto-size & freeze pane ──────────────────────────────────────────────
         $spreadsheet->setActiveSheetIndex(0);
-        
+
         // Set fixed row height for better image UX
         for ($i = 2; $i <= 1000; $i++) {
             $sheet->getRowDimension($i)->setRowHeight(60);

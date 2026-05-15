@@ -675,15 +675,18 @@ class StudentService extends BaseService
                     if (preg_match('/^(\d{2})-(\d{2})-(\d{4})$/', $birthDateRaw, $matches) || preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $birthDateRaw, $matches)) {
                         // Input: DD-MM-YYYY or DD/MM/YYYY
                         $birthDateFormatted = $matches[3] . '-' . $matches[2] . '-' . $matches[1];
+                        Log::info("Baris check 1 $rowNumber: Tanggal Lahir $birthDateRaw diubah menjadi $matches[3]-$matches[2]-$matches[1]");
                         $passwordString = $matches[1] . $matches[2] . $matches[3]; // DDMMYYYY
                     } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthDateRaw)) {
                         // Input: YYYY-MM-DD
                         $birthDateFormatted = $birthDateRaw;
                         $parts = explode('-', $birthDateRaw);
+                        Log::info("Baris check 2 $rowNumber: Tanggal Lahir $birthDateRaw diubah menjadi $parts[2]-$parts[1]-$parts[0]");
                         $passwordString = $parts[2] . $parts[1] . $parts[0]; // DDMMYYYY
                     } else if (preg_match('/^\d{8}$/', $birthDateRaw)) {
                         // Input: DDMMYYYY
                         $parts = str_split($birthDateRaw, 2);
+                        Log::info("Baris check 3 $rowNumber: Tanggal Lahir $birthDateRaw diubah menjadi $parts[0]-$parts[1]-$parts[2]");
                         $birthDateFormatted = $parts[0] . '-' . $parts[1] . '-' . $parts[2];
                         $passwordString = $birthDateRaw; // DDMMYYYY
                     } else {

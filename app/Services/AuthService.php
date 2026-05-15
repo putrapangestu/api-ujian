@@ -85,7 +85,7 @@ class AuthService extends BaseService
             }
 
             Log::info("Check user data login ", ["user" => $user, "credentials" => $credentials]);
-            if (!Auth::attempt(['email' => $user->email, 'password' => $credentials['password']])) {
+            if (!Hash::check($credentials['password'], $user->password)) {
                 return $this->errorResponse('Password salah', null, 401);
             }
 

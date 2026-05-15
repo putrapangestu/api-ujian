@@ -67,7 +67,8 @@ class StudentService extends BaseService
     public function getAllStudents(array $filters = [], int $perPage = 15): array
     {
         try {
-            $query = Student::query()->with('group', 'user');
+            $query = Student::query()->with('group', 'user')
+                ->whereHas('user');
 
             if (isset($filters['search'])) {
                 $search = $filters['search'];

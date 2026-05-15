@@ -497,12 +497,14 @@ class StudentService extends BaseService
                     return $this->errorResponse('Siswa tidak ditemukan', null, 404);
                 }
 
-                // Check if student has exam history
-                if ($student->userExams()->exists()) {
-                    return $this->errorResponse('Siswa tidak dapat dihapus karena memiliki riwayat ujian');
-                }
+                // // Check if student has exam history
+                // if ($student->userExams()->exists()) {
+                //     return $this->errorResponse('Siswa tidak dapat dihapus karena memiliki riwayat ujian');
+                // }
 
                 // Delete student
+                $this->userRepository->delete($student->user_id);
+
                 $deleted = $this->studentRepository->delete($id);
 
                 if (!$deleted) {
@@ -510,7 +512,6 @@ class StudentService extends BaseService
                 }
 
                 return $this->successResponse(null, 'Siswa berhasil dihapus');
-
             } catch (\Exception $e) {
                 DB::rollBack();
                 return $this->errorResponse('Gagal menghapus siswa: ' . $e->getMessage());
@@ -529,10 +530,10 @@ class StudentService extends BaseService
         return DB::transaction(function () use ($studentIds) {
             try {
                 // Check if any student has exam history
-                $studentsWithExams = Student::whereIn('id', $studentIds)->whereHas('userExams')->exists();
-                if ($studentsWithExams) {
-                    return $this->errorResponse('Beberapa siswa tidak dapat dihapus karena memiliki riwayat ujian');
-                }
+                // $studentsWithExams = Student::whereIn('id', $studentIds)->whereHas('userExams')->exists();
+                // if ($studentsWithExams) {
+                //     return $this->errorResponse('Beberapa siswa tidak dapat dihapus karena memiliki riwayat ujian');
+                // }
 
                 $students = Student::whereIn('id', $studentIds)->get();
                 $deletedCount = 0;

@@ -44,7 +44,7 @@ class AuthService extends BaseService
     {
         try {
             // Hash password
-            $data['password'] = Hash::make($data['password']);
+            // $data['password'] = Hash::make($data['password']);
 
             // Create user
             $user = $this->userRepository->create($data);

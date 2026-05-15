@@ -125,8 +125,9 @@ class StudentRepository extends BaseRepository implements StudentRepositoryInter
                         $emailCount++;
                     }
 
-                    $password = Hash::make($studentData['password_string'] ?? $studentData['birth_date']);
-                    Log::info("password user : ", ['string' => $studentData['password_string'], 'password' => $password]);
+                    // $password = Hash::make($studentData['password_string'] ?? $studentData['birth_date']);
+                    $password = $studentData['password_string'] ?? $studentData['birth_date'];
+                    // Log::info("password user : ", ['string' => $studentData['password_string'], 'password' => $password]);
 
                     // Create User
                     $user = User::create([

@@ -22,7 +22,7 @@ class DashboardService extends BaseService
         try {
             $data = Cache::remember('admin_dashboard_summary', 3600, function () {
                 return [
-                    'total_students' => Student::count(),
+                    'total_students' => Student::whereHas('user')->count(),
                     'total_question_banks' => QuestionGroup::count(), // Menggunakan QuestionGroup
                     'total_exams' => Exam::count(),
                 ];
@@ -79,6 +79,7 @@ class DashboardService extends BaseService
                     DB::raw('MONTH(created_at) as month'),
                     DB::raw('COUNT(*) as count')
                 )
+                ->whereHas('user')
                 ->whereYear('created_at', $year)
                 ->groupBy('month')
                 ->orderBy('month')

@@ -422,7 +422,7 @@ class StudentService extends BaseService
      */
     public function updateStudent(string $id, array $data): array
     {
-        Log::info('Update student', ['id' => $id, 'data' => $data]);
+        // Log::info('Update student', ['id' => $id, 'data' => $data]);
         return DB::transaction(function () use ($id, $data) {
             try {
                 // Extract user data from payload
@@ -676,20 +676,20 @@ class StudentService extends BaseService
                     if (preg_match('/^(\d{2})-(\d{2})-(\d{4})$/', $birthDateRaw, $matches) || preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $birthDateRaw, $matches)) {
                         // Input: DD-MM-YYYY or DD/MM/YYYY
                         $birthDateFormatted = $matches[3] . '-' . $matches[2] . '-' . $matches[1];
-                        Log::info("Baris check 1 $rowNumber: Tanggal Lahir $birthDateRaw diubah menjadi $matches[3]-$matches[2]-$matches[1]");
+                        // Log::info("Baris check 1 $rowNumber: Tanggal Lahir $birthDateRaw diubah menjadi $matches[3]-$matches[2]-$matches[1]");
                         $passwordString = $matches[1] . $matches[2] . $matches[3]; // DDMMYYYY
                     } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthDateRaw)) {
                         // Input: YYYY-MM-DD
                         $birthDateFormatted = $birthDateRaw;
                         $parts = explode('-', $birthDateRaw);
-                        Log::info("Baris check 2 $rowNumber: Tanggal Lahir $birthDateRaw diubah menjadi $parts[2]-$parts[1]-$parts[0]");
+                        // Log::info("Baris check 2 $rowNumber: Tanggal Lahir $birthDateRaw diubah menjadi $parts[2]-$parts[1]-$parts[0]");
                         $passwordString = $parts[2] . $parts[1] . $parts[0]; // DDMMYYYY
                     } else if (preg_match('/^\d{8}$/', $birthDateRaw)) {
                         // Input: DDMMYYYY
                         $day = substr($birthDateRaw, 0, 2);
                         $month = substr($birthDateRaw, 2, 2);
                         $year = substr($birthDateRaw, 4, 4);
-                        Log::info("Baris check 3 $rowNumber: Tanggal Lahir $birthDateRaw diubah menjadi $year-$month-$day");
+                        // Log::info("Baris check 3 $rowNumber: Tanggal Lahir $birthDateRaw diubah menjadi $year-$month-$day");
                         $birthDateFormatted = $year . '-' . $month . '-' . $day;
                         $passwordString = $birthDateRaw; // DDMMYYYY
                     } else {

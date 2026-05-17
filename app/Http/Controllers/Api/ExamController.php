@@ -401,14 +401,14 @@ class ExamController extends Controller
 
         // Cek apakah soal spesifik untuk user ini sudah pernah di-generate
         $hasQuestions = UserAnswer::where('user_exam_id', $userExam->id)->exists();
-        Log::info("Questions", [$hasQuestions]);
+        // Log::info("Questions", [$hasQuestions]);
 
         if (!$hasQuestions) {
             // Generate soal sesuai aturan kategori dan rentang untuk siswa ini
             $questions = $this->questionSelectorService->generateExamQuestions($exam);
 
             $userExamQuestions = [];
-            Log::info("Jumlah questions", [count($questions)]);
+            // Log::info("Jumlah questions", [count($questions)]);
             foreach ($questions as $index => $question) {
                 $userExamQuestions[] = [
                     'id'           => (string) \Illuminate\Support\Str::uuid(),

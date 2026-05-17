@@ -44,7 +44,7 @@ class ExamNotificationService extends BaseService
             ];
 
             // Log notification (will be replaced with actual notification system)
-            Log::info('Exam Start Notification', $notificationData);
+            // Log::info('Exam Start Notification', $notificationData);
 
             // Broadcast via Socket.IO (when configured)
             $this->broadcastNotification($notificationData);

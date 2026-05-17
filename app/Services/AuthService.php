@@ -77,14 +77,14 @@ class AuthService extends BaseService
 
             /** @var \App\Models\User|null $user */
             $user = User::whereRaw("LOWER(REPLACE(name, ' ', '')) = ?", [$usernameInput])->first();
-            Log::info($user);
+            // Log::info($user);
 
             // Attempt login check password
             if (!$user) {
                 return $this->errorResponse('Username salah', null, 401);
             }
 
-            Log::info("Check user data login ", ["user" => $user, "credentials" => $credentials]);
+            // Log::info("Check user data login ", ["user" => $user, "credentials" => $credentials]);
             if (!Hash::check($credentials['password'], $user->password)) {
                 return $this->errorResponse('Password salah', null, 401);
             }

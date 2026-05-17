@@ -13,6 +13,7 @@ use App\Repositories\ExamRepositoryInterface;
 use App\Helpers\ResponseHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -676,6 +677,7 @@ class ExamService extends BaseService
      */
     public function finishExam(string $examId, string $userId, array $questions = []): array
     {
+        Log::info("Jawaban siswa", [$questions]);
         return DB::transaction(function () use ($examId, $userId, $questions) {
             try {
                 $exam = $this->examRepository->find($examId);

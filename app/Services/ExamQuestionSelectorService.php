@@ -116,7 +116,7 @@ class ExamQuestionSelectorService extends BaseService
 
             } catch (\Exception $e) {
                 DB::rollBack();
-                Log::error('Error selecting questions for exam: ' . $e->getMessage());
+                // Log::error('Error selecting questions for exam: ' . $e->getMessage());
                 return $this->errorResponse('Failed to select questions: ' . $e->getMessage());
             }
         });
@@ -152,12 +152,12 @@ class ExamQuestionSelectorService extends BaseService
             }
 
             // Log the randomization for audit purposes
-            Log::info('Question order generated for student', [
-                'exam_id' => $examId,
-                'user_id' => $userId,
-                'question_count' => count($questionOrderMap),
-                'timestamp' => Carbon::now()->toISOString(),
-            ]);
+            // Log::info('Question order generated for student', [
+            //     'exam_id' => $examId,
+            //     'user_id' => $userId,
+            //     'question_count' => count($questionOrderMap),
+            //     'timestamp' => Carbon::now()->toISOString(),
+            // ]);
 
             return $this->successResponse([
                 'exam_id' => $examId,
@@ -167,7 +167,7 @@ class ExamQuestionSelectorService extends BaseService
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error generating random question order: ' . $e->getMessage());
+            // Log::error('Error generating random question order: ' . $e->getMessage());
             return $this->errorResponse('Failed to generate question order: ' . $e->getMessage());
         }
     }
@@ -255,7 +255,7 @@ class ExamQuestionSelectorService extends BaseService
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error getting exam questions for student: ' . $e->getMessage());
+            // Log::error('Error getting exam questions for student: ' . $e->getMessage());
             return $this->errorResponse('Failed to get exam questions: ' . $e->getMessage());
         }
     }
@@ -333,7 +333,7 @@ class ExamQuestionSelectorService extends BaseService
      */
     public function generateExamQuestions(Exam $exam)
     {
-        Log::info("Generate exam questions for exam: ", [$exam]);
+        // Log::info("Generate exam questions for exam: ", [$exam]);
 
         // Ambil QuestionExam terlebih dahulu
         $questionExams = QuestionExam::with(['question', 'questionGroup.questionCategory'])
@@ -356,7 +356,7 @@ class ExamQuestionSelectorService extends BaseService
             }
         }
 
-        Log::info("Jumlah question group", [count($examGroups)]);
+        // Log::info("Jumlah question group", [count($examGroups)]);
         if ($examGroups->isEmpty()) {
             return $selectedQuestions;
         }
@@ -369,12 +369,12 @@ class ExamQuestionSelectorService extends BaseService
             }
         }
 
-        Log::info("Category => ", [$examCategories]);
+        // Log::info("Category => ", [$examCategories]);
         foreach ($examCategories as $category) {
             $categoryStartRange = $category->start_range;
             $categoryEndRange = $category->end_range;
             $neededQuestionCount = $examGroups->where('question_category_id', $category->id)->sum('display_question_count');
-            Log::info("Jumlah question per category", [$category->name, $neededQuestionCount]);
+            // Log::info("Jumlah question per category", [$category->name, $neededQuestionCount]);
 
             // Ambil grup soal untuk kategori ini yang berstatus aktif dan terkait dengan ujian
             $groups = $examGroups->where('question_category_id', $category->id)
@@ -431,12 +431,12 @@ class ExamQuestionSelectorService extends BaseService
             }
 
             // Batasi total soal yang diambil agar pas dengan alokasi question_count yang dibutuhkan pada kategori
-            Log::info("Data question dibutuhkan", [$neededQuestionCount]);
-            Log::info("question => ", [$categoryQuestions]);
+            // Log::info("Data question dibutuhkan", [$neededQuestionCount]);
+            // Log::info("question => ", [$categoryQuestions]);
             $finalCategoryQuestions = $categoryQuestions->take($neededQuestionCount);
-            Log::info("final question =>", [$finalCategoryQuestions]);
+            // Log::info("final question =>", [$finalCategoryQuestions]);
             $selectedQuestions = $selectedQuestions->merge($finalCategoryQuestions);
-            Log::info("selected question => ", [$selectedQuestions]);
+            // Log::info("selected question => ", [$selectedQuestions]);
         }
 
         return $selectedQuestions;

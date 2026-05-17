@@ -68,16 +68,17 @@ class ExamQuestionSelectorService extends BaseService
                     // Tentukan berapa soal yang diambil dari grup ini
                     $displayCount = $group?->display_question_count ?? 0;
 
-                    if ($displayCount > 0 && $questionsInGroup->count() > $displayCount) {
-                        // Ambil sejumlah display_question_count secara acak
-                        $selectedFromGroup = $questionsInGroup->shuffle()->take($displayCount);
-                    } else {
-                        // Tampilkan semua soal di grup ini (acak urutannya)
-                        $selectedFromGroup = $questionsInGroup->shuffle();
-                    }
+                    // if ($displayCount > 0 && $questionsInGroup->count() > $displayCount) {
+                    //     // Ambil sejumlah display_question_count secara acak
+                    //     $selectedFromGroup = $questionsInGroup->shuffle()->take($displayCount);
+                    // } else {
+                    //     // Tampilkan semua soal di grup ini (acak urutannya)
+                    //     $selectedFromGroup = $questionsInGroup->shuffle();
+                    // }
 
                     // Buat question_exam entries
-                    foreach ($selectedFromGroup as $question) {
+                    // foreach ($selectedFromGroup as $question) {
+                    foreach ($questionsInGroup as $question) {
                         QuestionExam::create([
                             'exam_id'          => $exam->id,
                             'question_id'      => $question->id,

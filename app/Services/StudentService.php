@@ -813,7 +813,7 @@ class StudentService extends BaseService
 
                 // Handle birth date safely
                 $birthDate = $student->birth_date ? $day . $month . $year : "";
-                Log::info("Raw birthdate => ", [$birthDateRaw]);
+                Log::info("Raw birthdate => ", [$student->birth_date]);
                 Log::info("Nama " . $student->name . " => " . $birthDate);
                 Log::info("day => ", [$day]);
                 Log::info("month => ", [$month]);

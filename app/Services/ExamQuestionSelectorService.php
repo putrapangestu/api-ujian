@@ -334,8 +334,27 @@ class ExamQuestionSelectorService extends BaseService
     public function generateExamQuestions(Exam $exam)
     {
         Log::info("Generate exam questions for exam: ", [$exam]);
-        $examGroups = $exam->questionGroups ?? collect();
+
+        // Ambil QuestionExam terlebih dahulu
+        $questionExams = QuestionExam::with(['question', 'questionGroup.questionCategory'])
+            ->where('exam_id', $exam->id)
+            ->where('is_active', true)
+            ->get();
+
         $selectedQuestions = collect();
+
+        if ($questionExams->isEmpty()) {
+            return $selectedQuestions;
+        }
+
+        // Kumpulkan grup dari questionExams
+        $examGroups = collect();
+        foreach ($questionExams as $qe) {
+            $group = $qe->questionGroup;
+            if ($group && !$examGroups->contains('id', $group->id)) {
+                $examGroups->push($group);
+            }
+        }
 
         Log::info("Jumlah question group", [count($examGroups)]);
         if ($examGroups->isEmpty()) {
@@ -358,10 +377,9 @@ class ExamQuestionSelectorService extends BaseService
             Log::info("Jumlah question per category", [$category->name, $neededQuestionCount]);
 
             // Ambil grup soal untuk kategori ini yang berstatus aktif dan terkait dengan ujian
-            $groups = QuestionGroup::where('question_category_id', $category->id)
+            $groups = $examGroups->where('question_category_id', $category->id)
                         ->where('status', QuestionGroup::STATUS_ACTIVE)
-                        ->whereIn('id', $examGroups->pluck('id'))
-                        ->get();
+                        ->values();
 
             $categoryQuestions = collect();
             $validGroups = collect();
@@ -387,10 +405,11 @@ class ExamQuestionSelectorService extends BaseService
 
             // Proses grup yang valid: ambil soal secara acak sesuai dengan display_question_count
             foreach ($validGroups as $group) {
-                $questions = $group->questions()
-                    ->inRandomOrder()
-                    ->take($group->display_question_count)
-                    ->get();
+                $questions = $questionExams->where('question_group_id', $group->id)
+                    ->pluck('question')
+                    ->filter()
+                    ->shuffle()
+                    ->take($group->display_question_count);
                 $categoryQuestions = $categoryQuestions->merge($questions);
             }
 
@@ -402,10 +421,11 @@ class ExamQuestionSelectorService extends BaseService
                 // Ganti dengan question group lain secara acak jika ada, jika tidak tetap pakai yang awal
                 $replacementGroup = $otherGroups->isNotEmpty() ? $otherGroups->random() : $group;
 
-                $questions = $replacementGroup->questions()
-                    ->inRandomOrder()
-                    ->take($group->display_question_count) // Tetap dibatasi dengan display_question_count dari group asli
-                    ->get();
+                $questions = $questionExams->where('question_group_id', $replacementGroup->id)
+                    ->pluck('question')
+                    ->filter()
+                    ->shuffle()
+                    ->take($group->display_question_count); // Tetap dibatasi dengan display_question_count dari group asli
 
                 $categoryQuestions = $categoryQuestions->merge($questions);
             }

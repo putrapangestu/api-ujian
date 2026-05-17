@@ -336,6 +336,7 @@ class ExamQuestionSelectorService extends BaseService
         $examGroups = $exam->questionGroups ?? collect();
         $selectedQuestions = collect();
 
+        Log::info("Jumlah question group", [count($examGroups)]);
         if ($examGroups->isEmpty()) {
             return $selectedQuestions;
         }
@@ -348,10 +349,12 @@ class ExamQuestionSelectorService extends BaseService
             }
         }
 
+        Log::info("Category => ", [$examCategories]);
         foreach ($examCategories as $category) {
             $categoryStartRange = $category->start_range;
             $categoryEndRange = $category->end_range;
             $neededQuestionCount = $examGroups->where('question_category_id', $category->id)->sum('display_question_count');
+            Log::info("Jumlah question per category", [$category->name, $neededQuestionCount]);
 
             // Ambil grup soal untuk kategori ini yang berstatus aktif dan terkait dengan ujian
             $groups = QuestionGroup::where('question_category_id', $category->id)
@@ -364,6 +367,7 @@ class ExamQuestionSelectorService extends BaseService
             $invalidGroups = collect();
 
             // Pisahkan grup yang valid sesuai rentang (range) dengan yang tidak
+            Log::info("Data groups ", [$groups]);
             foreach ($groups as $group) {
                 $isValidRange = !is_null($group->number_start) && !is_null($group->number_end) &&
                                 !is_null($categoryStartRange) && !is_null($categoryEndRange) &&
@@ -406,8 +410,12 @@ class ExamQuestionSelectorService extends BaseService
             }
 
             // Batasi total soal yang diambil agar pas dengan alokasi question_count yang dibutuhkan pada kategori
+            Log::info("Data question dibutuhkan", [$neededQuestionCount]);
+            Log::info("question => ", [$categoryQuestions]);
             $finalCategoryQuestions = $categoryQuestions->take($neededQuestionCount);
+            Log::info("final question =>", $finalCategoryQuestions);
             $selectedQuestions = $selectedQuestions->merge($finalCategoryQuestions);
+            Log::info("selected question => ", $selectedQuestions);
         }
 
         return $selectedQuestions;

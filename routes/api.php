@@ -183,6 +183,16 @@ Route::middleware('auth:sanctum')->group(function () {
         // User management
         Route::get('/users/all', [UserController::class, 'listAll'])->name('admin.users.all');
     });
+    // Ebook routes
+    Route::prefix('ebooks')->group(function () {
+        Route::get('/', [\App\Http\Controllers\EbookController::class, 'index'])->name('ebooks.index');
+        Route::post('/', [\App\Http\Controllers\EbookController::class, 'store'])->name('ebooks.store');
+        Route::get('/{id}', [\App\Http\Controllers\EbookController::class, 'show'])->name('ebooks.show');
+        Route::put('/{id}', [\App\Http\Controllers\EbookController::class, 'update'])->name('ebooks.update');
+        Route::delete('/{id}', [\App\Http\Controllers\EbookController::class, 'destroy'])->name('ebooks.destroy');
+        Route::post('/bulk-delete', [\App\Http\Controllers\EbookController::class, 'bulkDestroy'])->name('ebooks.bulk-delete');
+        Route::get('/{id}/download', [\App\Http\Controllers\EbookController::class, 'download'])->name('ebooks.download');
+    });
 });
 
 // Test route

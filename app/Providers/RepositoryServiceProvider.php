@@ -19,6 +19,8 @@ use App\Repositories\UserExamRepositoryInterface;
 use App\Repositories\UserExamRepository;
 use App\Repositories\QuestionRepositoryInterface;
 use App\Repositories\QuestionRepository;
+use App\Repositories\EbookRepositoryInterface;
+use App\Repositories\EbookRepository;
 
 /**
  * Repository Service Provider
@@ -59,6 +61,9 @@ class RepositoryServiceProvider extends ServiceProvider
         
         // Bind Question Repository
         $this->app->bind(QuestionRepositoryInterface::class, QuestionRepository::class);
+
+        // Bind Ebook Repository
+        $this->app->bind(EbookRepositoryInterface::class, EbookRepository::class);
     }
 
     /**

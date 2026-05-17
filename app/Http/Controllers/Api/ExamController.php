@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 use Illuminate\Support\Facades\DB;
 use App\Models\UserExam;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Exam Controller
@@ -405,6 +406,7 @@ class ExamController extends Controller
             $questions = $this->questionSelectorService->generateExamQuestions($exam);
 
             $userExamQuestions = [];
+            Log::info("Jumlah questions", [count($questions)]);
             foreach ($questions as $index => $question) {
                 $userExamQuestions[] = [
                     'id'           => (string) \Illuminate\Support\Str::uuid(),

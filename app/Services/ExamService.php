@@ -705,7 +705,8 @@ class ExamService extends BaseService
                 if (!empty($questions) && is_array($questions)) {
                     $items = collect($questions);
                     $questionIds = $items->pluck('question_id')->filter()->unique()->values();
-                    $optionIds = $items->pluck('question_option_id')->filter()->unique()->values();
+                    // Gunakan flatten() agar menangkap list string jika question_option_id dikirim sebagai array (multiple choice)
+                    $optionIds = $items->pluck('question_option_id')->flatten()->filter()->unique()->values();
 
                     $examQuestions = $exam->questions()->whereIn('id', $questionIds)->get()->keyBy('id');
                     $options = $optionIds->isNotEmpty()
@@ -732,20 +733,40 @@ class ExamService extends BaseService
                         }
 
                         $answerText = $item['answer'] ?? null;
-                        $questionOptionId = $item['question_option_id'] ?? null;
+                        $questionOptionIdInput = $item['question_option_id'] ?? null;
                         $timeSpent = $item['time_spent'] ?? null;
                         $questionOrder = $item['question_order'] ?? null;
                         $questionNumber = $item['question_number'] ?? null;
 
                         $isCorrect = false;
                         $score = 0;
+                        $questionOptionIdToSave = null;
 
-                        if ($questionOptionId) {
-                            $option = $options->get($questionOptionId);
-                            if ($option && $option->question_id === $questionId) {
-                                $isCorrect = (bool) $option->is_correct;
-                                $score = (int) $option->score;
-                                $answerText = $answerText ?? $option->option_text;
+                        if ($questionOptionIdInput) {
+                            if (is_array($questionOptionIdInput)) {
+                                $selectedOptions = collect();
+                                foreach ($questionOptionIdInput as $oid) {
+                                    $opt = $options->get($oid);
+                                    if ($opt && $opt->question_id === $questionId) {
+                                        $selectedOptions->push($opt);
+                                    }
+                                }
+
+                                if ($selectedOptions->isNotEmpty()) {
+                                    // Asumsi skor multiple_choice = penjumlahan skor jawaban yang dipilih
+                                    $score = $selectedOptions->sum('score');
+                                    $isCorrect = $selectedOptions->where('is_correct', true)->isNotEmpty();
+                                    $answerText = $answerText ?? json_encode($selectedOptions->pluck('option_text')->toArray());
+                                }
+                                $questionOptionIdToSave = json_encode($questionOptionIdInput);
+                            } else {
+                                $option = $options->get($questionOptionIdInput);
+                                if ($option && $option->question_id === $questionId) {
+                                    $isCorrect = (bool) $option->is_correct;
+                                    $score = (int) $option->score;
+                                    $answerText = $answerText ?? $option->option_text;
+                                }
+                                $questionOptionIdToSave = $questionOptionIdInput;
                             }
                         } elseif ($answerText !== null) {
                             $isCorrect = $question->isCorrect($answerText);
@@ -754,9 +775,11 @@ class ExamService extends BaseService
                             continue;
                         }
 
+                        $finalAnswerText = is_array($answerText) ? json_encode($answerText) : $answerText;
+
                         $payload = [
-                            'question_option_id' => $questionOptionId,
-                            'answer' => $answerText,
+                            'question_option_id' => $questionOptionIdToSave,
+                            'answer' => $finalAnswerText,
                             'is_correct' => $isCorrect,
                             'score' => $score,
                         ];
@@ -790,7 +813,7 @@ class ExamService extends BaseService
                             'exam_id' => $userExam->exam_id,
                             'action' => ExamMonitoring::ACTION_ANSWER,
                             'question_id' => $questionId,
-                            'answer' => $answerText,
+                            'answer' => $finalAnswerText,
                             'time_spent' => $timeSpent ?? 0,
                             'created_at' => $now,
                             'updated_at' => $now,

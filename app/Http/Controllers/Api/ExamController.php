@@ -606,7 +606,7 @@ class ExamController extends Controller
                             properties: [
                                 new OA\Property(property: 'question_id', type: 'string'),
                                 new OA\Property(property: 'answer', type: 'string', nullable: true),
-                                new OA\Property(property: 'question_option_id', type: 'string', nullable: true),
+                                new OA\Property(property: 'question_option_id', description: 'ID opsi jawaban (bisa string tunggal atau array string untuk multiple choice)', nullable: true),
                                 new OA\Property(property: 'time_spent', type: 'integer', nullable: true),
                                 new OA\Property(property: 'question_order', type: 'integer', nullable: true),
                                 new OA\Property(property: 'question_number', type: 'integer', nullable: true),
@@ -624,7 +624,7 @@ class ExamController extends Controller
             'questions' => 'nullable|array',
             'questions.*.question_id' => 'required_with:questions|string',
             'questions.*.answer' => 'nullable|string',
-            'questions.*.question_option_id' => 'nullable|string|exists:question_options,id',
+            'questions.*.question_option_id' => 'nullable', // Menghapus limitasi string agar bisa menerima array untuk multiple choice
             'questions.*.time_spent' => 'nullable|integer|min:0',
             'questions.*.question_order' => 'nullable|integer|min:1',
             'questions.*.question_number' => 'nullable|integer|min:1',

@@ -749,7 +749,8 @@ class StudentService extends BaseService
     public function exportStudents(array $filters = []): array
     {
         try {
-            $query = Student::query()->with(['group', 'user']);
+            $query = Student::query()->with(['group', 'user'])
+                    ->whereHas('user');
 
             if (isset($filters['search'])) {
                 $search = $filters['search'];
@@ -813,11 +814,6 @@ class StudentService extends BaseService
 
                 // Handle birth date safely
                 $birthDate = $student->birth_date ? $day . $month . $year : "";
-                Log::info("Raw birthdate => ", [$student->birth_date]);
-                Log::info("Nama " . $student->name . " => " . $birthDate);
-                Log::info("day => ", [$day]);
-                Log::info("month => ", [$month]);
-                Log::info("year => ", [$year]);
                 $sheet->setCellValue('D' . $row, $birthDate);
 
                 $row++;

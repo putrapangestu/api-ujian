@@ -400,6 +400,7 @@ class ExamController extends Controller
 
         // Cek apakah soal spesifik untuk user ini sudah pernah di-generate
         $hasQuestions = UserAnswer::where('user_exam_id', $userExam->id)->exists();
+        Log::info("Questions", [$hasQuestions]);
 
         if (!$hasQuestions) {
             // Generate soal sesuai aturan kategori dan rentang untuk siswa ini

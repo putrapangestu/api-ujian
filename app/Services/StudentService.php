@@ -811,14 +811,9 @@ class StudentService extends BaseService
                 $month = substr($birthDateRaw, 4, 2);
                 $day = substr($birthDateRaw, 6, 2);
 
-                Log::info("raw => ", [$student->birth_date]);
-                Log::info("replace => ", [str_replace("-", "", $student->birth_date)]);
-                Log::info("parse => ", [Carbon::parse($student->birth_date)->format('dmY')]);
-                Log::info("day => ", [$day]);
-                Log::info("month => ", [$month]);
-                Log::info("year => ", [$year]);
                 // Handle birth date safely
                 $birthDate = $student->birth_date ? $day . $month . $year : "";
+                Log::info("Nama " . $student->name . " => " . $birthDate);
                 $sheet->setCellValue('D' . $row, $birthDate);
 
 

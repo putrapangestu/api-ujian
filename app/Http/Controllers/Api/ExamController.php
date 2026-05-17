@@ -389,7 +389,7 @@ class ExamController extends Controller
     )]
     public function getExamQuestionsForStudent(Request $request, $examId, $userId)
     {
-        $exam = Exam::find($examId);
+        $exam = Exam::with(['questionGroups.questionCategory'])->where('id', $examId)->first();
         $userExam = UserExam::where('exam_id', $examId)
             ->where('user_id', $userId)
             ->first();

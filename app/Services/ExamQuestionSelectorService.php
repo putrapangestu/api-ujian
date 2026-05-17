@@ -333,6 +333,7 @@ class ExamQuestionSelectorService extends BaseService
      */
     public function generateExamQuestions(Exam $exam)
     {
+        Log::info("Generate exam questions for exam: ", [$exam]);
         $examGroups = $exam->questionGroups ?? collect();
         $selectedQuestions = collect();
 

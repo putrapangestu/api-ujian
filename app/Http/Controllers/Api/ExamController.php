@@ -170,9 +170,9 @@ class ExamController extends Controller
                 properties: [
                     new OA\Property(property: 'title', type: 'string', maxLength: 255),
                     new OA\Property(property: 'description', type: 'string'),
-                    new OA\Property(property: 'duration', type: 'integer', minimum: 1, maximum: 300),
-                    new OA\Property(property: 'total_questions', type: 'integer', minimum: 1, maximum: 200),
-                    new OA\Property(property: 'passing_score', type: 'integer', minimum: 0, maximum: 100),
+                    new OA\Property(property: 'duration', type: 'integer', minimum: 1),
+                    new OA\Property(property: 'total_questions', type: 'integer', minimum: 1),
+                    new OA\Property(property: 'passing_score', type: 'integer', minimum: 0),
                     new OA\Property(property: 'start_date', type: 'string', format: 'date-time'),
                     new OA\Property(property: 'end_date', type: 'string', format: 'date-time'),
                     new OA\Property(property: 'question_groups', type: 'array', items: new OA\Items(type: 'string')),

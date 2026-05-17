@@ -101,7 +101,7 @@ class ExamQuestionSelectorService extends BaseService
                 }
 
                 // Update exam total questions
-                $exam->update(['total_questions' => count($selectedQuestions)]);
+                // $exam->update(['total_questions' => count($selectedQuestions)]);
 
                 return $this->successResponse([
                     'exam_id'            => $exam->id,

@@ -24,23 +24,23 @@ class QuestionRequest extends BaseRequest
             'exam_id' => 'nullable|exists:exams,id',
             'question_category_id' => 'nullable|exists:question_categories,id',
             'question_group_id' => 'required|exists:question_groups,id',
-            'question_text' => 'required|string|max:1000',
+            'question_text' => 'required|string',
             'question_type' => 'required|in:multiple_choice,essay,true_false,single_choice',
-            'score' => 'required|integer|min:1|max:100',
+            'score' => 'required|integer|min:0',
         ];
 
         // Validasi tambahan berdasarkan tipe soal
         if ($this->question_type === 'multiple_choice' || $this->question_type === 'single_choice') {
             $rules['options'] = 'required|array|min:2';
             $rules['options.*.id'] = 'nullable';
-            $rules['options.*.option_text'] = 'required|string|max:255';
+            $rules['options.*.option_text'] = 'required|string';
             $rules['options.*.is_correct'] = 'required|boolean';
-            $rules['options.*.score'] = 'required|integer|min:0|max:100';
-            $rules['options.*.label'] = 'nullable|string|max:10';
+            $rules['options.*.score'] = 'required|integer|min:0';
+            $rules['options.*.label'] = 'nullable|string';
         } elseif ($this->question_type === 'true_false') {
             $rules['correct_answer'] = 'required|in:true,false';
         } elseif ($this->question_type === 'essay') {
-            $rules['correct_answer'] = 'nullable|string|max:1000';
+            $rules['correct_answer'] = 'nullable|string';
         }
 
         return $rules;
@@ -79,7 +79,7 @@ class QuestionRequest extends BaseRequest
     {
         $validator->after(function ($validator) {
             // Validasi tambahan untuk multiple choice
-            if ($this->question_type === 'multiple_choice' && $this->options) {
+            if (($this->question_type === 'multiple_choice' || $this->question_type === 'single_choice') && $this->options) {
                 $options = $this->options ?? [];
 
                 // Check if exactly one correct answer exists

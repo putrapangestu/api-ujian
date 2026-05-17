@@ -369,6 +369,7 @@ class ExamService extends BaseService
                         'name' => $userExam->user?->name,
                         'email' => $userExam->user?->email,
                         'nisn' => $student?->nisn,
+                        'address' => $student?->address,
                         'group_name' => $student?->group?->name,
                     ],
                     'is_passed' => $userExam->score >= ($exam->passing_grade ?? 0),
@@ -454,17 +455,16 @@ class ExamService extends BaseService
             // Set headers
             $headers = [
                 'A1' => 'Nama Peserta',
-                'B1' => 'Email',
-                'C1' => 'NISN',
-                'D1' => 'Grup Siswa',
-                'E1' => 'Waktu Mulai',
-                'F1' => 'Waktu Selesai',
-                'G1' => 'Status',
-                'H1' => 'Skor TWK',
-                'I1' => 'Skor TIU',
-                'J1' => 'Skor TKP',
-                'K1' => 'Total Skor',
-                'L1' => 'Status Kelulusan'
+                'B1' => 'Sekolah',
+                'C1' => 'Grup Siswa',
+                'D1' => 'Waktu Mulai',
+                'E1' => 'Waktu Selesai',
+                'F1' => 'Status',
+                'G1' => 'Skor TWK',
+                'H1' => 'Skor TIU',
+                'I1' => 'Skor TKP',
+                'J1' => 'Total Skor',
+                'K1' => 'Status Kelulusan'
             ];
 
             foreach ($headers as $cell => $value) {
@@ -497,30 +497,30 @@ class ExamService extends BaseService
                 $isPassed = $userExam->score >= ($exam->passing_grade ?? 0) ? 'Lulus' : 'Tidak Lulus';
 
                 $sheet->setCellValue('A' . $row, $userExam->user?->name);
-                $sheet->setCellValue('B' . $row, $userExam->user?->email);
-                $sheet->setCellValueExplicit('C' . $row, $student?->nisn, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-                $sheet->setCellValue('D' . $row, $student?->group?->name);
-                $sheet->setCellValue('E' . $row, $userExam->start_time ? date('Y-m-d H:i:s', strtotime($userExam->start_time)) : '-');
-                $sheet->setCellValue('F' . $row, $userExam->end_time ? date('Y-m-d H:i:s', strtotime($userExam->end_time)) : '-');
-                $sheet->setCellValue('G' . $row, ucfirst($userExam->status));
-                $sheet->setCellValue('H' . $row, $scoreTwk);
-                $sheet->setCellValue('I' . $row, $scoreTiu);
-                $sheet->setCellValue('J' . $row, $scoreTkp);
-                $sheet->setCellValue('K' . $row, $userExam->score ?? 0);
-                $sheet->setCellValue('L' . $row, $isPassed);
+                // $sheet->setCellValue('B' . $row, $userExam->user?->email);
+                $sheet->setCellValueExplicit('B' . $row, $student?->address, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                $sheet->setCellValue('C' . $row, $student?->group?->name);
+                $sheet->setCellValue('D' . $row, $userExam->start_time ? date('Y-m-d H:i:s', strtotime($userExam->start_time)) : '-');
+                $sheet->setCellValue('E' . $row, $userExam->end_time ? date('Y-m-d H:i:s', strtotime($userExam->end_time)) : '-');
+                $sheet->setCellValue('F' . $row, ucfirst($userExam->status));
+                $sheet->setCellValue('G' . $row, $scoreTwk);
+                $sheet->setCellValue('H' . $row, $scoreTiu);
+                $sheet->setCellValue('I' . $row, $scoreTkp);
+                $sheet->setCellValue('J' . $row, $userExam->score ?? 0);
+                $sheet->setCellValue('K' . $row, $isPassed);
 
                 // Highlight kelulusan
                 if ($userExam->score >= ($exam->passing_grade ?? 0)) {
-                    $sheet->getStyle('L' . $row)->getFont()->getColor()->setARGB('FF008000'); // Green
+                    $sheet->getStyle('K' . $row)->getFont()->getColor()->setARGB('FF008000'); // Green
                 } else {
-                    $sheet->getStyle('L' . $row)->getFont()->getColor()->setARGB('FFFF0000'); // Red
+                    $sheet->getStyle('K' . $row)->getFont()->getColor()->setARGB('FFFF0000'); // Red
                 }
 
                 $row++;
             }
 
             // Auto size columns
-            foreach (range('A', 'L') as $column) {
+            foreach (range('A', 'K') as $column) {
                 $sheet->getColumnDimension($column)->setAutoSize(true);
             }
 

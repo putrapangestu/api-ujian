@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExamRequest;
 use App\Models\Exam;
+use App\Models\UserAnswer;
 use App\Services\ExamQuestionSelectorService;
 use App\Services\ExamService;
 use App\Services\QuestionService;
@@ -392,40 +393,69 @@ class ExamController extends Controller
             ->where('user_id', $userId)
             ->first();
 
-        if ($exam && $userExam) {
-            // Cek apakah soal spesifik untuk user ini sudah pernah di-generate
-            $hasQuestions = DB::table('user_exam_questions')
-                ->where('user_exam_id', $userExam->id)
-                ->exists();
+        if (!$exam || !$userExam) {
+            return $this->errorResponse('Ujian atau peserta tidak ditemukan', 404);
+        }
 
-            if (!$hasQuestions) {
-                // Generate soal sesuai aturan kategori dan rentang untuk siswa ini
-                $questions = $this->questionSelectorService->generateExamQuestions($exam);
+        // Cek apakah soal spesifik untuk user ini sudah pernah di-generate
+        $hasQuestions = UserAnswer::where('user_exam_id', $userExam->id)->exists();
 
-                $userExamQuestions = [];
-                foreach ($questions as $index => $question) {
-                    $userExamQuestions[] = [
-                        'user_exam_id'   => $userExam->id,
-                        'question_id'    => $question->id,
-                        'question_order' => $index + 1,
-                        'created_at'     => now(),
-                        'updated_at'     => now(),
-                    ];
-                }
+        if (!$hasQuestions) {
+            // Generate soal sesuai aturan kategori dan rentang untuk siswa ini
+            $questions = $this->questionSelectorService->generateExamQuestions($exam);
 
-                if (!empty($userExamQuestions)) {
-                    DB::table('user_exam_questions')->insert($userExamQuestions);
-                }
+            $userExamQuestions = [];
+            foreach ($questions as $index => $question) {
+                $userExamQuestions[] = [
+                    'id'             => (string) \Illuminate\Support\Str::uuid(),
+                    'user_exam_id'   => $userExam->id,
+                    'question_id'    => $question->id,
+                    'question_order' => $index + 1,
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ];
+            }
+
+            if (!empty($userExamQuestions)) {
+                UserAnswer::insert($userExamQuestions);
             }
         }
 
-        $result = $this->questionSelectorService->getExamQuestionsForStudent($examId, $userId);
+        // Ambil data soal yang sudah tersimpan di UserAnswer beserta relasinya
+        $userAnswers = UserAnswer::with(['question.options', 'question.questionGroup', 'question.category'])
+            ->where('user_exam_id', $userExam->id)
+            ->orderBy('question_order', 'asc')
+            ->get();
 
-        if ($result['success']) {
-            return $this->successResponse($result['data'], $result['message']);
-        }
+        $formattedQuestions = $userAnswers->map(function ($userAnswer) {
+            $question = $userAnswer->question;
+            return [
+                'id'                 => $userAnswer->id,
+                'question_id'        => $question?->id,
+                'question_number'    => $userAnswer->question_number ?? $userAnswer->question_order,
+                'question_order'     => $userAnswer->question_order,
+                'question_text'      => $question?->question_text,
+                'question_type'      => $question?->question_type,
+                'score'              => $question?->score,
+                'category_name'      => $question?->category?->name,
+                'group_name'         => $question?->questionGroup?->name,
+                'options'            => $question?->options->map(function ($option) {
+                    return [
+                        'id'          => $option->id,
+                        'option_text' => $option->option_text
+                    ];
+                }),
+                'answer'             => $userAnswer->answer,
+                'question_option_id' => $userAnswer->question_option_id,
+            ];
+        });
 
-        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+        return $this->successResponse([
+            'exam'            => $exam,
+            'user_exam'       => $userExam,
+            'questions'       => $formattedQuestions,
+            'total_questions' => $formattedQuestions->count(),
+        ], 'Soal ujian siswa berhasil diambil');
     }
 
     /**

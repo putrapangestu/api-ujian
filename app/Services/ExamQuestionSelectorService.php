@@ -434,9 +434,9 @@ class ExamQuestionSelectorService extends BaseService
             Log::info("Data question dibutuhkan", [$neededQuestionCount]);
             Log::info("question => ", [$categoryQuestions]);
             $finalCategoryQuestions = $categoryQuestions->take($neededQuestionCount);
-            Log::info("final question =>", $finalCategoryQuestions);
+            Log::info("final question =>", [$finalCategoryQuestions]);
             $selectedQuestions = $selectedQuestions->merge($finalCategoryQuestions);
-            Log::info("selected question => ", $selectedQuestions);
+            Log::info("selected question => ", [$selectedQuestions]);
         }
 
         return $selectedQuestions;

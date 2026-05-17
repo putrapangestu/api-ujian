@@ -391,6 +391,7 @@ class ExamController extends Controller
     {
         $exam = Exam::where('id', $examId)->first();
         $userExam = UserExam::where('exam_id', $examId)
+            ->with('user.student')
             ->where('user_id', $userId)
             ->first();
 

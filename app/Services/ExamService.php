@@ -329,6 +329,10 @@ class ExamService extends BaseService
                 $query->where('user_id', $filters['user_id']);
             }
 
+            if (isset($filters['search']) && $filters['search']) {
+                $query->whereRelation('user','name', 'like', '%' . $filters['search'] . '%');
+            }
+
             $userExams = $query->orderByDesc('created_at')->paginate($perPage);
 
             // Mapping data to include detailed scores and user info
@@ -844,8 +848,10 @@ class ExamService extends BaseService
 
     private function createUserExamsForGroups(Exam $exam, array $groupIds): void
     {
-        $students = Student::whereIn('group_id', $groupIds)
+        $students = Student::with('user')
+            ->whereIn('group_id', $groupIds)
             ->where('status', Student::STATUS_ACTIVE)
+            ->whereHas('user')
             ->whereNotNull('user_id')
             ->get();
 

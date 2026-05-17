@@ -81,6 +81,16 @@ class UserExam extends Model
     }
 
     /**
+     * Get the user that owns the user exam
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function userOnly()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * Get the exam that owns the user exam
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo

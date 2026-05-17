@@ -519,7 +519,7 @@ class ExamController extends Controller
     )]
     public function getUserExamsByExam(Request $request, $id)
     {
-        $filters = $request->only(['status', 'student_id', 'user_id']);
+        $filters = $request->only(['status', 'student_id', 'user_id', 'search']);
         $perPage = (int) $request->get('per_page', 15);
         $result = $this->examService->getUserExamsByExam($id, $filters, $perPage);
 

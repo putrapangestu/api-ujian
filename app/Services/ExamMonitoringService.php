@@ -346,7 +346,8 @@ class ExamMonitoringService extends BaseService
         try {
             // Get active user exams for this exam without loading all userAnswers
             $activeExams = UserExam::where('exam_id', $examId)
-                ->with(['user.student', 'exam'])
+                ->with(['userOnly.student', 'exam'])
+                ->whereHas('userOnly')
                 ->get();
 
             // Pre-calculate total questions per category for this exam
@@ -450,8 +451,8 @@ class ExamMonitoringService extends BaseService
                     }
                 }
 
-                $studentId = $userExam->student_id ?? ($userExam->user->student->id ?? $userExam->user_id);
-                $studentName = $userExam->user->name ?? 'Unknown';
+                $studentId = $userExam->student_id ?? ($userExam->userOnly->student->id ?? $userExam->user_id);
+                $studentName = $userExam->userOnly->name ?? 'Unknown';
 
                 $monitoringData[] = [
                     'id' => $studentId, // frontend expects student uuid as id

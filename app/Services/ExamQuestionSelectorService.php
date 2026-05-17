@@ -43,6 +43,9 @@ class ExamQuestionSelectorService extends BaseService
     {
         return DB::transaction(function () use ($exam, $questionBanks) {
             try {
+                // Hapus data soal lama yang sudah terkait dengan ujian ini
+                QuestionExam::where('exam_id', $exam->id)->delete();
+
                 $selectedQuestions = [];
                 $questionNumber    = 1;
 

@@ -333,23 +333,30 @@ class ExamQuestionSelectorService extends BaseService
      */
     public function generateExamQuestions(Exam $exam)
     {
-        // Catatan: Pastikan model Exam memiliki relasi categories() atau questionCategories()
-        // yang mengarah ke QuestionCategory dengan membawa pivot 'question_count'.
-        $examCategories = $exam->categories ?? $exam->questionCategories ?? collect();
+        $examGroups = $exam->questionGroups ?? collect();
         $selectedQuestions = collect();
 
-        if ($examCategories->isEmpty()) {
+        if ($examGroups->isEmpty()) {
             return $selectedQuestions;
+        }
+
+        $examCategories = collect();
+        foreach ($examGroups as $group) {
+            $category = $group->questionCategory ?? $group->category;
+            if ($category && !$examCategories->contains('id', $category->id)) {
+                $examCategories->push($category);
+            }
         }
 
         foreach ($examCategories as $category) {
             $categoryStartRange = $category->start_range;
             $categoryEndRange = $category->end_range;
-            $neededQuestionCount = $category->pivot->question_count ?? 0;
+            $neededQuestionCount = $examGroups->where('question_category_id', $category->id)->sum('display_question_count');
 
-            // Ambil semua grup soal untuk kategori ini yang berstatus aktif
+            // Ambil grup soal untuk kategori ini yang berstatus aktif dan terkait dengan ujian
             $groups = QuestionGroup::where('question_category_id', $category->id)
                         ->where('status', QuestionGroup::STATUS_ACTIVE)
+                        ->whereIn('id', $examGroups->pluck('id'))
                         ->get();
 
             $categoryQuestions = collect();

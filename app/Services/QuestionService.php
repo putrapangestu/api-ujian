@@ -648,7 +648,7 @@ class QuestionService extends BaseService
                     }
                 }
 
-                // $message = "Berhasil menghapus $deletedCount soal.";
+                $message = "Berhasil menghapus $deletedCount soal.";
                 // if ($skippedCount > 0) {
                 //     $message .= " $skippedCount soal dilewati karena sudah pernah digunakan dalam ujian.";
                 // }

@@ -407,12 +407,11 @@ class ExamController extends Controller
             $userExamQuestions = [];
             foreach ($questions as $index => $question) {
                 $userExamQuestions[] = [
-                    'id'             => (string) \Illuminate\Support\Str::uuid(),
-                    'user_exam_id'   => $userExam->id,
-                    'question_id'    => $question->id,
-                    'question_order' => $index + 1,
-                    'created_at'     => now(),
-                    'updated_at'     => now(),
+                    'id'           => (string) \Illuminate\Support\Str::uuid(),
+                    'user_exam_id' => $userExam->id,
+                    'question_id'  => $question->id,
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
                 ];
             }
 
@@ -424,16 +423,17 @@ class ExamController extends Controller
         // Ambil data soal yang sudah tersimpan di UserAnswer beserta relasinya
         $userAnswers = UserAnswer::with(['question.options', 'question.questionGroup', 'question.category'])
             ->where('user_exam_id', $userExam->id)
-            ->orderBy('question_order', 'asc')
+            ->orderBy('created_at', 'asc')
+            ->orderBy('id', 'asc')
             ->get();
 
-        $formattedQuestions = $userAnswers->map(function ($userAnswer) {
+        $formattedQuestions = $userAnswers->map(function ($userAnswer, $index) {
             $question = $userAnswer->question;
             return [
                 'id'                 => $userAnswer->id,
                 'question_id'        => $question?->id,
-                'question_number'    => $userAnswer->question_number ?? $userAnswer->question_order,
-                'question_order'     => $userAnswer->question_order,
+                'question_number'    => $index + 1,
+                'question_order'     => $index + 1,
                 'question_text'      => $question?->question_text,
                 'question_type'      => $question?->question_type,
                 'score'              => $question?->score,
@@ -447,6 +447,7 @@ class ExamController extends Controller
                 }),
                 'answer'             => $userAnswer->answer,
                 'question_option_id' => $userAnswer->question_option_id,
+                'is_correct'         => $userAnswer->is_correct,
             ];
         });
 

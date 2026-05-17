@@ -44,9 +44,6 @@ class UserAnswer extends Model
         'answer',
         'is_correct',
         'score',
-        'time_spent',
-        'question_order',
-        'question_number',
     ];
 
     /**

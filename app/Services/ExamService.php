@@ -53,7 +53,7 @@ class ExamService extends BaseService
     {
         try {
             $query = Exam::query()
-                ->withCount('questions');
+                ->withCount('questionExams');
 
             if (isset($filters['search'])) {
                 $search = $filters['search'];

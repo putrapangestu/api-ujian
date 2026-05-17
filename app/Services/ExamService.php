@@ -602,6 +602,40 @@ class ExamService extends BaseService
                 return $answer->answer !== null || $answer->question_option_id !== null;
             })->count();
 
+            // Handle multiple-choice options yang tersimpan sebagai JSON array di kolom answer
+            $multipleChoiceOptionIds = [];
+            foreach ($answers as $answer) {
+                if (empty($answer->question_option_id) && is_string($answer->answer) && str_starts_with(trim($answer->answer), '[')) {
+                    $decoded = json_decode($answer->answer, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        $multipleChoiceOptionIds = array_merge($multipleChoiceOptionIds, $decoded);
+                    }
+                }
+            }
+
+            if (!empty($multipleChoiceOptionIds)) {
+                $multipleOptions = QuestionOption::withTrashed()
+                    ->whereIn('id', array_unique($multipleChoiceOptionIds))
+                    ->get()
+                    ->keyBy('id');
+
+                foreach ($answers as $answer) {
+                    if (empty($answer->question_option_id) && is_string($answer->answer) && str_starts_with(trim($answer->answer), '[')) {
+                        $decoded = json_decode($answer->answer, true);
+                        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                            $selectedOpts = collect();
+                            foreach ($decoded as $oid) {
+                                if ($multipleOptions->has($oid)) {
+                                    $selectedOpts->push($multipleOptions->get($oid));
+                                }
+                            }
+                            $answer->setAttribute('selected_options', $selectedOpts);
+                            $answer->setAttribute('decoded_answer', $decoded);
+                        }
+                    }
+                }
+            }
+
             return $this->successResponse([
                 'user_exam' => $userExam,
                 'summary' => [
@@ -705,6 +739,17 @@ class ExamService extends BaseService
                 $invalidQuestions = [];
 
                 if (!empty($questions) && is_array($questions)) {
+                    // Preprocess questions untuk mengatasi problem stringified JSON array dari FE
+                    $questions = array_map(function ($item) {
+                        if (isset($item['question_option_id']) && is_string($item['question_option_id']) && str_starts_with(trim($item['question_option_id']), '[')) {
+                            $decoded = json_decode($item['question_option_id'], true);
+                            if (json_last_error() === JSON_ERROR_NONE) {
+                                $item['question_option_id'] = $decoded;
+                            }
+                        }
+                        return $item;
+                    }, $questions);
+
                     $items = collect($questions);
                     $questionIds = $items->pluck('question_id')->filter()->unique()->values();
                     // Gunakan flatten() agar menangkap list string jika question_option_id dikirim sebagai array (multiple choice)
@@ -758,9 +803,11 @@ class ExamService extends BaseService
                                     // Asumsi skor multiple_choice = penjumlahan skor jawaban yang dipilih
                                     $score = $selectedOptions->sum('score');
                                     $isCorrect = $selectedOptions->where('is_correct', true)->isNotEmpty();
-                                    $answerText = $answerText ?? json_encode($selectedOptions->pluck('option_text')->toArray());
+                                    // Simpan array UUID jawaban ganda ke kolom answer
+                                    $answerText = json_encode($questionOptionIdInput);
                                 }
-                                $questionOptionIdToSave = json_encode($questionOptionIdInput);
+                                // Kosongkan foreign key karena kita menyimpannya di kolom answer
+                                $questionOptionIdToSave = null;
                             } else {
                                 $option = $options->get($questionOptionIdInput);
                                 if ($option && $option->question_id === $questionId) {

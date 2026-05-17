@@ -402,6 +402,8 @@ class ExamQuestionSelectorService extends BaseService
 
             // Urutkan grup yang valid berdasarkan number_start
             $validGroups = $validGroups->sortBy('number_start');
+            Log::info("Data valid groups ", [$validGroups]);
+            Log::info("Data invalid groups ", [$invalidGroups]);
 
             // Proses grup yang valid: ambil soal secara acak sesuai dengan display_question_count
             foreach ($validGroups as $group) {

@@ -97,7 +97,7 @@ class UserExam extends Model
      */
     public function exam()
     {
-        return $this->belongsTo(Exam::class);
+        return $this->belongsTo(Exam::class)->withTrashed();
     }
 
     public function student()

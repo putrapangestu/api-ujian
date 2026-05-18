@@ -341,10 +341,8 @@ class ExamQuestionSelectorService extends BaseService
             ->where('is_active', true)
             ->get();
 
-        $selectedQuestions = collect();
-
         if ($questionExams->isEmpty()) {
-            return $selectedQuestions;
+            return collect();
         }
 
         // Kumpulkan grup dari questionExams
@@ -356,9 +354,8 @@ class ExamQuestionSelectorService extends BaseService
             }
         }
 
-        // Log::info("Jumlah question group", [count($examGroups)]);
         if ($examGroups->isEmpty()) {
-            return $selectedQuestions;
+            return collect();
         }
 
         $examCategories = collect();
@@ -369,27 +366,35 @@ class ExamQuestionSelectorService extends BaseService
             }
         }
 
-        // Log::info("Category => ", [$examCategories]);
+        // 2. Urutkan QuestionCategory berdasarkan start_range, end_range
+        $examCategories = $examCategories->sort(function ($a, $b) {
+            if ($a->start_range == $b->start_range) {
+                return $a->end_range <=> $b->end_range;
+            }
+            return $a->start_range <=> $b->start_range;
+        })->values();
+
+        $usedQuestionIds = [];
+        $finalQuestionsMap = [];
+
         foreach ($examCategories as $category) {
             $categoryStartRange = $category->start_range;
             $categoryEndRange = $category->end_range;
-            $neededQuestionCount = $examGroups->where('question_category_id', $category->id)->sum('display_question_count');
-            // Log::info("Jumlah question per category", [$category->name, $neededQuestionCount]);
 
-            // Ambil grup soal untuk kategori ini yang berstatus aktif dan terkait dengan ujian
+            if (is_null($categoryStartRange) || is_null($categoryEndRange)) {
+                continue;
+            }
+
+            // Ambil grup soal untuk kategori ini yang berstatus aktif
             $groups = $examGroups->where('question_category_id', $category->id)
                         ->where('status', QuestionGroup::STATUS_ACTIVE)
                         ->values();
 
-            $categoryQuestions = collect();
             $validGroups = collect();
             $invalidGroups = collect();
 
-            // Pisahkan grup yang valid sesuai rentang (range) dengan yang tidak
-            Log::info("Data groups ", [$groups]);
             foreach ($groups as $group) {
                 $isValidRange = !is_null($group->number_start) && !is_null($group->number_end) &&
-                                !is_null($categoryStartRange) && !is_null($categoryEndRange) &&
                                 ($group->number_start >= $categoryStartRange) &&
                                 ($group->number_end <= $categoryEndRange);
 
@@ -401,46 +406,61 @@ class ExamQuestionSelectorService extends BaseService
             }
 
             // Urutkan grup yang valid berdasarkan number_start
-            $validGroups = $validGroups->sortBy('number_start');
-            Log::info("Data valid groups ", [$validGroups]);
-            Log::info("Data invalid groups ", [$invalidGroups]);
+            $validGroups = $validGroups->sortBy('number_start')->values();
 
-            // Proses grup yang valid: ambil soal secara acak sesuai dengan display_question_count
+            // 3. Proses grup yang valid: alokasikan soal ke dalam range yang ditentukan
             foreach ($validGroups as $group) {
-                $questions = $questionExams->where('question_group_id', $group->id)
+                $groupStart = $group->number_start;
+                $groupEnd = $group->number_end;
+
+                $groupQuestions = $questionExams->where('question_group_id', $group->id)
                     ->pluck('question')
-                    ->filter()
-                    ->shuffle()
-                    ->take($group->display_question_count);
-                $categoryQuestions = $categoryQuestions->merge($questions);
+                    ->filter(function($q) use (&$usedQuestionIds) {
+                        return $q && !in_array($q->id, $usedQuestionIds);
+                    })
+                    ->shuffle();
+
+                $takeCount = $group->display_question_count > 0 ? $group->display_question_count : ($groupEnd - $groupStart + 1);
+                $groupQuestions = $groupQuestions->take($takeCount)->values();
+
+                $groupQuestionIndex = 0;
+                $groupQuestionsCount = $groupQuestions->count();
+
+                for ($num = $groupStart; $num <= $groupEnd; $num++) {
+                    if (!isset($finalQuestionsMap[$num]) && $groupQuestionIndex < $groupQuestionsCount) {
+                        $q = $groupQuestions[$groupQuestionIndex];
+                        $finalQuestionsMap[$num] = $q;
+                        $usedQuestionIds[] = $q->id;
+                        $groupQuestionIndex++;
+                    }
+                }
             }
 
-            // Proses grup yang tidak valid (tidak memiliki number_start/end atau di luar rentang)
-            foreach ($invalidGroups as $group) {
-                // Cari question group lain di kategori yang sama
-                $otherGroups = $groups->where('id', '!=', $group->id);
+            // 4. Rule Pengisian Nomor yang Belum Terpenuhi
+            // Ambil soal yang tersisa dari grup mana pun dalam kategori ini
+            $remainingCategoryQuestions = $questionExams->whereIn('question_group_id', $groups->pluck('id'))
+                ->pluck('question')
+                ->filter(function($q) use (&$usedQuestionIds) {
+                    return $q && !in_array($q->id, $usedQuestionIds);
+                })
+                ->shuffle()
+                ->values();
 
-                // Ganti dengan question group lain secara acak jika ada, jika tidak tetap pakai yang awal
-                $replacementGroup = $otherGroups->isNotEmpty() ? $otherGroups->random() : $group;
+            $fallbackIndex = 0;
+            $fallbackCount = $remainingCategoryQuestions->count();
 
-                $questions = $questionExams->where('question_group_id', $replacementGroup->id)
-                    ->pluck('question')
-                    ->filter()
-                    ->shuffle()
-                    ->take($group->display_question_count); // Tetap dibatasi dengan display_question_count dari group asli
-
-                $categoryQuestions = $categoryQuestions->merge($questions);
+            for ($num = $categoryStartRange; $num <= $categoryEndRange; $num++) {
+                if (!isset($finalQuestionsMap[$num]) && $fallbackIndex < $fallbackCount) {
+                    $q = $remainingCategoryQuestions[$fallbackIndex];
+                    $finalQuestionsMap[$num] = $q;
+                    $usedQuestionIds[] = $q->id;
+                    $fallbackIndex++;
+                }
             }
-
-            // Batasi total soal yang diambil agar pas dengan alokasi question_count yang dibutuhkan pada kategori
-            // Log::info("Data question dibutuhkan", [$neededQuestionCount]);
-            // Log::info("question => ", [$categoryQuestions]);
-            $finalCategoryQuestions = $categoryQuestions->take($neededQuestionCount);
-            // Log::info("final question =>", [$finalCategoryQuestions]);
-            $selectedQuestions = $selectedQuestions->merge($finalCategoryQuestions);
-            // Log::info("selected question => ", [$selectedQuestions]);
         }
 
-        return $selectedQuestions;
+        ksort($finalQuestionsMap);
+
+        return collect(array_values($finalQuestionsMap));
     }
 }

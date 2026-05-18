@@ -7,6 +7,7 @@ use App\Repositories\StudentRepositoryInterface;
 use App\Repositories\StudentGroupRepositoryInterface;
 use App\Repositories\UserRepositoryInterface;
 use App\Helpers\ResponseHelper;
+use App\Models\UserExam;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -203,6 +204,21 @@ class StudentService extends BaseService
 
         } catch (\Exception $e) {
             return $this->errorResponse('Gagal mengambil riwayat ujian: ' . $e->getMessage());
+        }
+    }
+
+    public function getStudentExamSummary(string $id) {
+        try {
+            $userExam = UserExam::selectRaw('
+                count(*) as total_exam,
+                SUM(score) as total_score,
+            ')
+            ->where('student_id', $id)
+            ->get();
+
+            return $this->successResponse($userExam, "Berhasil mengambil summary ujian");
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengambil summary ujian: ' . $e->getMessage());
         }
     }
 

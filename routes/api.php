@@ -77,6 +77,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/all', [StudentController::class, 'list'])->name('students.all');
         Route::get('/download-template', [StudentController::class, 'downloadTemplate'])->name('students.download-template');
         Route::get('/{id}', [StudentController::class, 'show'])->name('students.show');
+        Route::get('/{id}/exam-summary', [StudentController::class, 'getExamSummary'])->name('students.exam-summary');
         Route::get('/{id}/exam-history', [StudentController::class, 'getExamHistory'])->name('students.exam-history');
         Route::get('/{id}/exam-history/export', [StudentController::class, 'exportExamHistory'])->name('students.exam-history-export');
         Route::post('/import', [StudentController::class, 'import'])->name('students.import');
@@ -189,7 +190,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [\App\Http\Controllers\EbookController::class, 'index'])->name('ebooks.index');
         Route::get('/{id}', [\App\Http\Controllers\EbookController::class, 'show'])->name('ebooks.show');
         Route::get('/{id}/download', [\App\Http\Controllers\EbookController::class, 'download'])->name('ebooks.download');
-        
+
         // Admin only routes
         Route::middleware('role:admin')->group(function () {
             Route::post('/', [\App\Http\Controllers\EbookController::class, 'store'])->name('ebooks.store');

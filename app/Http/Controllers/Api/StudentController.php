@@ -153,6 +153,34 @@ class StudentController extends Controller
     }
 
     /**
+     * Get student exam summary
+     *
+     * @param Request $request
+     * @param string $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Get(
+        path: "/students/{id}/exam-summary",
+        summary: "Summary ujian siswa",
+        tags: ["Students"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string")),
+        ],
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    public function getExamSummary(Request $request, $id)
+    {
+        $filters = $request->only(['search']);
+        $result = $this->studentService->getStudentExamSummary($id);
+
+        if ($result['success']) {
+            return $this->successResponse($result['data'], $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
+
+    /**
      * Export student exam history to Excel file
      *
      * @param Request $request

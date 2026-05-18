@@ -256,11 +256,11 @@ class StudentService extends BaseService
                 'A1' => 'Nama Ujian',
                 'B1' => 'Tanggal Mulai',
                 'C1' => 'Tanggal Selesai',
-                'D1' => 'Status Kelulusan',
-                'E1' => 'Total Skor',
-                'F1' => 'Skor TWK',
-                'G1' => 'Skor TIU',
-                'H1' => 'Skor TKP',
+                // 'D1' => 'Status Kelulusan',
+                'D1' => 'Total Skor',
+                'E1' => 'Skor TWK',
+                'F1' => 'Skor TIU',
+                'G1' => 'Skor TKP',
             ];
 
             foreach ($headers as $cell => $value) {
@@ -299,17 +299,17 @@ class StudentService extends BaseService
                 $sheet->setCellValue('A' . $row, $userExam->exam->title ?? 'Unknown Exam');
                 $sheet->setCellValue('B' . $row, $userExam->start_time ? $userExam->start_time->format('Y-m-d H:i:s') : '-');
                 $sheet->setCellValue('C' . $row, $userExam->end_time ? $userExam->end_time->format('Y-m-d H:i:s') : '-');
-                $sheet->setCellValue('D' . $row, $statusKelulusan);
-                $sheet->setCellValue('E' . $row, $userExam->score ?? 0);
-                $sheet->setCellValue('F' . $row, $scoreTwk);
-                $sheet->setCellValue('G' . $row, $scoreTiu);
-                $sheet->setCellValue('H' . $row, $scoreTkp);
+                // $sheet->setCellValue('D' . $row, $statusKelulusan);
+                $sheet->setCellValue('D' . $row, $userExam->score ?? 0);
+                $sheet->setCellValue('E' . $row, $scoreTwk);
+                $sheet->setCellValue('F' . $row, $scoreTiu);
+                $sheet->setCellValue('I' . $row, $scoreTkp);
 
                 $row++;
             }
 
             // Auto size columns
-            foreach (range('A', 'H') as $column) {
+            foreach (range('A', 'I') as $column) {
                 $sheet->getColumnDimension($column)->setAutoSize(true);
             }
 

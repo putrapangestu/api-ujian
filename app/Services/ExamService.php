@@ -759,11 +759,6 @@ class ExamService extends BaseService
                     $options = $optionIds->isNotEmpty()
                         ? QuestionOption::whereIn('id', $optionIds)->get()->keyBy('id')
                         : collect();
-                    $existingAnswers = $questionIds->isNotEmpty()
-                        ? UserAnswer::where('user_exam_id', $userExam->id)->whereIn('question_id', $questionIds)->get()->keyBy('question_id')
-                        : collect();
-
-                    $answersToInsert = [];
                     $monitoringRows = [];
                     $now = Carbon::now();
 
@@ -802,7 +797,7 @@ class ExamService extends BaseService
                                 if ($selectedOptions->isNotEmpty()) {
                                     // Asumsi skor multiple_choice = penjumlahan skor jawaban yang dipilih
                                     $score = $selectedOptions->sum('score');
-                                    $isCorrect = $selectedOptions->where('is_correct', true)->isNotEmpty();
+                                    $isCorrect = $score > 0;
                                     // Simpan array UUID jawaban ganda ke kolom answer
                                     $answerText = json_encode($questionOptionIdInput);
                                 }
@@ -811,8 +806,8 @@ class ExamService extends BaseService
                             } else {
                                 $option = $options->get($questionOptionIdInput);
                                 if ($option && $option->question_id === $questionId) {
-                                    $isCorrect = (bool) $option->is_correct;
                                     $score = (int) $option->score;
+                                    $isCorrect = $score > 0;
                                     $answerText = $answerText ?? $option->option_text;
                                 }
                                 $questionOptionIdToSave = $questionOptionIdInput;
@@ -842,18 +837,13 @@ class ExamService extends BaseService
                             $payload['question_number'] = $questionNumber;
                         }
 
-                        $existing = $existingAnswers->get($questionId);
-                        if ($existing) {
-                            $existing->update($payload);
-                        } else {
-                            $answersToInsert[] = array_merge($payload, [
-                                'id' => (string) Str::uuid(),
+                        UserAnswer::updateOrCreate(
+                            [
                                 'user_exam_id' => $userExam->id,
                                 'question_id' => $questionId,
-                                'created_at' => $now,
-                                'updated_at' => $now,
-                            ]);
-                        }
+                            ],
+                            $payload
+                        );
 
                         $monitoringRows[] = [
                             'id' => (string) Str::uuid(),
@@ -871,9 +861,6 @@ class ExamService extends BaseService
                         $processed++;
                     }
 
-                    if (!empty($answersToInsert)) {
-                        UserAnswer::insert($answersToInsert);
-                    }
                     if (!empty($monitoringRows)) {
                         ExamMonitoring::insert($monitoringRows);
                     }

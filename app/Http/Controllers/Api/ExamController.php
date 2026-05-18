@@ -409,13 +409,14 @@ class ExamController extends Controller
 
             $userExamQuestions = [];
             // Log::info("Jumlah questions", [count($questions)]);
+            $now = now();
             foreach ($questions as $index => $question) {
                 $userExamQuestions[] = [
                     'id'           => (string) \Illuminate\Support\Str::uuid(),
                     'user_exam_id' => $userExam->id,
                     'question_id'  => $question->id,
-                    'created_at'   => now(),
-                    'updated_at'   => now(),
+                    'created_at'   => $now->copy()->addSeconds($index),
+                    'updated_at'   => $now->copy()->addSeconds($index),
                 ];
             }
 
@@ -428,7 +429,6 @@ class ExamController extends Controller
         $userAnswers = UserAnswer::with(['question.options', 'question.questionGroup', 'question.category'])
             ->where('user_exam_id', $userExam->id)
             ->orderBy('created_at', 'asc')
-            ->orderBy('id', 'asc')
             ->get();
 
         $formattedQuestions = $userAnswers->map(function ($userAnswer, $index) {

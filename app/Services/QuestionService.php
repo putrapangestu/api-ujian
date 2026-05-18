@@ -150,7 +150,7 @@ class QuestionService extends BaseService
                         QuestionOption::create([
                             'question_id' => $question->id,
                             'option_text' => $optionData['option_text'],
-                            'is_correct' => $optionData['is_correct'],
+                            'is_correct' => $optionData['is_correct'] ?? ($optionData['score'] > 0 ? true : false),
                             'score' => $optionData['score'],
                             'option_label' => $optionData['label'] ?? null,
                         ]);
@@ -217,7 +217,7 @@ class QuestionService extends BaseService
                         if ($existingOption) {
                             $existingOption->update([
                                 'option_text' => $optionData['option_text'],
-                                'is_correct' => $optionData['is_correct'],
+                                'is_correct' => $optionData['is_correct'] ?? ($optionData['score'] > 0 ? true : false),
                                 'score' => $optionData['score'],
                                 'option_label' => $optionData['label'] ?? null,
                             ]);
@@ -225,7 +225,7 @@ class QuestionService extends BaseService
                             QuestionOption::create([
                                 'question_id' => $question->id,
                                 'option_text' => $optionData['option_text'],
-                                'is_correct' => $optionData['is_correct'],
+                                'is_correct' => $optionData['is_correct'] ?? ($optionData['score'] > 0 ? true : false),
                                 'score' => $optionData['score'],
                                 'option_label' => $optionData['label'] ?? null,
                             ]);
@@ -377,17 +377,17 @@ class QuestionService extends BaseService
                     $rowNumber++;
 
                     // Validasi row data
-                    if (count($row) < 5) {
+                    if (count($row) < 2) {
                         $errors[] = "Baris $rowNumber: Data tidak lengkap";
 
                         continue;
                     }
 
-                    $questionText      = trim($row[0]);
-                    $questionTypeLabel = trim($row[1]);
-                    $categoryId        = trim($row[2]);
-                    $score             = trim($row[3]);
-                    $correctAnswerLabel = trim($row[4]);
+                    $questionText      = isset($row[0]) ? trim($row[0]) : '';
+                    $questionTypeLabel = isset($row[1]) ? trim($row[1]) : '';
+                    $categoryId        = isset($row[2]) ? trim($row[2]) : null;
+                    $score             = isset($row[3]) ? trim($row[3]) : null;
+                    $correctAnswerLabel = isset($row[4]) ? trim($row[4]) : null;
 
                     // Map label bahasa Indonesia kembali ke system value
                     $typeMapping = [
@@ -488,7 +488,7 @@ class QuestionService extends BaseService
                             }
 
                             if ($optionScore === '') $optionScore = '0';
-                            $isCorrect = ($optionLabel === $correctAnswerLabel);
+                            $isCorrect = (float)$optionScore > 0;
 
                             if ($optImagePath) {
                                 $optImageUrl = asset('storage/' . $optImagePath);
@@ -499,10 +499,10 @@ class QuestionService extends BaseService
                             }
 
                             $optionsData[] = [
-                                'text'       => $optionText,
-                                'is_correct' => $isCorrect,
-                                'score'      => (int) $optionScore,
-                                'label'      => $optionLabel,
+                                'option_text' => $optionText,
+                                'is_correct'  => $isCorrect,
+                                'score'       => (int) $optionScore,
+                                'label'       => $optionLabel,
                             ];
 
                             $optionIndex += 2;

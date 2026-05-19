@@ -757,8 +757,12 @@ class ExamService extends BaseService
                     $optionIds = $items->pluck('question_option_id')->flatten()->filter()->unique()->values();
                     Log::info("questionIds => ", [$questionIds]);
                     Log::info("optionIds => ", [$optionIds]);
+                    Log::info("question from exam", [$exam->questions()->get()->pluck('id')->toArray()]);
 
-                    $examQuestions = $exam->questions()->whereIn('id', $questionIds->toArray())->get()->keyBy('id');
+                    $examQuestions = Question::whereIn('id', $questionIds->toArray())
+                        ->where('exam_id', $exam->id)
+                        ->get()
+                        ->keyBy('id');
                     $options = $optionIds->isNotEmpty()
                         ? QuestionOption::whereIn('id', $optionIds->toArray())->get()->keyBy('id')
                         : collect();

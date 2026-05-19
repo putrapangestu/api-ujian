@@ -317,7 +317,7 @@ class ExamService extends BaseService
             }
 
             $query = \App\Models\UserExam::where('exam_id', $examId)
-                ->with(['user.student.group', 'userAnswers.question.category']);
+                ->with(['user.student.group', 'userAnswers.question.questionGroup.questionCategory']);
 
             if (isset($filters['status']) && $filters['status']) {
                 $query->where('status', $filters['status']);
@@ -345,7 +345,7 @@ class ExamService extends BaseService
                 $scoreTkp = 0;
 
                 foreach ($userExam->userAnswers as $answer) {
-                    $categoryCode = strtolower($answer->question?->category?->code ?? '');
+                    $categoryCode = strtolower($answer->question?->questionGroup?->questionCategory?->code ?? '');
 
                     if (str_contains($categoryCode, 'twk')) {
                         $scoreTwk += $answer->score;
@@ -418,7 +418,7 @@ class ExamService extends BaseService
             }
 
             $query = \App\Models\UserExam::where('exam_id', $examId)
-                ->with(['user.student.group', 'userAnswers.question.category']);
+                ->with(['user.student.group', 'userAnswers.question.questionGroup.questionCategory']);
 
             if (isset($filters['status']) && $filters['status']) {
                 $query->where('status', $filters['status']);
@@ -488,7 +488,7 @@ class ExamService extends BaseService
                 $scoreTkp = 0;
 
                 foreach ($userExam->userAnswers as $answer) {
-                    $categoryCode = strtolower($answer->question?->category?->code ?? '');
+                    $categoryCode = strtolower($answer->question?->questionGroup?->questionCategory?->code ?? '');
 
                     if (str_contains($categoryCode, 'twk')) {
                         $scoreTwk += $answer->score;
@@ -739,6 +739,7 @@ class ExamService extends BaseService
 
                 $processed = 0;
                 $invalidQuestions = [];
+                $categoryScores = [];
 
                 if (!empty($questions) && is_array($questions)) {
                     // Preprocess questions untuk mengatasi problem stringified JSON array dari FE
@@ -756,11 +757,9 @@ class ExamService extends BaseService
                     $questionIds = $items->pluck('question_id')->filter()->unique()->values();
                     // Gunakan flatten() agar menangkap list string jika question_option_id dikirim sebagai array (multiple choice)
                     $optionIds = $items->pluck('question_option_id')->flatten()->filter()->unique()->values();
-                    Log::info("questionIds => ", [$questionIds]);
-                    Log::info("optionIds => ", [$optionIds]);
-                    Log::info("question from exam", [$exam->questions()->get()->pluck('id')->toArray()]);
 
-                    $examQuestions = QuestionExam::whereIn('question_id', $questionIds->toArray())
+                    $examQuestions = QuestionExam::with('question.questionGroup.questionCategory', 'question.options')
+                        ->whereIn('question_id', $questionIds->toArray())
                         ->where('exam_id', $exam->id)
                         ->withTrashed()
                         ->get()
@@ -771,9 +770,6 @@ class ExamService extends BaseService
                     $monitoringRows = [];
                     $now = Carbon::now();
 
-                    Log::info("check item => ", [$items]);
-                    Log::info("exam questions", [$examQuestions]);
-                    Log::info("pilihan dari database", [$options]);
                     foreach ($items as $item) {
                         $questionId = $item['question_id'] ?? null;
                         if (!$questionId) {
@@ -796,39 +792,54 @@ class ExamService extends BaseService
                         $score = 0;
                         $questionOptionIdToSave = null;
 
-                        if ($questionOptionIdInput) {
-                            if (is_array($questionOptionIdInput)) {
-                                $selectedOptions = collect();
-                                foreach ($questionOptionIdInput as $oid) {
-                                    $opt = $options->get($oid);
-                                    if ($opt && $opt->question_id === $questionId) {
-                                        $selectedOptions->push($opt);
-                                    }
-                                }
+                        $category = $question->question->questionGroup->questionCategory;
 
-                                if ($selectedOptions->isNotEmpty()) {
-                                    // Asumsi skor multiple_choice = penjumlahan skor jawaban yang dipilih
-                                    $score = $selectedOptions->sum('score');
-                                    $isCorrect = $score > 0;
-                                    // Simpan array UUID jawaban ganda ke kolom answer
-                                    $answerText = json_encode($questionOptionIdInput);
-                                }
-                                // Kosongkan foreign key karena kita menyimpannya di kolom answer
-                                $questionOptionIdToSave = null;
-                            } else {
+                        if ($questionOptionIdInput) {
+                            if (is_array($questionOptionIdInput)) { // Multiple Choice
+                                $correctOptions = $question->question->options->where('is_correct', true)->pluck('id')->sort()->values();
+                                $selectedOptions = collect($questionOptionIdInput)->sort()->values();
+                                $isCorrect = $correctOptions->count() > 0 && $correctOptions->isEqualTo($selectedOptions);
+                                $questionOptionIdToSave = json_encode($questionOptionIdInput);
+                            } else { // Single Choice
                                 $option = $options->get($questionOptionIdInput);
-                                if ($option && $option->question_id === $questionId) {
-                                    $score = (int) $option->score;
-                                    $isCorrect = $score > 0;
-                                    $answerText = $answerText ?? $option->option_text;
+                                if ($option) {
+                                    $isCorrect = $option->is_correct;
+                                    $questionOptionIdToSave = $questionOptionIdInput;
                                 }
-                                $questionOptionIdToSave = $questionOptionIdInput;
                             }
-                        } elseif ($answerText !== null) {
-                            $isCorrect = $question->isCorrect($answerText);
-                            $score = $isCorrect ? (int) $question->score : 0;
-                        } else {
-                            continue;
+                        } else if ($answerText !== null) { // Essay
+                             $isCorrect = $question->isCorrect($answerText);
+                        }
+
+                        // Determine score based on correctness and category settings
+                        if ($isCorrect) {
+                            $score = $category->correct_score ?? $exam->default_correct_score ?? 0;
+                        } else if ($questionOptionIdInput === null && $answerText === null) { // Unanswered
+                            $score = $category->unanswered_score ?? $exam->default_unanswered_score ?? 0;
+                        } else { // Wrong
+                            $score = $category->wrong_score ?? $exam->default_wrong_score ?? 0;
+                        }
+
+                        // Accumulate scores per category
+                        if ($category) {
+                            if (!isset($categoryScores[$category->id])) {
+                                $categoryScores[$category->id] = [
+                                    'category_name' => $category->name,
+                                    'total_score' => 0,
+                                    'correct_count' => 0,
+                                    'wrong_count' => 0,
+                                    'unanswered_count' => 0,
+                                ];
+                            }
+
+                            $categoryScores[$category->id]['total_score'] += $score;
+                            if ($questionOptionIdInput === null && $answerText === null) {
+                                $categoryScores[$category->id]['unanswered_count']++;
+                            } elseif ($isCorrect) {
+                                $categoryScores[$category->id]['correct_count']++;
+                            } else {
+                                $categoryScores[$category->id]['wrong_count']++;
+                            }
                         }
 
                         $finalAnswerText = is_array($answerText) ? json_encode($answerText) : $answerText;
@@ -849,7 +860,6 @@ class ExamService extends BaseService
                             $payload['question_number'] = $questionNumber;
                         }
 
-                        Log::info("Payload update data student exam finish => ", [$payload]);
                         UserAnswer::updateOrCreate(
                             [
                                 'user_exam_id' => $userExam->id,
@@ -909,6 +919,7 @@ class ExamService extends BaseService
                         'answered_questions' => $answeredCount,
                         'correct_answers' => $answers->where('is_correct', true)->count(),
                         'total_score' => (int) $answers->sum('score'),
+                        'category_scores' => array_values($categoryScores),
                     ],
                 ], 'Ujian berhasil diselesaikan');
             } catch (\Exception $e) {

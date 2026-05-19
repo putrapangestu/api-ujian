@@ -319,13 +319,13 @@ class StudentService extends BaseService
                 $sheet->setCellValue('D' . $row, $userExam->score ?? 0);
                 $sheet->setCellValue('E' . $row, $scoreTwk);
                 $sheet->setCellValue('F' . $row, $scoreTiu);
-                $sheet->setCellValue('I' . $row, $scoreTkp);
+                $sheet->setCellValue('G' . $row, $scoreTkp);
 
                 $row++;
             }
 
             // Auto size columns
-            foreach (range('A', 'I') as $column) {
+            foreach (range('A', 'G') as $column) {
                 $sheet->getColumnDimension($column)->setAutoSize(true);
             }
 

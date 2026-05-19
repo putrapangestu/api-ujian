@@ -58,9 +58,15 @@ class QuestionGroupService extends BaseService
                 });
             }
 
+            if (isset($filters['question_category_id'])) {
+                $query->where('question_category_id', $filters['question_category_id']);
+            }
+
             if (isset($filters['status'])) {
                 $query->where('status', $filters['status']);
             }
+
+            $query->orderByDesc('name')->orderByDesc('number_start');
 
             $groups = $query->paginate($perPage);
 

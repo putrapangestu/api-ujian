@@ -53,7 +53,7 @@ class QuestionGroupController extends Controller
     )]
     public function index(Request $request)
     {
-        $filters = $request->only(['search', 'status']);
+        $filters = $request->only(['search', 'status', 'question_category_id']);
         $perPage = (int) $request->get('per_page', 15);
         $result = $this->questionGroupService->getAllGroups($filters, $perPage);
 

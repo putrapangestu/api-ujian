@@ -470,7 +470,7 @@ class ExamMonitoringService extends BaseService
                     'id' => $studentId, // frontend expects student uuid as id
                     'name' => $studentName,
                     'status' => $status,
-                    'timeRemaining' => $timeRemaining, // Based on FE's note: time_spent replaced by timeRemaining
+                    'timeRemaining' => $userExam->status === UserExam::STATUS_IN_PROGRESS || $userExam->status === UserExam::STATUS_PENDING ? $timeRemaining : 0, // Based on FE's note: time_spent replaced by timeRemaining
                     'totalScore' => (int) $userExam->score ?? 0,
                     'currentTotalScore' => (int) $userExam->current_score ?? 0,
                     'categories' => (object) $categories

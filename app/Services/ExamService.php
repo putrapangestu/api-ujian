@@ -758,9 +758,9 @@ class ExamService extends BaseService
                     Log::info("questionIds => ", [$questionIds]);
                     Log::info("optionIds => ", [$optionIds]);
 
-                    $examQuestions = $exam->questions()->whereIn('id', $questionIds)->get()->keyBy('id');
+                    $examQuestions = $exam->questions()->whereIn('id', $questionIds->toArray())->get()->keyBy('id');
                     $options = $optionIds->isNotEmpty()
-                        ? QuestionOption::whereIn('id', $optionIds)->get()->keyBy('id')
+                        ? QuestionOption::whereIn('id', $optionIds->toArray())->get()->keyBy('id')
                         : collect();
                     $monitoringRows = [];
                     $now = Carbon::now();

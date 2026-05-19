@@ -755,6 +755,8 @@ class ExamService extends BaseService
                     $questionIds = $items->pluck('question_id')->filter()->unique()->values();
                     // Gunakan flatten() agar menangkap list string jika question_option_id dikirim sebagai array (multiple choice)
                     $optionIds = $items->pluck('question_option_id')->flatten()->filter()->unique()->values();
+                    Log::info("questionIds => ", [$questionIds]);
+                    Log::info("optionIds => ", [$optionIds]);
 
                     $examQuestions = $exam->questions()->whereIn('id', $questionIds)->get()->keyBy('id');
                     $options = $optionIds->isNotEmpty()
@@ -763,6 +765,9 @@ class ExamService extends BaseService
                     $monitoringRows = [];
                     $now = Carbon::now();
 
+                    Log::info("check item => ", [$items]);
+                    Log::info("exam questions", [$examQuestions]);
+                    Log::info("pilihan dari database", [$options]);
                     foreach ($items as $item) {
                         $questionId = $item['question_id'] ?? null;
                         if (!$questionId) {

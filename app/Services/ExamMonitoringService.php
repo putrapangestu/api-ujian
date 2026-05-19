@@ -348,13 +348,25 @@ class ExamMonitoringService extends BaseService
             $activeExams = UserExam::where('exam_id', $examId)
                 ->with(['userOnly.student', 'exam'])
                 ->whereHas('userOnly')
+                ->orderByDesc('score')
+                ->orderByDesc('current_score')
                 ->get();
 
             // Pre-calculate total questions per category for this exam
-            $examCategoriesTotal = \App\Models\QuestionExam::where('question_exam.exam_id', $examId)
-                ->join('question_groups', 'question_exam.question_group_id', '=', 'question_groups.id')
+            // $examCategoriesTotal = \App\Models\QuestionExam::where('question_exam.exam_id', $examId)
+            //     ->join('question_groups', 'question_exam.question_group_id', '=', 'question_groups.id')
+            //     ->join('question_categories', 'question_groups.question_category_id', '=', 'question_categories.id')
+            //     ->select('question_categories.code', DB::raw('count(question_exam.id) as total'))
+            //     ->groupBy('question_categories.code')
+            //     ->pluck('total', 'code');
+            $examCategoriesTotal = UserAnswer::where('user_answers.user_exam_id', $activeExams->first()->id)
+                ->join('questions', 'user_answers.question_id', '=', 'questions.id')
+                ->join('question_groups', 'questions.question_group_id', '=', 'question_groups.id')
                 ->join('question_categories', 'question_groups.question_category_id', '=', 'question_categories.id')
-                ->select('question_categories.code', DB::raw('count(question_exam.id) as total'))
+                ->select(
+                    'question_categories.code',
+                    DB::raw('COUNT(user_answers.id) as total')
+                )
                 ->groupBy('question_categories.code')
                 ->pluck('total', 'code');
 
@@ -459,7 +471,7 @@ class ExamMonitoringService extends BaseService
                     'name' => $studentName,
                     'status' => $status,
                     'timeRemaining' => $timeRemaining, // Based on FE's note: time_spent replaced by timeRemaining
-                    'totalScore' => (int) $userExam->current_score,
+                    'totalScore' => (int) $userExam->current_score ?? $userExam->score,
                     'categories' => (object) $categories
                 ];
             }

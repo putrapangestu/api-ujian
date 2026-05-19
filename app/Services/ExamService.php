@@ -828,7 +828,7 @@ class ExamService extends BaseService
                         if ($category) {
                             if (!isset($categoryScores[$category->id])) {
                                 $categoryScores[$category->id] = [
-                                    'category_name' => $category->name,
+                                    'category_name' => $category->code,
                                     'total_score' => 0,
                                     'correct_count' => 0,
                                     'wrong_count' => 0,

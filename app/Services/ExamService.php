@@ -799,7 +799,9 @@ class ExamService extends BaseService
                                 $correctOptions = $question->question->options->where('is_correct', true)->pluck('id')->sort()->values();
                                 $selectedOptions = collect($questionOptionIdInput)->sort()->values();
                                 $isCorrect = $correctOptions->count() > 0 && $correctOptions->count() == $selectedOptions->count() && $correctOptions->diff($selectedOptions)->isEmpty();
-                                $questionOptionIdToSave = json_encode($questionOptionIdInput);
+                                // $questionOptionIdToSave = json_encode($questionOptionIdInput);
+                                $questionOptionIdToSave = null;
+                                $answerText = json_encode($questionOptionIdInput);
                             } else { // Single Choice
                                 $option = $options->get($questionOptionIdInput);
                                 if ($option) {

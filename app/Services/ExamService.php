@@ -588,7 +588,8 @@ class ExamService extends BaseService
                             'questionOption' => function ($q) {
                                 $q->withTrashed();
                             }
-                        ]);
+                        ])
+                        ->orderBy('created_at','asc');
                     },
                 ])
                 ->first();
@@ -837,6 +838,7 @@ class ExamService extends BaseService
                             $payload['question_number'] = $questionNumber;
                         }
 
+                        Log::info("Payload update data student exam finish => ", [$payload]);
                         UserAnswer::updateOrCreate(
                             [
                                 'user_exam_id' => $userExam->id,

@@ -791,35 +791,37 @@ class ExamService extends BaseService
                         $isCorrect = false;
                         $score = 0;
                         $questionOptionIdToSave = null;
-
                         $category = $question->question->questionGroup->questionCategory;
 
                         if ($questionOptionIdInput) {
-                            if (is_array($questionOptionIdInput)) { // Multiple Choice
-                                $correctOptions = $question->question->options->where('is_correct', true)->pluck('id')->sort()->values();
-                                $selectedOptions = collect($questionOptionIdInput)->sort()->values();
-                                $isCorrect = $correctOptions->count() > 0 && $correctOptions->count() == $selectedOptions->count() && $correctOptions->diff($selectedOptions)->isEmpty();
-                                // $questionOptionIdToSave = json_encode($questionOptionIdInput);
+                            if (is_array($questionOptionIdInput)) { // Multiple Choice (e.g., TKP)
+                                // Score is the sum of scores from selected options
+                                foreach($questionOptionIdInput as $optionId) {
+                                    $option = $options->get($optionId);
+                                    if ($option) {
+                                        $score += $option->score;
+                                    }
+                                }
+                                $isCorrect = $score > 0; // Define 'correct' as having a score > 0
                                 $questionOptionIdToSave = null;
                                 $answerText = json_encode($questionOptionIdInput);
-                            } else { // Single Choice
+
+                            } else { // Single Choice (e.g., TWK, TIU)
                                 $option = $options->get($questionOptionIdInput);
                                 if ($option) {
                                     $isCorrect = $option->is_correct;
+                                    // For single choice, score is based on category setting, not option score
+                                    $score = $option->score;
                                     $questionOptionIdToSave = $questionOptionIdInput;
                                 }
                             }
                         } else if ($answerText !== null) { // Essay
-                             $isCorrect = $question->isCorrect($answerText);
-                        }
-
-                        // Determine score based on correctness and category settings
-                        if ($isCorrect) {
-                            $score = $category->correct_score ?? $exam->default_correct_score ?? 0;
-                        } else if ($questionOptionIdInput === null && $answerText === null) { // Unanswered
-                            $score = $category->unanswered_score ?? $exam->default_unanswered_score ?? 0;
-                        } else { // Wrong
-                            $score = $category->wrong_score ?? $exam->default_wrong_score ?? 0;
+                            $isCorrect = $question->isCorrect($answerText);
+                            // For essays, we still rely on category-level scores as options aren't involved
+                            $score = $isCorrect ? ($category->correct_score ?? 0) : ($category->wrong_score ?? 0);
+                        } else { // Unanswered
+                            $isCorrect = false;
+                            $score = $category->unanswered_score ?? 0;
                         }
 
                         // Accumulate scores per category

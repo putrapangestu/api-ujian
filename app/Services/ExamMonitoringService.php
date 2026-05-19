@@ -471,7 +471,8 @@ class ExamMonitoringService extends BaseService
                     'name' => $studentName,
                     'status' => $status,
                     'timeRemaining' => $timeRemaining, // Based on FE's note: time_spent replaced by timeRemaining
-                    'totalScore' => (int) $userExam->current_score ?? $userExam->score,
+                    'totalScore' => (int) $userExam->score ?? 0,
+                    'currentTotalScore' => (int) $userExam->current_score ?? 0,
                     'categories' => (object) $categories
                 ];
             }

@@ -11,6 +11,7 @@ use App\Models\QuestionOption;
 use App\Models\ExamMonitoring;
 use App\Repositories\ExamRepositoryInterface;
 use App\Helpers\ResponseHelper;
+use App\Models\QuestionExam;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -759,12 +760,13 @@ class ExamService extends BaseService
                     Log::info("optionIds => ", [$optionIds]);
                     Log::info("question from exam", [$exam->questions()->get()->pluck('id')->toArray()]);
 
-                    $examQuestions = Question::whereIn('id', $questionIds->toArray())
+                    $examQuestions = QuestionExam::whereIn('question_id', $questionIds->toArray())
                         ->where('exam_id', $exam->id)
+                        ->withTrashed()
                         ->get()
-                        ->keyBy('id');
+                        ->keyBy('question_id');
                     $options = $optionIds->isNotEmpty()
-                        ? QuestionOption::whereIn('id', $optionIds->toArray())->get()->keyBy('id')
+                        ? QuestionOption::whereIn('id', $optionIds->toArray())->withTrashed()->get()->keyBy('id')
                         : collect();
                     $monitoringRows = [];
                     $now = Carbon::now();

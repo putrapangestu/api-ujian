@@ -652,6 +652,7 @@ class ExamService extends BaseService
                     'answered_questions' => $answeredCount,
                     'correct_answers' => $answers->where('is_correct', true)->count(),
                     'total_score' => (int) $answers->sum('score'),
+                    'category_scores' => $categoryScores,
                 ],
             ], 'Detail riwayat ujian berhasil diambil');
         } catch (\Exception $e) {

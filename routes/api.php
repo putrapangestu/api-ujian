@@ -124,6 +124,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/by-category/{examId}', [ExamMonitoringController::class, 'getMonitoringByCategory'])->name('exam-monitoring.by-category');
         Route::post('/force-submit', [ExamMonitoringController::class, 'forceSubmit'])->name('exam-monitoring.force-submit');
         Route::post('/unblock', [ExamMonitoringController::class, 'unblockStudent'])->name('exam-monitoring.unblock');
+        Route::post('/reset', [ExamMonitoringController::class, 'resetExam'])->name('exam-monitoring.reset');
     });
 
     // Exam Rolling routes

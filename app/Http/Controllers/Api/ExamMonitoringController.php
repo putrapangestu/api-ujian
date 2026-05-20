@@ -315,4 +315,64 @@ class ExamMonitoringController extends Controller
 
         return response()->json(['status' => 'success', 'message' => 'Blokir dibuka.']);
     }
+
+    /**
+     * Reset student exam
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Post(
+        path: "/exam-monitoring/reset",
+        summary: "Reset ujian siswa",
+        tags: ["Exam Monitoring"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "user_exam_id", type: "integer"),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    public function resetExam(Request $request)
+    {
+        $request->validate([
+            'user_exam_id' => 'required|exists:user_exams,id'
+        ]);
+
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($request) {
+            $userExam = \App\Models\UserExam::find($request->user_exam_id);
+
+            // Simpan data untuk broadcast sebelum dihapus
+            $studentId = $userExam->student_id;
+            $examId = $userExam->exam_id;
+
+            // Hapus jawaban
+            \App\Models\UserAnswer::where('user_exam_id', $userExam->id)->delete();
+            
+            // Hapus log monitoring
+            \App\Models\ExamMonitoring::where('user_exam_id', $userExam->id)->delete();
+
+            // Update user exam kembali ke pending atau hapus untuk re-roll
+            // Di sini kita reset status dan score agar bisa mulai lagi
+            $userExam->update([
+                'status' => \App\Models\UserExam::STATUS_PENDING,
+                'start_time' => null,
+                'end_time' => null,
+                'score' => 0
+            ]);
+
+            // Broadcast reset ke student via socket jika sedang online
+            app(\App\Services\SocketIOService::class)->emitEvent(
+                'admin-action',
+                'reset',
+                ['message' => 'Ujian Anda telah direset oleh Admin.'],
+                "student:{$studentId}"
+            );
+
+            return response()->json(['status' => 'success', 'message' => 'Ujian berhasil direset.']);
+        });
+    }
 }

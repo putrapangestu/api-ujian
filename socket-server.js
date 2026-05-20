@@ -377,6 +377,22 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('leave', (payload) => {
+        const room = payload?.room;
+        if (typeof room === 'string' && ROOM_RE.test(room)) {
+            socket.leave(room);
+            if (clients.has(socket.id)) {
+                const clientData = clients.get(socket.id);
+                clients.set(socket.id, { ...clientData, rooms: Array.from(socket.rooms) });
+            }
+            log('info', {
+                event: 'socket_leave_room',
+                id: socket.id,
+                room,
+            });
+        }
+    });
+
     socket.on('answer_sync', (payload, callback) => {
         const body = (payload?.data ?? payload) ?? {};
         const room = examId ? `exam:${examId}` : '';

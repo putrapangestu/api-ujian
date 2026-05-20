@@ -577,6 +577,7 @@ class ExamService extends BaseService
     public function getExamHistoryDetailForUser(string $userId, string $userExamId): array
     {
         try {
+            $categoryScores = [];
             $userExam = UserExam::where('id', $userExamId)
                 ->where('user_id', $userId)
                 ->with([
@@ -584,7 +585,7 @@ class ExamService extends BaseService
                     'userAnswers' => function ($query) {
                         $query->with([
                             'question' => function ($q) {
-                                $q->withTrashed();
+                                $q->with('questionGroup.questionCategory')->withTrashed();
                             },
                             'questionOption' => function ($q) {
                                 $q->withTrashed();
@@ -607,6 +608,12 @@ class ExamService extends BaseService
             // Handle multiple-choice options yang tersimpan sebagai JSON array di kolom answer
             $multipleChoiceOptionIds = [];
             foreach ($answers as $answer) {
+                if(isset($categoryScores[$answer->question->questionGroup->questionCategory->code])){
+                    $categoryScores[$answer->question->questionGroup->questionCategory->code] += $answer->score;
+                } else {
+                    $categoryScores[$answer->question->questionGroup->questionCategory->code] = $answer->score;
+                }
+
                 if (empty($answer->question_option_id) && is_string($answer->answer) && str_starts_with(trim($answer->answer), '[')) {
                     $decoded = json_decode($answer->answer, true);
                     if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
@@ -721,8 +728,7 @@ class ExamService extends BaseService
                     return $this->errorResponse('Ujian tidak ditemukan', null, 404);
                 }
 
-                $userExam = UserExam::with('student')
-                    ->where('user_id', $userId)
+                $userExam = UserExam::where('user_id', $userId)
                     ->where('exam_id', $examId)
                     ->first();
 
@@ -916,7 +922,7 @@ class ExamService extends BaseService
                 })->count();
 
                 return $this->successResponse([
-                    'user_exam' => $userExam->fresh(),
+                    'user_exam' => $userExam->fresh()->load('student'),
                     'summary' => [
                         'processed_answers' => $processed,
                         'invalid_question_ids' => $invalidQuestions,

@@ -212,7 +212,7 @@ adminNamespace.on('connection', (socket) => {
             if (!exam_id || !student_id) return;
 
             // Broadcast to the specific student
-            io.to(`student:${studentId}`).emit('admin_action', {
+            io.to(`student:${student_id}`).emit('admin-action', {
                 action: 'force_submit',
                 message: 'Ujian Anda dihentikan paksa oleh Admin.'
             });

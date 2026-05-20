@@ -721,7 +721,8 @@ class ExamService extends BaseService
                     return $this->errorResponse('Ujian tidak ditemukan', null, 404);
                 }
 
-                $userExam = UserExam::where('user_id', $userId)
+                $userExam = UserExam::with('student')
+                    ->where('user_id', $userId)
                     ->where('exam_id', $examId)
                     ->first();
 

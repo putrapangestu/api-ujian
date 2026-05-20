@@ -404,8 +404,8 @@ class ExamQuestionSelectorService extends BaseService
                     $invalidGroups->push($group);
                 }
             }
-            Log::info("Valid groups", [$validGroups]);
-            Log::info("invalid Groups", [$invalidGroups]);
+            // Log::info("Valid groups", [$validGroups]);
+            // Log::info("invalid Groups", [$invalidGroups]);
 
             // Urutkan grup yang valid berdasarkan number_start
             $validGroups = $validGroups->sortBy('number_start')->values();

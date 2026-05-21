@@ -585,7 +585,7 @@ class ExamService extends BaseService
                     'userAnswers' => function ($query) {
                         $query->with([
                             'question' => function ($q) {
-                                $q->with('questionGroup.questionCategory')->withTrashed();
+                                $q->with('questionGroup.questionCategory','options')->withTrashed();
                             },
                             'questionOption' => function ($q) {
                                 $q->withTrashed();

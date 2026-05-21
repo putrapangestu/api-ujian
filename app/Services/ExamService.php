@@ -817,7 +817,7 @@ class ExamService extends BaseService
                             } else { // Single Choice (e.g., TWK, TIU)
                                 $option = $options->get($questionOptionIdInput);
                                 if ($option) {
-                                    $isCorrect = $option->is_correct;
+                                    $isCorrect = $option->is_correct || $option->score > 0;
                                     // For single choice, score is based on category setting, not option score
                                     $score = $option->score;
                                     $questionOptionIdToSave = $questionOptionIdInput;

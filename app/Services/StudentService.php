@@ -213,7 +213,7 @@ class StudentService extends BaseService
                 count(*) as total_exam,
                 SUM(score) as total_score
             ')
-            ->where('student_id', $id)
+            ->where('user_id', $id)
             ->get();
 
             return $this->successResponse($userExam, "Berhasil mengambil summary ujian");

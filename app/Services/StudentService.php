@@ -211,7 +211,7 @@ class StudentService extends BaseService
         try {
             $userExam = UserExam::selectRaw('
                 count(*) as total_exam,
-                SUM(score) as total_score,
+                SUM(score) as total_score
             ')
             ->where('student_id', $id)
             ->get();

@@ -566,6 +566,7 @@ class ExamService extends BaseService
                             ->join('questions', 'questions.id', '=', 'user_answers.question_id')
                             ->join('question_groups', 'question_groups.id', '=', 'questions.question_group_id')
                             ->join('question_categories', 'question_categories.id', '=', 'question_groups.question_category_id')
+                            ->where('user_answers.is_correct',true)
                             ->selectRaw('
                                 user_answers.user_exam_id,
                                 SUM(questions.score) as score,

@@ -569,7 +569,7 @@ class ExamService extends BaseService
                             ->where('user_answers.score','>',0)
                             ->selectRaw('
                                 user_answers.user_exam_id,
-                                SUM(questions.score) as score,
+                                SUM(user_answers.score) as score,
                                 question_categories.code as category_code
                             ')
                             ->groupBy(

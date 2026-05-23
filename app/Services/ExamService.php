@@ -559,14 +559,32 @@ class ExamService extends BaseService
     {
         try {
             $query = UserExam::where('user_id', $userId)
-                ->with(['exam'])
-                ->withCount('userAnswers');
+                ->with([
+                    'exam',
+                    'userAnswers' => function ($query) {
+                        $query
+                            ->join('questions', 'questions.id', '=', 'user_answers.question_id')
+                            ->join('question_groups', 'question_groups.id', '=', 'questions.question_group_id')
+                            ->join('question_categories', 'question_categories.id', '=', 'question_groups.question_category_id')
+                            ->selectRaw('
+                                user_answers.user_exam_id,
+                                SUM(questions.score) as score,
+                                question_categories.code as category_code
+                            ')
+                            ->groupBy(
+                                'user_answers.user_exam_id',
+                                'question_categories.code'
+                            );
+                    }
+                ]);
 
-            if (isset($filters['status']) && $filters['status']) {
+            if (!empty($filters['status'])) {
                 $query->where('status', $filters['status']);
             }
 
-            $userExams = $query->orderByDesc('created_at')->paginate($perPage);
+            $userExams = $query
+                ->orderByDesc('created_at')
+                ->paginate($perPage);
 
             return ResponseHelper::paginate($userExams, 'Riwayat ujian berhasil diambil');
         } catch (\Exception $e) {

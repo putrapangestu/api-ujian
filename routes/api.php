@@ -159,6 +159,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/exams', [ExamController::class, 'store'])->name('admin.exams.store');
         Route::put('/exams/{id}', [ExamController::class, 'update'])->name('admin.exams.update');
         Route::delete('/exams/{id}', [ExamController::class, 'destroy'])->name('admin.exams.destroy');
+        Route::delete('/user-exams/{id}', [ExamController::class, 'deleteUserExam'])
+            ->name('admin.user-exams.destroy');
 
         // Student Group management
         Route::post('/student-groups', [StudentGroupController::class, 'store'])->name('admin.student-groups.store');

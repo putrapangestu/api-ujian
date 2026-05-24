@@ -37,13 +37,17 @@ class StudentGroupRepository extends BaseRepository implements StudentGroupRepos
     }
 
     /**
-     * Get groups with student count
+     * Get groups with active student count (only students with valid user_id and user not soft-deleted)
      * 
      * @return Collection
      */
     public function getWithStudentCount(): Collection
     {
-        return $this->model->withCount('students')->get();
+        return $this->model
+            ->withCount(['students as active_students_count' => function ($q) {
+                $q->whereNotNull('user_id')->whereHas('user', fn($q2) => $q2->whereNull('deleted_at'));
+            }])
+            ->get();
     }
 
     /**
@@ -70,8 +74,10 @@ class StudentGroupRepository extends BaseRepository implements StudentGroupRepos
     public function getWithAvailableSlots(): Collection
     {
         return $this->model
-            ->withCount('students')
-            ->havingRaw('student_count < max_students')
+            ->withCount(['students as active_students_count' => function ($q) {
+                $q->whereNotNull('user_id')->whereHas('user', fn($q2) => $q2->whereNull('deleted_at'));
+            }])
+            ->havingRaw('active_students_count < max_students')
             ->get();
     }
 }

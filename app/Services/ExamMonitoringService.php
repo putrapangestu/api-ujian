@@ -352,6 +352,14 @@ class ExamMonitoringService extends BaseService
                 ->orderByDesc('current_score')
                 ->get();
 
+            // Early return jika tidak ada peserta aktif (NPE protection)
+            if ($activeExams->isEmpty()) {
+                return $this->successResponse([
+                    'monitoringData' => [],
+                    'totalParticipants' => 0,
+                ], 'Tidak ada peserta aktif');
+            }
+
             // Pre-calculate total questions per category for this exam
             // $examCategoriesTotal = \App\Models\QuestionExam::where('question_exam.exam_id', $examId)
             //     ->join('question_groups', 'question_exam.question_group_id', '=', 'question_groups.id')
@@ -468,6 +476,7 @@ class ExamMonitoringService extends BaseService
 
                 $monitoringData[] = [
                     'id' => $studentId, // frontend expects student uuid as id
+                    'user_exam_id' => $userExam->id,
                     'name' => $studentName,
                     'status' => $status,
                     'timeRemaining' => $userExam->status === UserExam::STATUS_IN_PROGRESS || $userExam->status === UserExam::STATUS_PENDING ? $timeRemaining : 0, // Based on FE's note: time_spent replaced by timeRemaining

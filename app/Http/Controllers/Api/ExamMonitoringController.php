@@ -264,18 +264,23 @@ class ExamMonitoringController extends Controller
 
         $userExam = \App\Models\UserExam::find($request->user_exam_id);
 
-        // Panggil method finishExam dari ExamService
-        $result = $examService->finishExam($userExam, []);
+        // Panggil method finishExam dari ExamService dengan parameter yang benar
+        $result = $examService->finishExam($userExam->exam_id, $userExam->user_id, []);
+
+        // Cek hasil sebelum mengembalikan response sukses
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'] ?? 'Gagal menghentikan ujian', 400);
+        }
 
         // Broadcast force submit ke student via socket
         app(\App\Services\SocketIOService::class)->emitEvent(
             'admin-action',
             'force_submit',
-            ['message' => 'Ujian Anda dihentikan paksa oleh Admin.'],
+            ['action' => 'force_submit', 'message' => 'Ujian Anda dihentikan paksa oleh Admin.'],
             "student:{$userExam->student_id}"
         );
 
-        return response()->json(['status' => 'success', 'message' => 'Peserta dihentikan paksa.']);
+        return $this->successResponse(null, 'Peserta dihentikan paksa.');
     }
 
     /**
@@ -309,11 +314,11 @@ class ExamMonitoringController extends Controller
         app(\App\Services\SocketIOService::class)->emitEvent(
             'admin-action',
             'unblock',
-            ['message' => 'Silakan lanjutkan ujian.'],
+            ['action' => 'unblock', 'message' => 'Silakan lanjutkan ujian.'],
             "student:{$userExam->student_id}"
         );
 
-        return response()->json(['status' => 'success', 'message' => 'Blokir dibuka.']);
+        return $this->successResponse(null, 'Blokir dibuka.');
     }
 
     /**
@@ -368,11 +373,11 @@ class ExamMonitoringController extends Controller
             app(\App\Services\SocketIOService::class)->emitEvent(
                 'admin-action',
                 'reset',
-                ['message' => 'Ujian Anda telah direset oleh Admin.'],
+                ['action' => 'exam_reset', 'message' => 'Ujian Anda telah direset oleh Admin.'],
                 "student:{$studentId}"
             );
 
-            return response()->json(['status' => 'success', 'message' => 'Ujian berhasil direset.']);
+            return $this->successResponse(null, 'Ujian berhasil direset.');
         });
     }
 }

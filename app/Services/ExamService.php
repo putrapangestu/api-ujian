@@ -145,6 +145,11 @@ class ExamService extends BaseService
                     $this->createUserExamsForGroups($exam, $data['student_groups']);
                 }
 
+                // Handle individual students
+                if (isset($data['students']) && is_array($data['students'])) {
+                    $this->createUserExamsForStudents($exam, $data['students']);
+                }
+
                 return $this->successResponse($exam->loadMissing(['questionGroups']), 'Ujian berhasil dibuat', 201);
 
             } catch (\Exception $e) {
@@ -191,6 +196,11 @@ class ExamService extends BaseService
                     $this->createUserExamsForGroups($exam, $data['student_groups']);
                 }
 
+                // Handle individual students
+                if (isset($data['students']) && is_array($data['students'])) {
+                    $this->createUserExamsForStudents($exam, $data['students']);
+                }
+
                 // Get updated exam with relationships
                 $updatedExam = $this->examRepository->find($id, ['questionGroups']);
 
@@ -200,6 +210,32 @@ class ExamService extends BaseService
                 DB::rollBack();
                 return $this->errorResponse('Gagal update ujian: ' . $e->getMessage());
             }
+        });
+    }
+
+    /**
+     * Delete user exam with related answers and monitoring
+     *
+     * @param string $userExamId
+     * @return array
+     */
+    public function deleteUserExam(string $userExamId): array
+    {
+        return DB::transaction(function () use ($userExamId) {
+            $userExam = UserExam::find($userExamId);
+
+            if (!$userExam) {
+                return $this->errorResponse('Data peserta ujian tidak ditemukan', null, 404);
+            }
+
+            // Hapus related answers
+            UserAnswer::where('user_exam_id', $userExamId)->delete();
+            // Hapus related monitoring
+            ExamMonitoring::where('user_exam_id', $userExamId)->delete();
+            // Hapus user exam (soft delete)
+            $userExam->delete();
+
+            return $this->successResponse(null, 'Data peserta ujian berhasil dihapus');
         });
     }
 
@@ -982,6 +1018,29 @@ class ExamService extends BaseService
                     'score' => 0,
                     'start_time' => null,
                     'end_time' => null,
+                ]
+            );
+        }
+    }
+
+    private function createUserExamsForStudents(Exam $exam, array $studentIds): void
+    {
+        $students = Student::with('user')
+            ->whereIn('id', $studentIds)
+            ->whereNotNull('user_id')
+            ->whereHas('user')
+            ->get();
+
+        foreach ($students as $student) {
+            UserExam::firstOrCreate(
+                [
+                    'exam_id' => $exam->id,
+                    'user_id' => $student->user_id,
+                ],
+                [
+                    'student_id' => $student->id,
+                    'status' => UserExam::STATUS_PENDING,
+                    'score' => 0,
                 ]
             );
         }

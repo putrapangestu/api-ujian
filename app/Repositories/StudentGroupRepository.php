@@ -89,9 +89,10 @@ class StudentGroupRepository extends BaseRepository implements StudentGroupRepos
     {
         return $this->model
             ->with([
-                'students.user'
+                'students' => function ($q) {
+                    $q->with('user')->whereHas('user');
+                }
             ])
-            ->whereHas('students.user')
             ->where('id', $id)
             ->first();
     }

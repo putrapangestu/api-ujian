@@ -183,6 +183,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/question-groups', [QuestionGroupController::class, 'store'])->name('admin.question-groups.store');
         Route::put('/question-groups/{id}', [QuestionGroupController::class, 'update'])->name('admin.question-groups.update');
         Route::delete('/question-groups/{id}', [QuestionGroupController::class, 'destroy'])->name('admin.question-groups.destroy');
+        Route::put('/question-groups/bulk-update-range', [QuestionGroupController::class, 'bulkUpdateRange'])
+            ->name('admin.question-groups.bulk-update-range');
 
         // User management
         Route::get('/users/all', [UserController::class, 'listAll'])->name('admin.users.all');

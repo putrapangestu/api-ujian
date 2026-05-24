@@ -66,7 +66,7 @@ class QuestionGroupService extends BaseService
                 $query->where('status', $filters['status']);
             }
 
-            $query->orderByDesc('name')->orderByDesc('number_start');
+            $query->orderBy('number_start')->orderBy('number_end');
 
             $groups = $query->paginate($perPage);
 
@@ -307,6 +307,52 @@ class QuestionGroupService extends BaseService
                 return $this->errorResponse('Gagal import grup soal: ' . $e->getMessage());
             }
         });
+    }
+
+    /**
+     * Bulk update number_start and number_end for multiple question groups
+     *
+     * @param array $data Array with 'ranges' key containing [{id, number_start, number_end}]
+     * @return array
+     */
+    public function bulkUpdateRange(array $data): array
+    {
+        try {
+            $ranges = $data['ranges'] ?? [];
+            $updated = 0;
+            $errors = [];
+
+            foreach ($ranges as $range) {
+                $group = QuestionGroup::find($range['id']);
+                if (!$group) {
+                    $errors[] = "QuestionGroup {$range['id']} tidak ditemukan";
+                    continue;
+                }
+
+                $updateData = [];
+                if (isset($range['number_start'])) {
+                    $updateData['number_start'] = (int) $range['number_start'];
+                }
+                if (isset($range['number_end'])) {
+                    $updateData['number_end'] = (int) $range['number_end'];
+                }
+
+                if (!empty($updateData)) {
+                    $group->update($updateData);
+                    $updated++;
+                }
+            }
+
+            $message = "Berhasil memperbarui {$updated} range";
+            if (!empty($errors)) {
+                $message .= '. ' . implode('; ', $errors);
+            }
+
+            return $this->successResponse(['updated' => $updated, 'errors' => $errors], $message);
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal memperbarui range: ' . $e->getMessage());
+        }
     }
 
     /**

@@ -217,6 +217,52 @@ class QuestionGroupController extends Controller
     }
 
     /**
+     * Bulk update number_start and number_end ranges
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    #[OA\Put(
+        path: "/admin/question-groups/bulk-update-range",
+        summary: "Update range nomor soal",
+        tags: ["Admin","Question Groups"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "ranges", type: "array",
+                        items: new OA\Items(
+                            properties: [
+                                new OA\Property(property: "id", type: "string"),
+                                new OA\Property(property: "number_start", type: "integer"),
+                                new OA\Property(property: "number_end", type: "integer"),
+                            ]
+                        )
+                    ),
+                ]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Success")]
+    )]
+    public function bulkUpdateRange(Request $request)
+    {
+        $request->validate([
+            'ranges' => 'required|array',
+            'ranges.*.id' => 'required|string|exists:question_groups,id',
+            'ranges.*.number_start' => 'nullable|integer|min:0',
+            'ranges.*.number_end' => 'nullable|integer|min:0',
+        ]);
+
+        $result = $this->questionGroupService->bulkUpdateRange($request->all());
+
+        if ($result['success']) {
+            return $this->successResponse($result['data'], $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
+
+    /**
      * Import question groups from Excel file
      *
      * @param Request $request

@@ -106,7 +106,8 @@ class StudentGroupService extends BaseService
     public function getGroupById(string $id): array
     {
         try {
-            $group = $this->studentGroupRepository->find($id, ['students']);
+            // $group = $this->studentGroupRepository->find($id, ['students']);
+            $group = $this->studentGroupRepository->findWithStudents($id);
 
             if (! $group) {
                 return $this->errorResponse('Grup siswa tidak ditemukan', null, 404);

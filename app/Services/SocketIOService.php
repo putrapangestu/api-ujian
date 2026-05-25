@@ -259,10 +259,10 @@ class SocketIOService extends BaseService
         return [
             'exam_id' => $examId,
             'question_group_id' => $questionGroupId,
-            'question_group' => QuestionGroup::find($questionGroupId) ? [
-                'id' => QuestionGroup::find($questionGroupId)->id,
-                'name' => QuestionGroup::find($questionGroupId)->name,
-                'code' => QuestionGroup::find($questionGroupId)->code,
+            'question_group' => ($questionGroup = QuestionGroup::find($questionGroupId)) ? [
+                'id' => $questionGroup->id,
+                'name' => $questionGroup->name,
+                'code' => $questionGroup->code,
             ] : null,
             'statistics' => $statistics,
             'timestamp' => Carbon::now()->toISOString(),

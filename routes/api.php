@@ -159,6 +159,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/exams', [ExamController::class, 'store'])->name('admin.exams.store');
         Route::put('/exams/{id}', [ExamController::class, 'update'])->name('admin.exams.update');
         Route::delete('/exams/{id}', [ExamController::class, 'destroy'])->name('admin.exams.destroy');
+        Route::delete('/user-exams/{id}', [ExamController::class, 'deleteUserExam'])
+            ->name('admin.user-exams.destroy');
 
         // Student Group management
         Route::post('/student-groups', [StudentGroupController::class, 'store'])->name('admin.student-groups.store');
@@ -178,6 +180,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/question-categories/{id}', [QuestionCategoryController::class, 'destroy'])->name('admin.question-categories.destroy');
 
         // Question Group management
+        Route::put('/question-groups/bulk-update-range', [QuestionGroupController::class, 'bulkUpdateRange'])
+            ->name('admin.question-groups.bulk-update-range');
         Route::post('/question-groups', [QuestionGroupController::class, 'store'])->name('admin.question-groups.store');
         Route::put('/question-groups/{id}', [QuestionGroupController::class, 'update'])->name('admin.question-groups.update');
         Route::delete('/question-groups/{id}', [QuestionGroupController::class, 'destroy'])->name('admin.question-groups.destroy');

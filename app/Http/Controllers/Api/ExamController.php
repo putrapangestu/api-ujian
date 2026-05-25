@@ -9,6 +9,7 @@ use App\Models\UserAnswer;
 use App\Services\ExamQuestionSelectorService;
 use App\Services\ExamService;
 use App\Services\QuestionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 use Illuminate\Support\Facades\DB;
@@ -261,6 +262,18 @@ class ExamController extends Controller
         }
 
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
+
+    /**
+     * Delete user exam
+     *
+     * @param  string  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deleteUserExam(string $id): JsonResponse
+    {
+        $result = $this->examService->deleteUserExam($id);
+        return response()->json($result, $result['code']);
     }
 
     /**

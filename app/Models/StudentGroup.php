@@ -71,6 +71,20 @@ class StudentGroup extends Model
     }
 
     /**
+     * Get active students in this group (with valid user_id and user not soft-deleted)
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function activeStudents()
+    {
+        return $this->hasMany(Student::class, 'group_id')
+            ->whereNotNull('user_id')
+            ->whereHas('user', function ($q) {
+                $q->whereNull('deleted_at');
+            });
+    }
+
+    /**
      * Get exams assigned to this group
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
@@ -93,13 +107,13 @@ class StudentGroup extends Model
     }
 
     /**
-     * Get current student count
+     * Get current active student count (only students with valid user_id and user not soft-deleted)
      *
      * @return int
      */
     public function getCurrentStudentCount(): int
     {
-        return $this->students()->count();
+        return $this->activeStudents()->count();
     }
 
     /**

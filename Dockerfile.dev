@@ -29,5 +29,10 @@ EXPOSE 9008
 RUN rm /usr/local/etc/php-fpm.d/www.conf
 COPY www.conf /usr/local/etc/php-fpm.d/www.conf
 
+# Set upload limits
+RUN echo "upload_max_filesize=50M" > /usr/local/etc/php/conf.d/99-upload.ini \
+ && echo "memory_limit=1024M" >> /usr/local/etc/php/conf.d/99-upload.ini \
+ && echo "post_max_size=50M" >> /usr/local/etc/php/conf.d/99-upload.ini
+
 # Start php-fpm
 CMD ["php-fpm", "-F", "-y", "/usr/local/etc/php-fpm.d/www.conf"]

@@ -155,7 +155,7 @@ deploy_prod:
     # - cp /home/gitlab-runner/secrets/.env $DEPLOY_DIR/.env
     - |
       cat <<EOF > $DEPLOY_DIR/.env
-      $ENV_DEV
+      $ENV_PROD
       EOF
 
     # Deploy container
@@ -206,4 +206,4 @@ deploy_socket_prod:
     - sudo rm -rf $DEPLOY_DIR_SOCKET/node_modules
 
     # npm ci dengan PATH eksplisit agar `node` tersedia untuk post-install scripts (esbuild, dll)
-    - sudo -u www bash -c "export PATH=/www/server/nodejs/v20.19.5/bin:\$PATH && cd $DEPLOY_DIR_SOCKET && npm ci"
+    - sudo -u www bash -c "export PATH=/www/server/nodejs/v24.11.1/bin:\$PATH && cd $DEPLOY_DIR_SOCKET && npm ci"

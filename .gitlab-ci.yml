@@ -148,7 +148,7 @@ deploy_prod:
     - sudo chown -R gitlab-runner:gitlab-runner $DEPLOY_DIR
 
     # Copy docker-compose.yml ke folder deploy
-    - cp docker-compose-development.yml $DEPLOY_DIR/docker-compose-development.yml
+    - cp docker-compose.yml $DEPLOY_DIR/docker-compose.yml
 
     # Buat file .env dari variable GitLab CI
     # - echo "$ENV_DEVELOPMENT" > $DEPLOY_DIR/.env

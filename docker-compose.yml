@@ -1,0 +1,54 @@
+services:
+  api-ujian:
+    image: registry.hummatech.com/proyek/ujian-cnps/api-ujian:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: api-ujian
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - /www/wwwroot/api.anlearning.net/storage:/var/www/html/storage
+    network_mode: "host"
+
+  worker:
+    image: registry.hummatech.com/proyek/ujian-cnps/api-ujian:latest
+    restart: unless-stopped
+    env_file:
+        - .env
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
+    volumes:
+        - /www/wwwroot/api.anlearning.net/storage:/var/www/html/storage
+    network_mode: "host"
+
+  # socket-io-ujian:
+  #   image: node:20-alpine
+  #   container_name: socket-io-ujian
+  #   restart: unless-stopped
+  #   working_dir: /usr/src/app
+  #   volumes:
+  #     - /www/wwwroot/api.anlearning.net/socket-io:/usr/src/app
+  #     - socket-io-node-modules:/usr/src/app/node_modules
+  #   env_file:
+  #     - .env
+  #   command: sh -c "npm install --omit=dev && node socket-server.js"
+  #   ports:
+  #     - "3051:3051"
+  #   network_mode: "host"
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx-ujian
+    restart: unless-stopped
+    ports:
+      - "8024:80"
+    volumes:
+      - /www/wwwroot/api.anlearning.net/storage:/var/www/html/storage:ro
+      - ./nginx-api-ujian:/etc/nginx/conf.d
+    depends_on:
+      - api-ujian
+    network_mode: "host"
+
+volumes:
+  socket-io-node-modules:

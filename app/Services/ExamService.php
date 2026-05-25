@@ -792,13 +792,13 @@ class ExamService extends BaseService
                     return $this->errorResponse('Ujian untuk user ini tidak ditemukan atau belum dimulai', null, 404);
                 }
 
-                if ($userExam->isCompleted()) {
-                    return $this->errorResponse('Ujian sudah diselesaikan sebelumnya');
-                }
+                // if ($userExam->isCompleted()) {
+                //     return $this->errorResponse('Ujian sudah diselesaikan sebelumnya');
+                // }
 
-                if (!$userExam->isInProgress()) {
-                    return $this->errorResponse('Ujian belum dimulai', null, 400);
-                }
+                // if (!$userExam->isInProgress()) {
+                //     return $this->errorResponse('Ujian belum dimulai', null, 400);
+                // }
 
                 $processed = 0;
                 $invalidQuestions = [];

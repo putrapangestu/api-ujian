@@ -211,7 +211,9 @@ class StudentService extends BaseService
         try {
             $userExam = UserExam::selectRaw('
                 count(*) as total_exam,
-                SUM(score) as total_score
+                SUM(score) as total_score,
+                COUNT(CASE WHEN status = "completed" THEN 1 END) as completed_exam_count,
+                SUM(CASE WHEN status = "completed" THEN score ELSE 0 END) as completed_score_count
             ')
             ->where('user_id', $id)
             ->first();

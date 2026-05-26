@@ -650,6 +650,28 @@ class ExamController extends Controller
         $result = $this->examService->finishExam($id, $userId, $questions);
 
         if ($result['success']) {
+            // Broadcast ke CMS monitoring room biar real-time update
+            try {
+                $student = $request->user()->student;
+                if ($student) {
+                    app(\App\Services\SocketIOService::class)->emitEvent(
+                        'exam:' . $id,
+                        'exam:progress_update',
+                        [
+                            'id' => $student->id,
+                            'update' => [
+                                'status' => 'finished',
+                                'totalScore' => $result['data']['summary']['total_score'] ?? 0,
+                                'timeRemaining' => 0,
+                            ]
+                        ],
+                        'exam:' . $id
+                    );
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to emit finish socket: ' . $e->getMessage());
+            }
+
             return $this->successResponse($result['data'], $result['message']);
         }
 

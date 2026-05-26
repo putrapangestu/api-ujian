@@ -22,11 +22,16 @@ class EbookService extends BaseService
         try {
             $perPage = $request->query('per_page', 10);
             $search = $request->query('search');
+            $questionCategoryId = $request->query('question_category_id');
 
-            $query = $this->repository->query();
+            $query = $this->repository->query()->with('category');
 
             if ($search) {
                 $query->where('name', 'like', "%{$search}%");
+            }
+
+            if ($questionCategoryId) {
+                $query->where('question_category_id', $questionCategoryId);
             }
 
             $ebooks = $query->latest()->paginate($perPage);
@@ -49,7 +54,7 @@ class EbookService extends BaseService
     public function createEbook(Request $request): array
     {
         try {
-            $data = $request->only(['name']);
+            $data = $request->only(['name', 'question_category_id']);
 
             if ($request->hasFile('file')) {
                 $file = $request->file('file');
@@ -93,7 +98,7 @@ class EbookService extends BaseService
                 return $this->errorResponse('Ebook not found', null, 404);
             }
 
-            $data = $request->only(['name']);
+            $data = $request->only(['name', 'question_category_id']);
 
             if ($request->hasFile('file')) {
                 // Delete old file if exists

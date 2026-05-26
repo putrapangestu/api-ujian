@@ -14,5 +14,14 @@ class Ebook extends Model
     protected $fillable = [
         'name',
         'file_path',
+        'question_category_id',
     ];
+
+    /**
+     * Get the question category that this ebook belongs to.
+     */
+    public function category()
+    {
+        return $this->belongsTo(QuestionCategory::class, 'question_category_id');
+    }
 }

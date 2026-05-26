@@ -28,6 +28,7 @@ class EbookController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'file' => 'required|file|mimes:pdf,epub,doc,docx,txt|max:10240', // 10MB max
+            'question_category_id' => 'nullable|string|exists:question_categories,id',
         ]);
 
         if ($validator->fails()) {
@@ -54,6 +55,7 @@ class EbookController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
             'file' => 'nullable|file|mimes:pdf,epub,doc,docx,txt|max:10240',
+            'question_category_id' => 'nullable|string|exists:question_categories,id',
         ]);
 
         if ($validator->fails()) {
@@ -79,7 +81,7 @@ class EbookController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array',
-            'ids.*' => 'required|integer|exists:ebooks,id',
+            'ids.*' => 'required|string|exists:ebooks,id',
         ]);
 
         if ($validator->fails()) {

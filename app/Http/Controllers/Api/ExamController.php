@@ -277,6 +277,23 @@ class ExamController extends Controller
     }
 
     /**
+     * Bulk delete user exams
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deleteUserExamsBulk(Request $request): JsonResponse
+    {
+        $request->validate([
+            'user_exam_ids' => 'required|array|min:1',
+            'user_exam_ids.*' => 'required|string|exists:user_exams,id',
+        ]);
+
+        $result = $this->examService->deleteMultipleUserExams($request->user_exam_ids);
+        return response()->json($result, $result['code']);
+    }
+
+    /**
      * Select questions from question banks for exam
      *
      * @param  string  $examId

@@ -240,6 +240,34 @@ class ExamService extends BaseService
     }
 
     /**
+     * Delete multiple user exams with related answers and monitoring
+     *
+     * @param array $ids
+     * @return array
+     */
+    public function deleteMultipleUserExams(array $ids): array
+    {
+        return DB::transaction(function () use ($ids) {
+            $userExams = UserExam::whereIn('id', $ids)->get();
+
+            if ($userExams->isEmpty()) {
+                return $this->errorResponse('Data peserta ujian tidak ditemukan', null, 404);
+            }
+
+            $userExamIds = $userExams->pluck('id');
+
+            // Hapus related answers
+            UserAnswer::whereIn('user_exam_id', $userExamIds)->delete();
+            // Hapus related monitoring
+            ExamMonitoring::whereIn('user_exam_id', $userExamIds)->delete();
+            // Hapus user exams (soft delete)
+            UserExam::whereIn('id', $userExamIds)->delete();
+
+            return $this->successResponse(null, 'Data peserta ujian berhasil dihapus');
+        });
+    }
+
+    /**
      * Delete exam
      *
      * @param string $id

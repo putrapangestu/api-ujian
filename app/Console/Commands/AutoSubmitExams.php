@@ -8,6 +8,7 @@ use App\Services\ExamService;
 use App\Services\SocketIOService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 
 class AutoSubmitExams extends Command
 {
@@ -62,15 +63,89 @@ class AutoSubmitExams extends Command
 
         foreach ($expiredExams as $userExam) {
             try {
-                // Call finishExam with an empty array. It will calculate score based on synced user_answers
-                $examService->finishExam($userExam->exam_id, $userExam->user_id, []);
+                $exam = $userExam->exam;
 
-                // Notify via socket to force frontend redirect (if they reconnect or are lingering)
+                // 1. Collect existing answers dari DB (sudah batch-synced sebelumnya)
+                //    Format jawaban disamakan seperti yang dikirim FE via REST manual finish
+                $allQuestions = [];
+                $existingAnswers = \App\Models\UserAnswer::where('user_exam_id', $userExam->id)->get();
+                foreach ($existingAnswers as $ea) {
+                    $item = ['question_id' => $ea->question_id];
+                    if ($ea->question_option_id !== null) {
+                        $item['question_option_id'] = $ea->question_option_id;
+                    }
+                    if ($ea->answer !== null) {
+                        $item['answer'] = $ea->answer;
+                    }
+                    if ($ea->time_spent !== null) {
+                        $item['time_spent'] = $ea->time_spent;
+                    }
+                    $allQuestions[$ea->question_id] = $item;
+                }
+
+                // 2. Flush pending answers dari Redis (overwrite jika duplicate)
+                //    Antisipasi jawaban yang belum sempat batch sync 30s dari Node.js
+                $redisKey = "exam:{$userExam->exam_id}:answers:{$userExam->id}";
+                $pendingAnswers = Redis::hgetall($redisKey);
+                $pendingCount = 0;
+
+                if ($pendingAnswers) {
+                    foreach ($pendingAnswers as $questionId => $answerJson) {
+                        $answerData = json_decode($answerJson, true);
+                        $item = [
+                            'question_id' => $questionId,
+                            'time_spent' => $answerData['time_spent'] ?? 0,
+                        ];
+                        // Single/multiple choice
+                        if (!empty($answerData['question_option_id'])) {
+                            $item['question_option_id'] = $answerData['question_option_id'];
+                        }
+                        // Essay
+                        if (!empty($answerData['answer'])) {
+                            $item['answer'] = $answerData['answer'];
+                        }
+                        $allQuestions[$questionId] = $item;
+                        $pendingCount++;
+                    }
+                    // Hapus dari Redis agar batch sync tidak duplikasi
+                    Redis::del($redisKey);
+                }
+
+                // 3. Finish exam dengan SEMUA answers (DB + Redis)
+                //    Identik dengan apa yang dikirim FE saat manual finish via REST
+                $questions = array_values($allQuestions);
+                $result = $examService->finishExam($userExam->exam_id, $userExam->user_id, $questions);
+
+                // 3. Hitung timeRemaining = 0 (sudah habis)
+                $durationInSeconds = $exam->duration * 60;
+                $timeSpent = Carbon::parse($userExam->start_time)->diffInSeconds(now());
+                $timeRemaining = max(0, $durationInSeconds - $timeSpent);
+
+                // 3. Kirim event force_submit ke student (untuk redirect halaman user)
                 $socketService->emitEvent(
                     'admin-action',
                     'force_submit',
-                    ['message' => 'Waktu ujian telah habis. Ujian otomatis diselesaikan oleh sistem.'],
+                    [
+                        'action' => 'exam_auto_submitted',
+                        'message' => 'Waktu ujian telah habis. Ujian otomatis diselesaikan oleh sistem.',
+                        'user_exam_id' => $userExam->id,
+                    ],
                     "student:{$userExam->student_id}"
+                );
+
+                // 4. Kirim progress_update ke exam room (untuk update CMS monitoring real-time)
+                $socketService->emitEvent(
+                    "exam:{$userExam->exam_id}",
+                    'exam:progress_update',
+                    [
+                        'id' => $userExam->student_id,
+                        'update' => [
+                            'timeRemaining' => $timeRemaining,
+                            'status' => 'finished',
+                            'totalScore' => $result['data']['summary']['total_score'] ?? $userExam->score ?? 0,
+                        ]
+                    ],
+                    "exam:{$userExam->exam_id}"
                 );
 
                 $successCount++;

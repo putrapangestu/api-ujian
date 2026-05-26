@@ -255,7 +255,7 @@ io.on('connection', (socket) => {
     // Handle submit answer
     socket.on('submit_answer', async (payload) => {
         try {
-            const { exam_id, student_id, user_exam_id, question_id, answer, time_spent } = payload;
+            const { exam_id, student_id, user_exam_id, question_id, answer, question_option_id, time_spent } = payload;
             if (!exam_id || !user_exam_id || !question_id) return;
 
             const answerData = {
@@ -264,6 +264,7 @@ io.on('connection', (socket) => {
                 exam_id,
                 question_id,
                 answer: answer || null,
+                question_option_id: question_option_id || null,
                 time_spent: time_spent || 0,
                 created_at: nowIso(),
                 updated_at: nowIso()
@@ -275,13 +276,34 @@ io.on('connection', (socket) => {
             // Simpan log monitoring
             const monitoringData = {
                 user_exam_id, student_id, exam_id,
-                action: 'answer', question_id, answer, time_spent: time_spent || 0,
+                action: 'answer', question_id, answer,
+                question_option_id: question_option_id || null,
+                time_spent: time_spent || 0,
                 created_at: nowIso()
             };
             await redis.lpush(`exam:monitorings_queue`, JSON.stringify(monitoringData));
 
             // Beri tahu klien bahwa jawaban telah diterima
             socket.emit('answer_received', { question_id, status: 'saved' });
+
+            // Broadcast ke CMS monitoring room untuk update progress real-time
+            try {
+                const stateRaw = await redis.hget(`exam:${exam_id}:state`, user_exam_id);
+                let timeRemaining = 0;
+                if (stateRaw) {
+                    const stateData = JSON.parse(stateRaw);
+                    timeRemaining = stateData.time_remaining || 0;
+                }
+                io.to(`exam:${exam_id}`).emit('exam:progress_update', {
+                    id: student_id,
+                    update: {
+                        timeRemaining: timeRemaining,
+                        status: 'online'
+                    }
+                });
+            } catch (e) {
+                log('warn', { event: 'submit_answer_broadcast_error', message: e.message });
+            }
 
         } catch (error) {
             log('error', { event: 'submit_answer_error', error: error.message });

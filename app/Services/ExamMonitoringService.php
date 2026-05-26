@@ -346,6 +346,7 @@ class ExamMonitoringService extends BaseService
         try {
             // Get active user exams for this exam without loading all userAnswers
             $activeExams = UserExam::where('exam_id', $examId)
+                ->whereIn('status', [UserExam::STATUS_IN_PROGRESS, UserExam::STATUS_COMPLETED])
                 ->with(['userOnly.student', 'exam'])
                 ->whereHas('userOnly')
                 ->orderByDesc('score')

@@ -411,7 +411,7 @@ class StudentService extends BaseService
                 $user = $this->userRepository->create([
                     'name' => $data['name'],
                     'email' => $data['email'],
-                    'password' => bcrypt($data['birth_date']),
+                    'password' => bcrypt(Carbon::parse($data['birth_date'])->format('dmY')),
                 ]);
 
                 // Add user_id to student data
@@ -473,7 +473,7 @@ class StudentService extends BaseService
 
                 // Update user if changed
                 if (isset($data['birth_date']) && $student->birth_date !== $data['birth_date']) {
-                    $payloadUser['password'] = bcrypt(Carbon::parse($data['birth_date'])->format('DDMMYYYY'));
+                    $payloadUser['password'] = bcrypt(Carbon::parse($data['birth_date'])->format('dmY'));
                 }
 
                 if (!empty($payloadUser)) {

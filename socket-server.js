@@ -601,7 +601,7 @@ async function processBatchSync() {
         log('info', { event: 'batch_sync_success' });
 
     } catch (error) {
-        log('error', { event: 'batch_sync_failed', message: error.message });
+        log('error', { event: 'batch_sync_failed', message: error.message, laravel_api_url: LARAVEL_API_URL });
     }
 }
 

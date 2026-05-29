@@ -176,13 +176,23 @@ class ExamMonitoringService extends BaseService
                 $examIds = array_unique(array_column($answers, 'exam_id'));
                 $examCategoriesTotal = [];
                 foreach ($examIds as $examId) {
-                    $examCategoriesTotal[$examId] = \App\Models\QuestionExam::where('question_exam.exam_id', $examId)
-                        ->join('questions', 'question_exam.question_id', '=', 'questions.id')
-                        ->join('question_categories', 'questions.category_id', '=', 'question_categories.id')
-                        ->select('question_categories.code', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+                    // $examCategoriesTotal[$examId] = \App\Models\QuestionExam::where('question_exam.exam_id', $examId)
+                    //     ->join('questions', 'question_exam.question_id', '=', 'questions.id')
+                    //     ->join('question_categories', 'questions.category_id', '=', 'question_categories.id')
+                    //     ->select('question_categories.code', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+                    //     ->groupBy('question_categories.code')
+                    //     ->pluck('total', 'code')
+                    //     ->toArray();
+                    $examCategoriesTotal[$examId] = UserAnswer::where('user_answers.user_exam_id', $answer['user_exam_id'])
+                        ->join('questions', 'user_answers.question_id', '=', 'questions.id')
+                        ->join('question_groups', 'questions.question_group_id', '=', 'question_groups.id')
+                        ->join('question_categories', 'question_groups.question_category_id', '=', 'question_categories.id')
+                        ->select(
+                            'question_categories.code',
+                            DB::raw('COUNT(user_answers.id) as total')
+                        )
                         ->groupBy('question_categories.code')
-                        ->pluck('total', 'code')
-                        ->toArray();
+                        ->pluck('total', 'code');
                 }
                 Log::info("ExamCategories", [$examCategoriesTotal]);
 

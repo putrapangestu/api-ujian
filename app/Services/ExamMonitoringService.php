@@ -128,8 +128,8 @@ class ExamMonitoringService extends BaseService
                             'question_option_id' => $questionOptionId,
                             'is_correct' => $isCorrect,
                             'score' => $score,
-                            'created_at' => $answer['created_at'] ?? now(),
-                            'updated_at' => $answer['updated_at'] ?? now(),
+                            'created_at' => Carbon::parse($answer['created_at'] ?? now()),
+                            'updated_at' => Carbon::parse($answer['updated_at'] ?? now()),
                         ];
                     }, $answers);
 

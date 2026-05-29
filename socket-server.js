@@ -605,8 +605,8 @@ async function processBatchSync() {
     }
 }
 
-// Jalankan setiap 10 detik agar skor lebih real-time
-setInterval(processBatchSync, 10000);
+// Jalankan setiap 5 detik agar skor lebih real-time
+setInterval(processBatchSync, 5000);
 
 server.listen(port, '0.0.0.0');
 server.on('listening', () => {

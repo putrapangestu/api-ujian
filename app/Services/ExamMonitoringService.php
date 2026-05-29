@@ -92,20 +92,6 @@ class ExamMonitoringService extends BaseService
     {
         return DB::transaction(function () use ($answers, $monitorings, $cheatCounters) {
             try {
-                // 1. Bulk Insert Monitorings
-                if (!empty($monitorings)) {
-                    // Validasi atau persiapkan data monitoring jika perlu
-                    $monitoringRows = array_map(function ($monitoring) {
-                        return array_merge($monitoring, [
-                            'id' => Str::uuid()->toString(),
-                            'created_at' => $monitoring['created_at'] ?? now(),
-                            'updated_at' => $monitoring['updated_at'] ?? now(),
-                        ]);
-                    }, $monitorings);
-
-                    ExamMonitoring::insert($monitoringRows);
-                }
-
                 // 2. Process Answers (Upsert)
                 $userExamIds = [];
                 if (!empty($answers)) {

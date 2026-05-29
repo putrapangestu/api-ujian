@@ -105,7 +105,7 @@ class ExamMonitoringService extends BaseService
                         $question = Question::with('options')->find($answer['question_id']);
                         Log::info("question ", [$question]);
                         if ($question) {
-                            if ($question->type === Question::TYPE_MULTIPLE_CHOICE || $question->type === Question::TYPE_TRUE_FALSE || $question->type === Question::TYPE_SINGLE_CHOICE) {
+                            if ($question->question_type === Question::TYPE_MULTIPLE_CHOICE || $question->question_type === Question::TYPE_TRUE_FALSE || $question->question_type === Question::TYPE_SINGLE_CHOICE) {
                                 // Pilihan ganda, question_option_id bisa dari field 'question_option_id' atau 'answer'
                                 $questionOptionId = $answer['question_option_id'] ?? $answer['answer'] ?? null;
                                 $correctOption = $question->options->where('is_correct', true)->first();

@@ -108,11 +108,11 @@ class ExamMonitoringService extends BaseService
                             if ($question->question_type === Question::TYPE_MULTIPLE_CHOICE || $question->question_type === Question::TYPE_TRUE_FALSE || $question->question_type === Question::TYPE_SINGLE_CHOICE) {
                                 // Pilihan ganda, question_option_id bisa dari field 'question_option_id' atau 'answer'
                                 $questionOptionId = $answer['question_option_id'] ?? $answer['answer'] ?? null;
-                                $correctOption = $question->options->where('is_correct', true)->first();
+                                $correctOption = $question->options->where('id', $questionOptionId)->first();
 
-                                if ($correctOption && $correctOption->id == $questionOptionId) {
+                                if ($correctOption && $correctOption->score > 0) {
                                     $isCorrect = true;
-                                    $score = $question->score ?? 1;
+                                    $score = $correctOption->score ?? 1;
                                 }
                                 Log::info("masuk check benar / salah", [$isCorrect, $score]);
                             } else {

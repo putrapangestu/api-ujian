@@ -92,21 +92,20 @@ class ExamMonitoringService extends BaseService
     {
         return DB::transaction(function () use ($answers, $monitorings, $cheatCounters) {
             try {
-                // 2. Process Answers (Upsert)
+                // 2. Process Answers (Update or Insert manual — tanpa upsert)
                 $userExamIds = [];
                 if (!empty($answers)) {
-                    $answerRows = array_map(function ($answer) {
+                    foreach ($answers as $answer) {
                         $isCorrect = false;
                         $score = 0;
                         $questionOptionId = null;
 
-                        // Di sistem nyata, kita perlu memverifikasi jawaban dengan kunci jawaban di sini.
-                        // Jika struktur database memungkinkan, panggil layanan yang dapat memvalidasi jawaban.
+                        // Verifikasi jawaban dengan kunci jawaban
                         $question = Question::with('options')->find($answer['question_id']);
                         if ($question) {
-                            if ($question->type === Question::TYPE_MULTIPLE_CHOICE || $question->type === Question::TYPE_TRUE_FALSE) {
-                                // Pilihan ganda, answer berisi question_option_id
-                                $questionOptionId = $answer['answer'];
+                            if ($question->type === Question::TYPE_MULTIPLE_CHOICE || $question->type === Question::TYPE_TRUE_FALSE || $question->type === Question::TYPE_SINGLE_CHOICE) {
+                                // Pilihan ganda, question_option_id bisa dari field 'question_option_id' atau 'answer'
+                                $questionOptionId = $answer['question_option_id'] ?? $answer['answer'] ?? null;
                                 $correctOption = $question->options->where('is_correct', true)->first();
 
                                 if ($correctOption && $correctOption->id == $questionOptionId) {
@@ -115,30 +114,45 @@ class ExamMonitoringService extends BaseService
                                 }
                             } else {
                                 // Essay
-                                $isCorrect = true; // Essay perlu dinilai manual nanti, asumsikan benar sementara
+                                $isCorrect = true; // Essay perlu dinilai manual nanti
                                 $score = 0; // Tidak langsung diberi nilai penuh
                             }
                         }
 
-                        return [
-                            'id' => \Illuminate\Support\Str::uuid()->toString(),
-                            'user_exam_id' => $answer['user_exam_id'],
-                            'question_id' => $answer['question_id'],
-                            'answer' => $answer['answer'],
-                            'question_option_id' => $questionOptionId,
-                            'is_correct' => $isCorrect,
-                            'score' => $score,
-                            'created_at' => Carbon::parse($answer['created_at'] ?? now()),
-                            'updated_at' => Carbon::parse($answer['updated_at'] ?? now()),
-                        ];
-                    }, $answers);
+                        // Cek apakah jawaban sudah ada
+                        $existing = \App\Models\UserAnswer::where('user_exam_id', $answer['user_exam_id'])
+                            ->where('question_id', $answer['question_id'])
+                            ->first();
 
-                    \App\Models\UserAnswer::upsert(
-                        $answerRows,
-                        ['user_exam_id', 'question_id'], // unique keys (membutuhkan index unique di DB)
-                        ['answer', 'question_option_id', 'is_correct', 'score', 'updated_at'] // update columns
-                    );
+                        if ($existing) {
+                            // Update jawaban yang sudah ada
+                            $existing->update([
+                                'answer' => $answer['answer'] ?? $existing->answer,
+                                'question_option_id' => $questionOptionId,
+                                'is_correct' => $isCorrect,
+                                'score' => $score,
+                                'updated_at' => Carbon::parse($answer['updated_at'] ?? now()),
+                            ]);
+                        } else {
+                            // Insert jawaban baru
+                            \App\Models\UserAnswer::create([
+                                'id' => \Illuminate\Support\Str::uuid()->toString(),
+                                'user_exam_id' => $answer['user_exam_id'],
+                                'question_id' => $answer['question_id'],
+                                'answer' => $answer['answer'] ?? null,
+                                'question_option_id' => $questionOptionId,
+                                'is_correct' => $isCorrect,
+                                'score' => $score,
+                                'created_at' => Carbon::parse($answer['created_at'] ?? now()),
+                                'updated_at' => Carbon::parse($answer['updated_at'] ?? now()),
+                            ]);
+                        }
+                    }
+
                     $userExamIds = array_unique(array_column($answers, 'user_exam_id'));
+
+                    // Hapus migration yang tidak jadi dipakai
+                    // (unique constraint tidak jadi ditambahkan)
                 }
 
                 // 3. Recalculate current_score
@@ -277,7 +291,7 @@ class ExamMonitoringService extends BaseService
 
                 return ['success' => true];
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Bulk Sync Error: ' . $e->getMessage());
+                Log::error('Bulk Sync Error: ' . $e->getMessage());
                 throw $e;
             }
         });

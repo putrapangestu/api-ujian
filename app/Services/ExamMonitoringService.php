@@ -121,13 +121,13 @@ class ExamMonitoringService extends BaseService
                         }
 
                         return [
+                            'id' => \Illuminate\Support\Str::uuid()->toString(),
                             'user_exam_id' => $answer['user_exam_id'],
                             'question_id' => $answer['question_id'],
                             'answer' => $answer['answer'],
                             'question_option_id' => $questionOptionId,
                             'is_correct' => $isCorrect,
                             'score' => $score,
-                            'time_spent' => $answer['time_spent'] ?? 0,
                             'created_at' => $answer['created_at'] ?? now(),
                             'updated_at' => $answer['updated_at'] ?? now(),
                         ];
@@ -136,7 +136,7 @@ class ExamMonitoringService extends BaseService
                     \App\Models\UserAnswer::upsert(
                         $answerRows,
                         ['user_exam_id', 'question_id'], // unique keys (membutuhkan index unique di DB)
-                        ['answer', 'question_option_id', 'is_correct', 'score', 'time_spent', 'updated_at'] // update columns
+                        ['answer', 'question_option_id', 'is_correct', 'score', 'updated_at'] // update columns
                     );
                     $userExamIds = array_unique(array_column($answers, 'user_exam_id'));
                 }

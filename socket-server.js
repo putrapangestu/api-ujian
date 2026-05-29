@@ -328,13 +328,13 @@ io.on('connection', (socket) => {
             // Karena data categories & totalScore sekarang diproses oleh Laravel setiap bulk sync,
             // Kita cukup meng-update timeRemaining & status saja via Socket secara real-time.
             // Struktur yang dikirim oleh heartbeat harus compatible dengan `update` object dari FE
-            io.to(`exam:${exam_id}`).emit('exam:progress_update', { 
-                id: student_id, 
+            io.to(`exam:${exam_id}`).emit('exam:progress_update', {
+                id: student_id,
                 update: {
-                    timeRemaining: time_remaining || 0, 
+                    timeRemaining: time_remaining || 0,
                     status: 'online',
                     last_seen: state.last_seen
-                } 
+                }
             });
         } catch (error) {
             log('error', { event: 'heartbeat_error', error: error.message });
@@ -551,7 +551,7 @@ io.on('connection', (socket) => {
     });
 });
 
-const LARAVEL_API_URL = process.env.LARAVEL_API_URL || 'http://localhost:8000/api/internal/sync-answers';
+const LARAVEL_API_URL = process.env.LARAVEL_API_URL || process.env.APP_URL + '/api/internal/sync-answers';
 const INTERNAL_KEY = key;
 
 async function processBatchSync() {

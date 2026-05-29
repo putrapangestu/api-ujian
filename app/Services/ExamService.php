@@ -564,7 +564,7 @@ class ExamService extends BaseService
                 }
 
                 $student = $userExam->user?->student;
-                $isPassed = $userExam->score >= ($exam->passing_grade ?? 0) ? 'Lulus' : 'Tidak Lulus';
+                $isPassed = $userExam->status == 'completed' ? 'Sudah Mengerjakan' : 'Belum Mengerjakan';
 
                 $sheet->setCellValue('A' . $row, $userExam->user?->name);
                 // $sheet->setCellValue('B' . $row, $userExam->user?->email);

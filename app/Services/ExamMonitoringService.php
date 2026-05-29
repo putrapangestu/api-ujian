@@ -90,6 +90,7 @@ class ExamMonitoringService extends BaseService
      */
     public function processBulkSync(array $answers, array $monitorings, array $cheatCounters): array
     {
+        Log::info("ExamMonitoringService processBulkSync ", [$answers]);
         return DB::transaction(function () use ($answers, $monitorings, $cheatCounters) {
             try {
                 // 2. Process Answers (Update or Insert manual — tanpa upsert)
@@ -102,6 +103,7 @@ class ExamMonitoringService extends BaseService
 
                         // Verifikasi jawaban dengan kunci jawaban
                         $question = Question::with('options')->find($answer['question_id']);
+                        Log::info("question ", [$question]);
                         if ($question) {
                             if ($question->type === Question::TYPE_MULTIPLE_CHOICE || $question->type === Question::TYPE_TRUE_FALSE || $question->type === Question::TYPE_SINGLE_CHOICE) {
                                 // Pilihan ganda, question_option_id bisa dari field 'question_option_id' atau 'answer'
@@ -112,6 +114,7 @@ class ExamMonitoringService extends BaseService
                                     $isCorrect = true;
                                     $score = $question->score ?? 1;
                                 }
+                                Log::info("masuk check benar / salah", [$isCorrect, $score]);
                             } else {
                                 // Essay
                                 $isCorrect = true; // Essay perlu dinilai manual nanti
@@ -123,6 +126,8 @@ class ExamMonitoringService extends BaseService
                         $existing = \App\Models\UserAnswer::where('user_exam_id', $answer['user_exam_id'])
                             ->where('question_id', $answer['question_id'])
                             ->first();
+
+                        Log::info("Check data jawaban ujian user ", [$existing]);
 
                         if ($existing) {
                             // Update jawaban yang sudah ada
@@ -159,9 +164,10 @@ class ExamMonitoringService extends BaseService
                 $updatedScores = [];
                 foreach ($userExamIds as $userExamId) {
                     $totalScore = (int) \App\Models\UserAnswer::where('user_exam_id', $userExamId)->sum('score');
-                    UserExam::where('id', $userExamId)->update(['current_score' => $totalScore]);
+                    UserExam::where('id', $userExamId)->update(['current_score' => $totalScore, 'score' => $totalScore]);
                     $updatedScores[$userExamId] = $totalScore;
                 }
+                Log::info("updatedScores ", [$updatedScores]);
 
                 // 4. (Optional) Process Cheat Counters if needed to DB
                 // Saat ini cheat dihandle realtime, bisa ditambahkan jika ingin persistensi.
@@ -178,6 +184,7 @@ class ExamMonitoringService extends BaseService
                         ->pluck('total', 'code')
                         ->toArray();
                 }
+                Log::info("ExamCategories", [$examCategoriesTotal]);
 
                 // 5. Emit back to Node.js
                 // Bulk aggregate answers for all active user_exams
@@ -210,6 +217,7 @@ class ExamMonitoringService extends BaseService
                         ];
                     }
                 }
+                Log::info("answerAggregates ", [$answerAggregates, $userExamIds]);
 
                 foreach ($updatedScores as $userExamId => $score) {
                     $userExam = UserExam::with(['user.student', 'exam'])->find($userExamId);
@@ -288,6 +296,7 @@ class ExamMonitoringService extends BaseService
                         );
                     }
                 }
+                Log::info("success bulk", [$updatedScores]);
 
                 return ['success' => true];
             } catch (\Exception $e) {
@@ -481,8 +490,8 @@ class ExamMonitoringService extends BaseService
                     'name' => $studentName,
                     'status' => $status,
                     'timeRemaining' => $userExam->status === UserExam::STATUS_IN_PROGRESS || $userExam->status === UserExam::STATUS_PENDING ? $timeRemaining : 0, // Based on FE's note: time_spent replaced by timeRemaining
-                    'totalScore' => (int) $userExam->score ?? 0,
-                    'currentTotalScore' => (int) $userExam->current_score ?? 0,
+                    'totalScore' => (int) ($userExam->current_score ?: $userExam->score ?? 0),
+                    'currentTotalScore' => (int) ($userExam->current_score ?: $userExam->score ?? 0),
                     'categories' => (object) $categories
                 ];
             }

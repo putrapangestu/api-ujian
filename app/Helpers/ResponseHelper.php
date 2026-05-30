@@ -95,7 +95,7 @@ class ResponseHelper
                 try {
                     $carbon = Carbon::parse($data);
                     return str_contains($data, 'T') || str_contains($data, ' ')
-                        ? $carbon->format('Y-m-d H:i:s')
+                        ? $carbon->format('Y-m-d\TH:i:sP')
                         : $carbon->format('Y-m-d');
                 } catch (\Exception $e) {
                     return $data;
@@ -104,7 +104,7 @@ class ResponseHelper
         }
 
         if ($data instanceof CarbonInterface || $data instanceof DateTimeInterface) {
-            return Carbon::instance($data)->format('Y-m-d H:i:s');
+            return Carbon::instance($data)->format('Y-m-d\TH:i:sP');
         }
 
         if ($data instanceof Model) {
@@ -126,7 +126,7 @@ class ResponseHelper
                     $cast = $casts[$key] ?? null;
                     $array[$key] = in_array($cast, ['date', 'immutable_date'], true)
                         ? Carbon::instance($data->{$key})->format('Y-m-d')
-                        : Carbon::instance($data->{$key})->format('Y-m-d H:i:s');
+                        : Carbon::instance($data->{$key})->format('Y-m-d\TH:i:sP');
                 }
             }
 

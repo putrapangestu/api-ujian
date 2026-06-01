@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 use Illuminate\Support\Facades\DB;
+use App\Models\QuestionExam;
 use App\Models\UserExam;
 use Illuminate\Support\Facades\Log;
 
@@ -259,6 +260,23 @@ class ExamController extends Controller
 
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
+
+    /**
+     * Copy/duplicate an exam with its question groups and question exams
+     *
+     * @param  string  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function copyExam(string $id): JsonResponse
+    {
+        $result = $this->examService->copyExam($id);
+
+        if ($result['success']) {
+            return $this->successResponse($result['data'], $result['message'], 201);
         }
 
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);

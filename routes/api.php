@@ -159,6 +159,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/exams', [ExamController::class, 'store'])->name('admin.exams.store');
         Route::put('/exams/{id}', [ExamController::class, 'update'])->name('admin.exams.update');
         Route::delete('/exams/{id}', [ExamController::class, 'destroy'])->name('admin.exams.destroy');
+        Route::post('/exams/{id}/copy', [ExamController::class, 'copyExam'])->name('admin.exams.copy');
         Route::delete('/user-exams/{id}', [ExamController::class, 'deleteUserExam'])
             ->name('admin.user-exams.destroy');
         Route::post('/user-exams/bulk-delete', [ExamController::class, 'deleteUserExamsBulk'])

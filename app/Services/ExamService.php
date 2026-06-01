@@ -300,6 +300,72 @@ class ExamService extends BaseService
     }
 
     /**
+     * Copy/duplicate an exam with its question groups and question exams
+     *
+     * @param string $id
+     * @return array
+     */
+    public function copyExam(string $id): array
+    {
+        return DB::transaction(function () use ($id) {
+            try {
+                // 1. Find original exam with relations
+                $originalExam = Exam::with(['questionGroups', 'questionExams'])->find($id);
+                if (!$originalExam) {
+                    return $this->errorResponse('Ujian tidak ditemukan', null, 404);
+                }
+
+                // 2. Create new exam (copy fields, without participants)
+                $newExam = Exam::create([
+                    'title' => "Copy of {$originalExam->title}",
+                    'description' => $originalExam->description,
+                    'duration' => $originalExam->duration,
+                    'total_questions' => $originalExam->total_questions,
+                    'passing_score' => $originalExam->passing_score,
+                    'start_date' => null,
+                    'end_date' => null,
+                ]);
+
+                // 3. Copy exam_question_groups pivot
+                $originalQuestionGroups = $originalExam->questionGroups;
+                foreach ($originalQuestionGroups as $qg) {
+                    $newExam->questionGroups()->attach($qg->id, [
+                        'random_selection' => $qg->pivot->random_selection ?? false,
+                    ]);
+                }
+
+                // 4. Copy question_exam records
+                $originalQuestionExams = $originalExam->questionExams;
+                foreach ($originalQuestionExams as $qe) {
+                    QuestionExam::create([
+                        'exam_id' => $newExam->id,
+                        'question_id' => $qe->question_id,
+                        'question_group_id' => $qe->question_group_id,
+                        'question_number' => $qe->question_number,
+                        'question_order' => $qe->question_order,
+                        'is_active' => $qe->is_active,
+                    ]);
+                }
+
+                // 5. Update total_questions
+                $newExam->update([
+                    'total_questions' => $originalQuestionExams->count(),
+                ]);
+
+                return $this->successResponse(
+                    $newExam->loadMissing(['questionGroups', 'questionExams']),
+                    'Ujian berhasil digandakan',
+                    201
+                );
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return $this->errorResponse('Gagal menggandakan ujian: ' . $e->getMessage());
+            }
+        });
+    }
+
+    /**
      * Start exam for user
      *
      * @param string $examId

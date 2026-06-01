@@ -295,6 +295,7 @@ class StudentService extends BaseService
                 $scoreTwk = 0;
                 $scoreTiu = 0;
                 $scoreTkp = 0;
+                $totalScore = 0;
 
                 // Load answers with question category info
                 $userExam->load(['userAnswers.question.category']);
@@ -311,6 +312,8 @@ class StudentService extends BaseService
                     }
                 }
 
+                $totalScore = $userExam->score == ($scoreTwk + $scoreTiu + $scoreTkp) ? $userExam->score : $scoreTwk + $scoreTiu + $scoreTkp;
+
                 $isPassed = $userExam->score >= ($userExam->exam->passing_grade ?? 0);
                 $statusKelulusan = $isPassed ? 'Lulus' : 'Tidak Lulus';
 
@@ -318,7 +321,7 @@ class StudentService extends BaseService
                 $sheet->setCellValue('B' . $row, $userExam->start_time ? $userExam->start_time->format('Y-m-d H:i:s') : '-');
                 $sheet->setCellValue('C' . $row, $userExam->end_time ? $userExam->end_time->format('Y-m-d H:i:s') : '-');
                 // $sheet->setCellValue('D' . $row, $statusKelulusan);
-                $sheet->setCellValue('D' . $row, $userExam->score ?? 0);
+                $sheet->setCellValue('D' . $row, $totalScore);
                 $sheet->setCellValue('E' . $row, $scoreTwk);
                 $sheet->setCellValue('F' . $row, $scoreTiu);
                 $sheet->setCellValue('G' . $row, $scoreTkp);

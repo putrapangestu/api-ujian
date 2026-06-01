@@ -25,10 +25,10 @@ class AdminMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         if (!$request->user() || !$request->user()->isAdmin()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized. Admin access required.'
-            ], 403);
+            return response()->json(
+                \App\Helpers\ResponseHelper::error('Anda tidak memiliki izin sebagai admin untuk mengakses fitur ini.', null, 403),
+                403
+            );
         }
 
         return $next($request);

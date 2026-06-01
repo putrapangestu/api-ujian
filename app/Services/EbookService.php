@@ -44,10 +44,10 @@ class EbookService extends BaseService
                     'current_page' => $ebooks->currentPage(),
                     'last_page' => $ebooks->lastPage()
                 ]
-            ], 'Ebooks retrieved successfully');
+            ], 'Berhasil mengambil daftar ebook');
         } catch (Exception $e) {
             Log::error('Error getting ebooks: ' . $e->getMessage());
-            return $this->errorResponse('Failed to retrieve ebooks', $e->getMessage(), 500);
+            return $this->errorResponse('Gagal mengambil daftar ebook.', $e->getMessage(), 500);
         }
     }
 
@@ -61,15 +61,15 @@ class EbookService extends BaseService
                 $path = $file->store('ebooks', 'public');
                 $data['file_path'] = $path;
             } else {
-                return $this->errorResponse('File is required', null, 422);
+                return $this->errorResponse('File ebook wajib diunggah.', null, 422);
             }
 
             $ebook = $this->repository->create($data);
 
-            return $this->successResponse($ebook, 'Ebook created successfully', 201);
+            return $this->successResponse($ebook, 'Ebook berhasil ditambahkan', 201);
         } catch (Exception $e) {
             Log::error('Error creating ebook: ' . $e->getMessage());
-            return $this->errorResponse('Failed to create ebook', $e->getMessage(), 500);
+            return $this->errorResponse('Gagal menambahkan ebook.', $e->getMessage(), 500);
         }
     }
 
@@ -79,13 +79,13 @@ class EbookService extends BaseService
             $ebook = $this->repository->find($id);
 
             if (!$ebook) {
-                return $this->errorResponse('Ebook not found', null, 404);
+                return $this->errorResponse('Ebook tidak ditemukan.', null, 404);
             }
 
-            return $this->successResponse($ebook, 'Ebook retrieved successfully');
+            return $this->successResponse($ebook, 'Berhasil mengambil detail ebook');
         } catch (Exception $e) {
             Log::error('Error getting ebook: ' . $e->getMessage());
-            return $this->errorResponse('Failed to retrieve ebook', $e->getMessage(), 500);
+            return $this->errorResponse('Gagal mengambil detail ebook.', $e->getMessage(), 500);
         }
     }
 
@@ -95,7 +95,7 @@ class EbookService extends BaseService
             $ebook = $this->repository->find($id);
 
             if (!$ebook) {
-                return $this->errorResponse('Ebook not found', null, 404);
+                return $this->errorResponse('Ebook tidak ditemukan.', null, 404);
             }
 
             $data = $request->only(['name', 'question_category_id']);
@@ -114,10 +114,10 @@ class EbookService extends BaseService
             $this->repository->update($id, $data);
             $updatedEbook = $this->repository->find($id);
 
-            return $this->successResponse($updatedEbook, 'Ebook updated successfully');
+            return $this->successResponse($updatedEbook, 'Ebook berhasil diperbarui');
         } catch (Exception $e) {
             Log::error('Error updating ebook: ' . $e->getMessage());
-            return $this->errorResponse('Failed to update ebook', $e->getMessage(), 500);
+            return $this->errorResponse('Gagal memperbarui ebook.', $e->getMessage(), 500);
         }
     }
 
@@ -127,7 +127,7 @@ class EbookService extends BaseService
             $ebook = $this->repository->find($id);
 
             if (!$ebook) {
-                return $this->errorResponse('Ebook not found', null, 404);
+                return $this->errorResponse('Ebook tidak ditemukan.', null, 404);
             }
 
             // Optional: delete physical file
@@ -137,10 +137,10 @@ class EbookService extends BaseService
 
             $this->repository->delete($id);
 
-            return $this->successResponse(null, 'Ebook deleted successfully');
+            return $this->successResponse(null, 'Ebook berhasil dihapus');
         } catch (Exception $e) {
             Log::error('Error deleting ebook: ' . $e->getMessage());
-            return $this->errorResponse('Failed to delete ebook', $e->getMessage(), 500);
+            return $this->errorResponse('Gagal menghapus ebook.', $e->getMessage(), 500);
         }
     }
 
@@ -157,10 +157,10 @@ class EbookService extends BaseService
 
             $this->repository->bulkDelete($ids);
 
-            return $this->successResponse(null, 'Ebooks deleted successfully');
+            return $this->successResponse(null, 'Ebook berhasil dihapus');
         } catch (Exception $e) {
             Log::error('Error bulk deleting ebooks: ' . $e->getMessage());
-            return $this->errorResponse('Failed to bulk delete ebooks', $e->getMessage(), 500);
+            return $this->errorResponse('Gagal menghapus beberapa ebook.', $e->getMessage(), 500);
         }
     }
 
@@ -170,11 +170,11 @@ class EbookService extends BaseService
             $ebook = $this->repository->find($id);
 
             if (!$ebook) {
-                return $this->errorResponse('Ebook not found', null, 404);
+                return $this->errorResponse('Ebook tidak ditemukan.', null, 404);
             }
 
             if (!$ebook->file_path || !Storage::disk('public')->exists($ebook->file_path)) {
-                return $this->errorResponse('File not found', null, 404);
+                return $this->errorResponse('File ebook tidak ditemukan.', null, 404);
             }
 
             $fullPath = Storage::disk('public')->path($ebook->file_path);
@@ -188,7 +188,7 @@ class EbookService extends BaseService
             ];
         } catch (Exception $e) {
             Log::error('Error getting download file: ' . $e->getMessage());
-            return $this->errorResponse('Failed to download ebook', $e->getMessage(), 500);
+            return $this->errorResponse('Gagal mengunduh ebook.', $e->getMessage(), 500);
         }
     }
 }

@@ -90,7 +90,7 @@ abstract class BaseRequest extends FormRequest
             $validator,
             response()->json([
                 'success' => false,
-                'message' => 'Validasi gagal',
+                'message' => 'Data yang Anda masukkan tidak sesuai ketentuan. Silakan periksa kembali.',
                 'errors' => $formattedErrors
             ], 422)
         );

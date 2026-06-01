@@ -34,19 +34,37 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Illuminate\Validation\ValidationException $e, \Illuminate\Http\Request $request) {
             if ($request->is('api/*')) {
-                return response()->json(\App\Helpers\ResponseHelper::error('Validation Error', $e->errors(), 422), 422);
+                return response()->json(\App\Helpers\ResponseHelper::error(
+                    'Data yang Anda masukkan tidak valid. Silakan periksa kembali.',
+                    $e->errors(),
+                    422
+                ), 422);
             }
         });
 
         $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
             if ($request->is('api/*')) {
-                return response()->json(\App\Helpers\ResponseHelper::error('Unauthenticated', null, 401), 401);
+                return response()->json(\App\Helpers\ResponseHelper::error(
+                    'Sesi Anda telah berakhir. Silakan login kembali.',
+                    null,
+                    401
+                ), 401);
             }
         });
 
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, \Illuminate\Http\Request $request) {
             if ($request->is('api/*')) {
-                return response()->json(\App\Helpers\ResponseHelper::error($e->getMessage() ?: 'HTTP Error', null, $e->getStatusCode()), $e->getStatusCode());
+                $httpMessage = match ($e->getStatusCode()) {
+                    403 => 'Anda tidak memiliki izin untuk mengakses halaman ini.',
+                    404 => 'Halaman atau data yang Anda cari tidak ditemukan.',
+                    429 => 'Terlalu banyak permintaan. Silakan coba beberapa saat lagi.',
+                    default => 'Terjadi kesalahan. Silakan coba lagi.',
+                };
+                return response()->json(\App\Helpers\ResponseHelper::error(
+                    $httpMessage,
+                    null,
+                    $e->getStatusCode()
+                ), $e->getStatusCode());
             }
         });
 
@@ -63,7 +81,11 @@ return Application::configure(basePath: dirname(__DIR__))
                     'trace' => $e->getTrace()
                 ] : null;
 
-                return response()->json(\App\Helpers\ResponseHelper::error(config('app.debug') ? $e->getMessage() : 'Server Error', $errors, $code), $code);
+                return response()->json(\App\Helpers\ResponseHelper::error(
+                    config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan pada server. Silakan coba beberapa saat lagi.',
+                    $errors,
+                    $code
+                ), $code);
             }
         });
     })->create();

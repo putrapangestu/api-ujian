@@ -36,7 +36,7 @@ class StudentRequest extends BaseRequest
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
             $studentId = $this->id;
             $rules['nisn'] = 'nullable|string|max:20|unique:students,nisn,' . $studentId . ',id,deleted_at,NULL';
-            $rules['email'] = 'required|string|email|max:255|unique:users,email,' . $studentId;
+            $rules['email'] = 'required|string|email|max:255|unique:users,email,' . $studentId . ',id,deleted_at,NULL';
         } else {
             $rules['nisn'] = 'nullable|string|max:20|unique:students,deleted_at,NULL';
             $rules['email'] = 'required|string|email|max:255|unique:users,deleted_at,NULL';

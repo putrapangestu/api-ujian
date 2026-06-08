@@ -2,6 +2,7 @@ import 'dotenv/config';
 import http from 'http';
 import { Server } from 'socket.io';
 import Redis from 'ioredis';
+import { createAdapter } from '@socket.io/redis-adapter';
 
 const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 const redis = new Redis(redisUrl);
@@ -12,7 +13,18 @@ redis.on('error', (err) => {
 
 redis.on('connect', () => {
     log('info', { event: 'redis_connected' });
+    // M2: Init Redis adapter untuk Socket.IO session persistence
+    setupSocketIOAdapter();
 });
+
+function setupSocketIOAdapter() {
+    const subClient = redis.duplicate();
+    subClient.on('error', (err) => {
+        log('error', { event: 'redis_sub_error', message: err.message });
+    });
+    io.adapter(createAdapter(redis, subClient));
+    log('info', { event: 'redis_adapter_initialized' });
+}
 
 const port = Number.parseInt(process.env.SOCKET_IO_PORT ?? '3001', 10);
 const key = process.env.SOCKET_IO_KEY ?? '';
@@ -141,6 +153,10 @@ const io = new Server(server, {
         origin: '*',
         methods: ['GET', 'POST'],
     },
+    // M2: Increase ping timeout/interval for high-load scenarios
+    pingInterval: 30000,
+    pingTimeout: 20000,
+    connectTimeout: 30000,
 });
 
 io.engine.on('connection_error', (err) => {
@@ -272,6 +288,8 @@ io.on('connection', (socket) => {
 
             // Simpan jawaban di Redis Hash (field: question_id, value: JSON string)
             await redis.hset(`exam:${exam_id}:answers:${user_exam_id}`, question_id, JSON.stringify(answerData));
+            // M1: Track key di Redis Set untuk O(1) lookup (gantikan KEYS blocking)
+            await redis.sadd('exam:answer-keys', `exam:${exam_id}:answers:${user_exam_id}`);
 
             // Simpan log monitoring
             const monitoringData = {
@@ -556,6 +574,11 @@ const INTERNAL_KEY = key;
 
 async function processBatchSync() {
     try {
+        // M4: Cek apakah ada data dulu — skip cepat jika kosong
+        const queueLen = await redis.llen('exam:monitorings_queue');
+        const answerKeysCount = await redis.scard('exam:answer-keys');
+        if (queueLen === 0 && answerKeysCount === 0) return;
+
         // Ambil semua monitoring log
         const monitoringsRaw = await redis.lrange('exam:monitorings_queue', 0, -1);
         if (monitoringsRaw.length > 0) {
@@ -563,8 +586,8 @@ async function processBatchSync() {
         }
         const monitorings = monitoringsRaw.map(r => JSON.parse(r));
 
-        // Ambil kunci-kunci jawaban yang ada
-        const answerKeys = await redis.keys('exam:*:answers:*');
+        // M1: Gunakan SMEMBERS (O(1) non-blocking) — bukan KEYS (O(N) blocking)
+        const answerKeys = await redis.smembers('exam:answer-keys');
         let allAnswers = [];
 
         for (const aKey of answerKeys) {
@@ -573,6 +596,11 @@ async function processBatchSync() {
                 allAnswers.push(JSON.parse(answersHash[qId]));
             }
             await redis.del(aKey);
+        }
+
+        // Hapus Set setelah diproses
+        if (answerKeys.length > 0) {
+            await redis.del('exam:answer-keys');
         }
 
         if (allAnswers.length === 0 && monitorings.length === 0) return;
@@ -605,7 +633,7 @@ async function processBatchSync() {
     }
 }
 
-// Jalankan setiap 5 detik agar skor lebih real-time
+// M4: Jalankan setiap 5 detik (bisa disesuaikan)
 setInterval(processBatchSync, 5000);
 
 server.listen(port, '0.0.0.0');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QuestionGroupRequest;
 use App\Services\QuestionGroupService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
@@ -213,6 +214,21 @@ class QuestionGroupController extends Controller
             return $this->successResponse($result['data'], $result['message']);
         }
 
+        return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
+    }
+
+    /**
+     * Copy/duplicate question group with all its questions and options
+     *
+     * @param string $id
+     * @return JsonResponse
+     */
+    public function copyGroup(string $id): JsonResponse
+    {
+        $result = $this->questionGroupService->copyGroup($id);
+        if ($result['success']) {
+            return $this->successResponse($result['data'], $result['message'], 201);
+        }
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
     }
 

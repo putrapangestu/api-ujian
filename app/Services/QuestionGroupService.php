@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Question;
 use App\Models\QuestionGroup;
+use App\Models\QuestionOption;
 use App\Repositories\QuestionGroupRepositoryInterface;
 use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\DB;
@@ -184,6 +186,68 @@ class QuestionGroupService extends BaseService
             } catch (\Exception $e) {
                 DB::rollBack();
                 return $this->errorResponse('Gagal update grup soal: ' . $e->getMessage());
+            }
+        });
+    }
+
+    /**
+     * Copy/duplicate question group with all its questions and options
+     *
+     * @param string $id
+     * @return array
+     */
+    public function copyGroup(string $id): array
+    {
+        return DB::transaction(function () use ($id) {
+            try {
+                $originalGroup = QuestionGroup::with('questions.options')->findOrFail($id);
+
+                // 1. Clone question group
+                $newGroup = QuestionGroup::create([
+                    'name' => "Copy of {$originalGroup->name}",
+                    'description' => $originalGroup->description,
+                    'code' => $originalGroup->code . '_copy_' . uniqid(),
+                    'question_category_id' => $originalGroup->question_category_id,
+                    'display_question_count' => $originalGroup->display_question_count,
+                    'number_start' => null,
+                    'number_end' => null,
+                    'status' => 'draft',
+                ]);
+
+                // 2. Clone each question + its options
+                foreach ($originalGroup->questions as $question) {
+                    $newQuestion = Question::create([
+                        'question_group_id' => $newGroup->id,
+                        'category_id' => $question->category_id,
+                        'question_text' => $question->question_text,
+                        'question_type' => $question->question_type,
+                        'score' => $question->score,
+                        'correct_answer' => $question->correct_answer,
+                        'image_path' => $question->image_path,
+                    ]);
+
+                    foreach ($question->options as $option) {
+                        QuestionOption::create([
+                            'question_id' => $newQuestion->id,
+                            'option_text' => $option->option_text,
+                            'is_correct' => $option->is_correct,
+                            'score' => $option->score,
+                            'option_label' => $option->option_label,
+                        ]);
+                    }
+                }
+
+                // 3. Update total questions
+                $newGroup->updateTotalQuestions();
+
+                // 4. Load relationships
+                $newGroup->loadMissing('questions.options', 'questionCategory');
+
+                return $this->successResponse($newGroup, 'Grup soal berhasil diduplikasi', 201);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return $this->errorResponse('Gagal menduplikasi grup soal: ' . $e->getMessage());
             }
         });
     }

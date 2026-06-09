@@ -188,6 +188,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/question-groups', [QuestionGroupController::class, 'store'])->name('admin.question-groups.store');
         Route::put('/question-groups/{id}', [QuestionGroupController::class, 'update'])->name('admin.question-groups.update');
         Route::delete('/question-groups/{id}', [QuestionGroupController::class, 'destroy'])->name('admin.question-groups.destroy');
+        Route::post('/question-groups/{id}/copy', [QuestionGroupController::class, 'copyGroup'])
+            ->name('admin.question-groups.copy');
 
         // User management
         Route::get('/users/all', [UserController::class, 'listAll'])->name('admin.users.all');

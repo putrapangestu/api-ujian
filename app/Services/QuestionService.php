@@ -140,6 +140,16 @@ class QuestionService extends BaseService
                     $data['question_category_id'] = $questionGroup->question_category_id;
                 }
 
+                // Check for duplicate question text in same group
+                if (isset($data['question_group_id']) && $data['question_group_id']) {
+                    $exists = Question::where('question_group_id', $data['question_group_id'])
+                        ->where('question_text', $data['question_text'])
+                        ->exists();
+                    if ($exists) {
+                        return $this->errorResponse('Soal dengan teks yang sama sudah ada dalam grup ini');
+                    }
+                }
+
                 $createData = $data;
                 unset($createData['options']);
                 $question = Question::create($createData);
@@ -183,6 +193,17 @@ class QuestionService extends BaseService
                 $question = Question::find($id);
                 if (! $question) {
                     return $this->errorResponse('Soal tidak ditemukan', null, 404);
+                }
+
+                // Check for duplicate question text in same group (exclude self)
+                if (isset($data['question_group_id']) && $data['question_group_id']) {
+                    $exists = Question::where('question_group_id', $data['question_group_id'])
+                        ->where('question_text', $data['question_text'])
+                        ->where('id', '!=', $id)
+                        ->exists();
+                    if ($exists) {
+                        return $this->errorResponse('Soal dengan teks yang sama sudah ada dalam grup ini');
+                    }
                 }
 
                 // Check if we need to version the question
@@ -532,6 +553,17 @@ class QuestionService extends BaseService
                         'image_path'        => null, // gambar sudah di-embed di question_text
                         'options'           => $optionsData,
                     ];
+
+                    // Check for duplicate question text in the same group
+                    if ($finalQuestionGroupId) {
+                        $exists = Question::where('question_group_id', $finalQuestionGroupId)
+                            ->where('question_text', $questionText)
+                            ->exists();
+                        if ($exists) {
+                            $errors[] = "Baris $rowNumber: Soal dengan teks yang sama sudah ada dalam grup ini";
+                            continue;
+                        }
+                    }
 
                     $result = $this->createQuestion($questionData);
 

@@ -73,7 +73,7 @@ class ExamService extends BaseService
 
             $examIds = $exams->pluck('id');
 
-            $groupsByExam = DB::table('user_exams')
+            $groupsByExam = UserExam::query()
                 ->whereIn('user_exams.exam_id', $examIds)
                 ->join('users', 'users.id', '=', 'user_exams.user_id')
                 ->join('students', 'students.user_id', '=', 'users.id')

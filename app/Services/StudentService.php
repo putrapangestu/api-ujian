@@ -8,6 +8,7 @@ use App\Repositories\StudentGroupRepositoryInterface;
 use App\Repositories\UserRepositoryInterface;
 use App\Helpers\ResponseHelper;
 use App\Models\UserExam;
+use App\Models\Exam;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -151,6 +152,13 @@ class StudentService extends BaseService
                 $query->whereDate('start_time', '<=', $filters['end_date']);
             }
 
+            // Filter by exam type (pretest/skd)
+            if (!empty($filters['exam_type'])) {
+                $query->whereHas('exam', function ($q) use ($filters) {
+                    $q->where('exam_type', $filters['exam_type']);
+                });
+            }
+
             $perPage = $filters['per_page'] ?? 10;
             $userExams = $query->orderBy('start_time', 'desc')->paginate($perPage);
 
@@ -181,6 +189,7 @@ class StudentService extends BaseService
                     'exam_history_id' => $userExam->id,
                     'exam_id' => $userExam->exam_id,
                     'exam_name' => $userExam->exam->title ?? 'Unknown Exam',
+                    'exam_type' => $userExam->exam->exam_type ?? 'skd',
                     'start_time' => $userExam->start_time,
                     'end_time' => $userExam->end_time,
                     'status' => $userExam->status,
@@ -377,9 +386,21 @@ class StudentService extends BaseService
                 $averageScore = round($completedExams->avg('score') ?? 0, 2);
             }
 
+            // Hitung rata-rata per tipe ujian
+            $skdExams = $completedExams->where('exam.exam_type', Exam::EXAM_TYPE_SKD);
+            $pretestExams = $completedExams->where('exam.exam_type', Exam::EXAM_TYPE_PRETEST);
+
             $studentData = $student->toArray();
             $studentData['total_exam_completed'] = $totalExamCompleted;
             $studentData['average_score'] = $averageScore;
+            $studentData['average_score_skd'] = $skdExams->count() > 0
+                ? round($skdExams->avg('score') ?? 0, 2)
+                : 0;
+            $studentData['average_score_pretest'] = $pretestExams->count() > 0
+                ? round($pretestExams->avg('score') ?? 0, 2)
+                : 0;
+            $studentData['total_exam_completed_skd'] = $skdExams->count();
+            $studentData['total_exam_completed_pretest'] = $pretestExams->count();
 
             return $this->successResponse($studentData, 'Detail siswa berhasil diambil');
 

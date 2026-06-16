@@ -322,6 +322,7 @@ class ExamService extends BaseService
                     'duration' => $originalExam->duration,
                     'total_questions' => $originalExam->total_questions,
                     'passing_score' => $originalExam->passing_score,
+                    'exam_type' => $originalExam->exam_type ?? Exam::EXAM_TYPE_SKD,
                     'start_date' => null,
                     'end_date' => null,
                 ]);
@@ -800,8 +801,10 @@ class ExamService extends BaseService
                     'total_questions' => $answers->count(),
                     'answered_questions' => $answeredCount,
                     'correct_answers' => $answers->where('is_correct', true)->count(),
+                    'wrong_answers' => $answers->where('is_correct', false)->whereNotNull('answer')->count(),
                     'total_score' => (int) $answers->sum('score'),
                     'category_scores' => $categoryScores,
+                    'exam_type' => $userExam->exam->exam_type ?? 'skd',
                 ],
             ], 'Detail riwayat ujian berhasil diambil');
         } catch (\Exception $e) {

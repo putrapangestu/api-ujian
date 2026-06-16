@@ -33,6 +33,9 @@ class Exam extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
+    public const EXAM_TYPE_PRETEST = 'pretest';
+    public const EXAM_TYPE_SKD = 'skd';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -44,6 +47,7 @@ class Exam extends Model
         'duration',
         'total_questions',
         'passing_score',
+        'exam_type',
         'start_date',
         'end_date',
     ];
@@ -59,6 +63,7 @@ class Exam extends Model
             'duration' => 'integer',
             'total_questions' => 'integer',
             'passing_score' => 'integer',
+            'exam_type' => 'string',
             'start_date' => 'datetime',
             'end_date' => 'datetime',
         ];

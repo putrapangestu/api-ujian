@@ -28,12 +28,15 @@ class ExamRequest extends BaseRequest
             'duration' => 'required|integer|min:1|max:300',
             'total_questions' => 'nullable',
             'passing_score' => 'required|integer|min:0|max:100',
+            'exam_type' => 'nullable|string|in:pretest,skd',
             'start_date' => 'nullable|date|after_or_equal:now',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'question_groups' => 'nullable|array',
             'question_groups.*' => 'exists:question_groups,id',
             'student_groups' => 'nullable|array',
             'student_groups.*' => 'exists:student_groups,id',
+            'students' => 'nullable|array',
+            'students.*' => 'string|exists:students,id',
         ];
 
         // Jika update, validasi tanggal bisa lebih fleksibel
@@ -58,10 +61,12 @@ class ExamRequest extends BaseRequest
             'duration' => 'Durasi (menit)',
             'total_questions' => 'Jumlah Soal',
             'passing_score' => 'Nilai Kelulusan',
+            'exam_type' => 'Tipe Ujian',
             'start_date' => 'Tanggal Mulai',
             'end_date' => 'Tanggal Berakhir',
             'question_groups' => 'Grup Soal',
             'student_groups' => 'Grup Siswa',
+            'students' => 'Siswa',
         ];
     }
 

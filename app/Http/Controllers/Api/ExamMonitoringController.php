@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\ExamMonitoringService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Redis;
 use OpenApi\Attributes as OA;
 
 /**
@@ -36,6 +37,7 @@ class ExamMonitoringController extends Controller
     /**
      * Get list of active (ongoing) exams for monitoring
      *
+     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     #[OA\Get(
@@ -44,9 +46,12 @@ class ExamMonitoringController extends Controller
         tags: ["Exam Monitoring"],
         responses: [new OA\Response(response: 200, description: "Success")]
     )]
-    public function getActiveExams()
+    public function getActiveExams(Request $request)
     {
-        $result = $this->examMonitoringService->getActiveExams();
+        $filters = $request->only(['search']);
+        $perPage = (int) $request->get('per_page', 10);
+
+        $result = $this->examMonitoringService->getActiveExams($filters, $perPage);
 
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
@@ -272,6 +277,9 @@ class ExamMonitoringController extends Controller
             return $this->errorResponse($result['message'] ?? 'Gagal menghentikan ujian', 400);
         }
 
+        // Hapus data Redis agar tidak stale
+        $this->cleanupRedisState($userExam);
+
         // Broadcast force submit ke student via socket
         app(\App\Services\SocketIOService::class)->emitEvent(
             'admin-action',
@@ -369,6 +377,9 @@ class ExamMonitoringController extends Controller
                 'score' => 0
             ]);
 
+            // Hapus data Redis agar tidak stale
+            $this->cleanupRedisState($userExam);
+
             // Broadcast reset ke student via socket jika sedang online
             app(\App\Services\SocketIOService::class)->emitEvent(
                 'admin-action',
@@ -379,5 +390,32 @@ class ExamMonitoringController extends Controller
 
             return $this->successResponse(null, 'Ujian berhasil direset.');
         });
+    }
+
+    /**
+     * Hapus data Redis yang berkaitan dengan user_exam.
+     * Mencegah data stale jika student reconnect setelah di-force submit / reset.
+     */
+    private function cleanupRedisState(\App\Models\UserExam $userExam): void
+    {
+        try {
+            $examId = $userExam->exam_id;
+            $userExamId = $userExam->id;
+            $studentId = $userExam->student_id;
+
+            // Hapus state participant di hash exam:{examId}:state
+            Redis::hdel("exam:{$examId}:state", $userExamId);
+
+            // Hapus jawaban cache di exam:{examId}:answers:{userExamId}
+            Redis::del("exam:{$examId}:answers:{$userExamId}");
+
+            // Hapus reverse mapping student_id → user_exam_id
+            Redis::del("exam_map:{$studentId}:{$examId}");
+
+            // Hapus dari set answer-keys
+            Redis::srem('exam:answer-keys', "exam:{$examId}:answers:{$userExamId}");
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Gagal cleanup Redis: ' . $e->getMessage());
+        }
     }
 }

@@ -34,6 +34,10 @@ const maxBodyBytesRaw = Number.parseInt(process.env.SOCKET_IO_MAX_BODY_BYTES ?? 
 const maxBodyBytes = Number.isFinite(maxBodyBytesRaw) && maxBodyBytesRaw > 0 ? maxBodyBytesRaw : 1048576;
 const EVENT_RE = /^[a-zA-Z0-9:_-]{1,64}$/;
 const ROOM_RE = /^[a-zA-Z0-9:_-]{1,128}$/;
+const examRooms = new Set();
+const lastHeartbeatEmit = new Map();
+const CHUNK_SIZE = 100;
+const HEARTBEAT_RATE_LIMIT_MS = 3000;
 
 function nowIso() {
     return new Date().toISOString();
@@ -196,9 +200,12 @@ io.use((socket, next) => {
     }
 });
 
-// Timer for periodic exam:tick broadcast
+// Timer for periodic exam:tick broadcast — per exam room, not global
 setInterval(() => {
-    io.emit('exam:tick', { serverTime: Date.now() });
+    const now = Date.now();
+    for (const room of examRooms) {
+        io.to(room).emit('exam:tick', { serverTime: now });
+    }
 }, 1000);
 
 // Admin Namespace
@@ -254,6 +261,7 @@ io.on('connection', (socket) => {
 
     if (examId) {
         socket.join(`exam:${examId}`);
+        examRooms.add(`exam:${examId}`);
     }
 
     if (studentId) {
@@ -342,6 +350,14 @@ io.on('connection', (socket) => {
                 socket_id: socket.id
             };
             await redis.hset(`exam:${exam_id}:state`, user_exam_id, JSON.stringify(state));
+            // Simpan reverse mapping student_id → user_exam_id untuk disconnect handler
+            await redis.set(`exam_map:${student_id}:${exam_id}`, user_exam_id, 'EX', 86400);
+
+            // Rate limit heartbeat emit: minimal 3 detik antar emit per student
+            const now = Date.now();
+            const lastEmit = lastHeartbeatEmit.get(student_id) || 0;
+            if (now - lastEmit < HEARTBEAT_RATE_LIMIT_MS) return;
+            lastHeartbeatEmit.set(student_id, now);
 
             // Karena data categories & totalScore sekarang diproses oleh Laravel setiap bulk sync,
             // Kita cukup meng-update timeRemaining & status saja via Socket secara real-time.
@@ -405,6 +421,9 @@ io.on('connection', (socket) => {
         const room = payload?.room;
         if (typeof room === 'string' && ROOM_RE.test(room)) {
             socket.join(room);
+            if (room.startsWith('exam:')) {
+                examRooms.add(room);
+            }
             if (clients.has(socket.id)) {
                 const clientData = clients.get(socket.id);
                 clients.set(socket.id, { ...clientData, rooms: Array.from(socket.rooms) });
@@ -417,10 +436,20 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('leave', (payload) => {
+    socket.on('leave', async (payload) => {
         const room = payload?.room;
         if (typeof room === 'string' && ROOM_RE.test(room)) {
             socket.leave(room);
+            if (room.startsWith('exam:')) {
+                try {
+                    const roomSockets = await io.in(room).fetchSockets();
+                    if (roomSockets.length === 0) {
+                        examRooms.delete(room);
+                    }
+                } catch (e) {
+                    log('warn', { event: 'leave_room_cleanup_error', room, message: e.message });
+                }
+            }
             if (clients.has(socket.id)) {
                 const clientData = clients.get(socket.id);
                 clients.set(socket.id, { ...clientData, rooms: Array.from(socket.rooms) });
@@ -548,24 +577,36 @@ io.on('connection', (socket) => {
             });
             // Update online status in Redis
             if (studentId) {
-                redis.hget(`exam:${examId}:state`, studentId).then(stateStr => {
-                    if (stateStr) {
-                        const state = JSON.parse(stateStr);
-                        state.status = 'offline';
-                        state.last_seen = nowIso();
-                        redis.hset(`exam:${examId}:state`, studentId, JSON.stringify(state));
-                        io.to(`exam:${examId}`).emit('exam:progress_update', {
-                            id: studentId,
-                            update: {
-                                status: 'offline',
-                                last_seen: state.last_seen
+                // Cari user_exam_id dari reverse mapping (disimpan saat heartbeat)
+                redis.get(`exam_map:${studentId}:${examId}`).then(userExamId => {
+                    if (userExamId) {
+                        redis.hget(`exam:${examId}:state`, userExamId).then(stateStr => {
+                            if (stateStr) {
+                                const state = JSON.parse(stateStr);
+                                state.status = 'offline';
+                                state.last_seen = nowIso();
+                                redis.hset(`exam:${examId}:state`, userExamId, JSON.stringify(state));
+                                io.to(`exam:${examId}`).emit('exam:progress_update', {
+                                    id: studentId,
+                                    update: {
+                                        status: 'offline',
+                                        last_seen: state.last_seen
+                                    }
+                                });
                             }
-                        });
+                        }).catch(e => log('error', { event: 'disconnect_redis_error', error: e.message }));
                     }
-                }).catch(e => log('error', { event: 'disconnect_redis_error', error: e.message }));
+                }).catch(e => log('error', { event: 'disconnect_map_error', error: e.message }));
             }
         }
         clients.delete(socket.id);
+        if (examId) {
+            io.in(`exam:${examId}`).fetchSockets().then((sockets) => {
+                if (sockets.length === 0) {
+                    examRooms.delete(`exam:${examId}`);
+                }
+            }).catch(() => {});
+        }
     });
 });
 
@@ -607,26 +648,32 @@ async function processBatchSync() {
 
         log('info', { event: 'batch_sync_start', answers_count: allAnswers.length, monitoring_count: monitorings.length });
 
-        // Kirim HTTP POST ke Laravel
-        const response = await fetch(LARAVEL_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'x-internal-key': INTERNAL_KEY
-            },
-            body: JSON.stringify({
-                answers: allAnswers,
-                monitorings: monitorings
-            })
-        });
+        // Kirim HTTP POST ke Laravel — chunked for large batches
+        const totalChunks = Math.ceil(allAnswers.length / CHUNK_SIZE);
+        for (let i = 0; i < allAnswers.length; i += CHUNK_SIZE) {
+            const chunk = allAnswers.slice(i, i + CHUNK_SIZE);
+            const response = await fetch(LARAVEL_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'x-internal-key': INTERNAL_KEY
+                },
+                body: JSON.stringify({
+                    answers: chunk,
+                    monitorings: i === 0 ? monitorings : []
+                })
+            });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Laravel returned ${response.status}: ${errorText}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Laravel returned ${response.status}: ${errorText}`);
+            }
+
+            log('info', { event: 'batch_sync_chunk_success', chunk: Math.floor(i / CHUNK_SIZE) + 1, total: totalChunks });
         }
 
-        log('info', { event: 'batch_sync_success' });
+        log('info', { event: 'batch_sync_success', total_answers: allAnswers.length, chunks: totalChunks });
 
     } catch (error) {
         log('error', { event: 'batch_sync_failed', message: error.message, laravel_api_url: LARAVEL_API_URL });

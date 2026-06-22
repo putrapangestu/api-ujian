@@ -69,6 +69,10 @@ class ExamService extends BaseService
                 $query->where('status', $filters['status']);
             }
 
+            if (isset($filters['exam_type'])) {
+                $query->where('exam_type', $filters['exam_type']);
+            }
+
             $exams = $query->paginate($perPage);
 
             $examIds = $exams->pluck('id');
@@ -714,6 +718,29 @@ class ExamService extends BaseService
                 $query->where('status', $filters['status']);
             }
 
+            // Search by exam title
+            if (!empty($filters['search'])) {
+                $search = $filters['search'];
+                $query->whereHas('exam', function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%");
+                });
+            }
+
+            // Filter by date range
+            if (!empty($filters['start_date'])) {
+                $query->whereDate('created_at', '>=', $filters['start_date']);
+            }
+            if (!empty($filters['end_date'])) {
+                $query->whereDate('created_at', '<=', $filters['end_date']);
+            }
+
+            // Filter by exam type (pretest/skd)
+            if (!empty($filters['exam_type'])) {
+                $query->whereHas('exam', function ($q) use ($filters) {
+                    $q->where('exam_type', $filters['exam_type']);
+                });
+            }
+
             $userExams = $query
                 ->orderByDesc('created_at')
                 ->paginate($perPage);
@@ -889,13 +916,13 @@ class ExamService extends BaseService
                     return $this->errorResponse('Ujian untuk user ini tidak ditemukan atau belum dimulai', null, 404);
                 }
 
-                // if ($userExam->isCompleted()) {
-                //     return $this->errorResponse('Ujian sudah diselesaikan sebelumnya');
-                // }
+                if ($userExam->isCompleted()) {
+                    return $this->errorResponse('Ujian sudah diselesaikan sebelumnya');
+                }
 
-                // if (!$userExam->isInProgress()) {
-                //     return $this->errorResponse('Ujian belum dimulai', null, 400);
-                // }
+                if (!$userExam->isInProgress()) {
+                    return $this->errorResponse('Ujian belum dimulai', null, 400);
+                }
 
                 $processed = 0;
                 $invalidQuestions = [];

@@ -142,7 +142,7 @@ class StudentController extends Controller
     )]
     public function getExamHistory(Request $request, $id)
     {
-        $filters = $request->only(['search', 'start_date', 'end_date', 'per_page']);
+        $filters = $request->only(['search', 'start_date', 'end_date', 'per_page', 'exam_type']);
         $result = $this->studentService->getStudentExamHistory($id, $filters);
 
         if ($result['success']) {

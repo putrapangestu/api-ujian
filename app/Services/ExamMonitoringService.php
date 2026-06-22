@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\ResponseHelper;
 use App\Models\Exam;
 use App\Models\ExamMonitoring;
 use App\Models\Question;
@@ -51,29 +52,37 @@ class ExamMonitoringService extends BaseService
      *
      * @return array
      */
-    public function getActiveExams(): array
+    public function getActiveExams(array $filters = [], int $perPage = 10): array
     {
         try {
             $now = \Carbon\Carbon::now();
-            $exams = \App\Models\Exam::where('start_date', '<=', $now)
+            $query = \App\Models\Exam::where('start_date', '<=', $now)
                 ->where('end_date', '>=', $now)
-                ->withCount('userExams as participant_count')
-                ->orderBy('start_date', 'desc')
-                ->get()
-                ->map(function ($exam) {
-                    return [
-                        'id' => $exam->id,
-                        'title' => $exam->title,
-                        'description' => $exam->description,
-                        'start_date' => $exam->start_date,
-                        'end_date' => $exam->end_date,
-                        'duration' => $exam->duration,
-                        'participant_count' => $exam->participant_count,
-                        'status' => 'ongoing'
-                    ];
-                });
+                ->withCount('userExams as participant_count');
 
-            return $this->successResponse($exams, 'Daftar ujian aktif berhasil diambil');
+            if (!empty($filters['search'])) {
+                $search = $filters['search'];
+                $query->where('title', 'like', "%{$search}%");
+            }
+
+            $exams = $query->orderBy('start_date', 'desc')
+                ->paginate($perPage);
+
+            // Transform items while preserving paginator
+            $exams->getCollection()->transform(function ($exam) {
+                return [
+                    'id' => $exam->id,
+                    'title' => $exam->title,
+                    'description' => $exam->description,
+                    'start_date' => $exam->start_date,
+                    'end_date' => $exam->end_date,
+                    'duration' => $exam->duration,
+                    'participant_count' => $exam->participant_count,
+                    'status' => 'ongoing'
+                ];
+            });
+
+            return ResponseHelper::paginate($exams, 'Daftar ujian aktif berhasil diambil');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('ExamMonitoringService getActiveExams Error: ' . $e->getMessage());
             return $this->errorResponse('Gagal mengambil daftar ujian aktif: ' . $e->getMessage());

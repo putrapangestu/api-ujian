@@ -66,7 +66,7 @@ class ExamController extends Controller
     )]
     public function index(Request $request)
     {
-        $filters = $request->only(['search', 'status']);
+        $filters = $request->only(['search', 'status', 'exam_type']);
         $perPage = (int) $request->get('per_page', 15);
         $result = $this->examService->getAllExams($filters, $perPage);
 
@@ -116,7 +116,7 @@ class ExamController extends Controller
     )]
     public function history(Request $request)
     {
-        $filters = $request->only(['status']);
+        $filters = $request->only(['status', 'search', 'start_date', 'end_date', 'exam_type']);
         $perPage = (int) $request->get('per_page', 15);
         $userId = $request->user()->id;
 

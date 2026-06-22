@@ -218,16 +218,30 @@ class StudentService extends BaseService
 
     public function getStudentExamSummary(string $id) {
         try {
-            $userExam = UserExam::selectRaw('
-                count(*) as total_exam,
-                SUM(score) as total_score,
-                COUNT(CASE WHEN status = "completed" THEN 1 END) as completed_exam_count,
-                SUM(CASE WHEN status = "completed" THEN score ELSE 0 END) as completed_score_count
-            ')
-            ->where('user_id', $id)
-            ->first();
+            $userExams = UserExam::where('user_id', $id)
+                ->with('exam')
+                ->get();
 
-            return $this->successResponse($userExam, "Berhasil mengambil summary ujian");
+            $completedExams = $userExams->where('status', UserExam::STATUS_COMPLETED);
+            $skdExams = $completedExams->where('exam.exam_type', Exam::EXAM_TYPE_SKD);
+            $pretestExams = $completedExams->where('exam.exam_type', Exam::EXAM_TYPE_PRETEST);
+
+            $data = [
+                'total_exam' => $userExams->count(),
+                'total_score' => (int) $userExams->sum('score'),
+                'completed_exam_count' => $completedExams->count(),
+                'completed_score_count' => (int) $completedExams->sum('score'),
+                'average_score_skd' => $skdExams->count() > 0
+                    ? round($skdExams->avg('score') ?? 0, 2)
+                    : 0,
+                'average_score_pretest' => $pretestExams->count() > 0
+                    ? round($pretestExams->avg('score') ?? 0, 2)
+                    : 0,
+                'total_exam_completed_skd' => $skdExams->count(),
+                'total_exam_completed_pretest' => $pretestExams->count(),
+            ];
+
+            return $this->successResponse($data, "Berhasil mengambil summary ujian");
         } catch (\Exception $e) {
             return $this->errorResponse('Gagal mengambil summary ujian: ' . $e->getMessage());
         }

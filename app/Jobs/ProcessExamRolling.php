@@ -17,10 +17,10 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * ProcessExamRolling Job
- * 
+ *
  * Job ini menangani rolling student yang mengikuti ujian
  * Membuat user_exam dan user_answer untuk setiap student dengan soal yang random
- * 
+ *
  * @package App\Jobs
  * @author Development Team
  * @version 1.0.0
@@ -68,11 +68,11 @@ class ProcessExamRolling implements ShouldQueue
                     ->first();
 
                 if ($existingUserExam) {
-                    Log::info('Student already has user_exam for this exam', [
-                        'exam_id' => $this->exam->id,
-                        'student_id' => $this->student->id,
-                        'user_exam_id' => $existingUserExam->id,
-                    ]);
+                    // Log::info('Student already has user_exam for this exam', [
+                    //     'exam_id' => $this->exam->id,
+                    //     'student_id' => $this->student->id,
+                    //     'user_exam_id' => $existingUserExam->id,
+                    // ]);
                     return;
                 }
 
@@ -87,11 +87,11 @@ class ProcessExamRolling implements ShouldQueue
                     'end_time' => null,
                 ]);
 
-                Log::info('User exam created', [
-                    'user_exam_id' => $userExam->id,
-                    'exam_id' => $this->exam->id,
-                    'student_id' => $this->student->id,
-                ]);
+                // Log::info('User exam created', [
+                //     'user_exam_id' => $userExam->id,
+                //     'exam_id' => $this->exam->id,
+                //     'student_id' => $this->student->id,
+                // ]);
 
                 // Get all questions for this exam
                 $examQuestions = QuestionExam::where('exam_id', $this->exam->id)
@@ -103,10 +103,10 @@ class ProcessExamRolling implements ShouldQueue
                     throw new \Exception('No questions found for this exam');
                 }
 
-                Log::info('Found exam questions', [
-                    'exam_id' => $this->exam->id,
-                    'question_count' => $examQuestions->count(),
-                ]);
+                // Log::info('Found exam questions', [
+                //     'exam_id' => $this->exam->id,
+                //     'question_count' => $examQuestions->count(),
+                // ]);
 
                 // Generate random order for this student
                 $shuffledQuestions = $examQuestions->shuffle();
@@ -128,30 +128,30 @@ class ProcessExamRolling implements ShouldQueue
                         'question_number' => $examQuestion->question_number, // Original question number
                     ]);
 
-                    Log::debug('User answer created', [
-                        'user_exam_id' => $userExam->id,
-                        'question_id' => $question->id,
-                        'question_order' => $index + 1,
-                        'question_number' => $examQuestion->question_number,
-                    ]);
+                    // Log::debug('User answer created', [
+                    //     'user_exam_id' => $userExam->id,
+                    //     'question_id' => $question->id,
+                    //     'question_order' => $index + 1,
+                    //     'question_number' => $examQuestion->question_number,
+                    // ]);
                 }
 
-                Log::info('Exam rolling completed successfully', [
-                    'exam_id' => $this->exam->id,
-                    'student_id' => $this->student->id,
-                    'user_exam_id' => $userExam->id,
-                    'total_questions' => $examQuestions->count(),
-                ]);
+                // Log::info('Exam rolling completed successfully', [
+                //     'exam_id' => $this->exam->id,
+                //     'student_id' => $this->student->id,
+                //     'user_exam_id' => $userExam->id,
+                //     'total_questions' => $examQuestions->count(),
+                // ]);
 
             });
 
         } catch (\Exception $e) {
-            Log::error('Error in exam rolling job', [
-                'exam_id' => $this->exam->id,
-                'student_id' => $this->student->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            // Log::error('Error in exam rolling job', [
+            //     'exam_id' => $this->exam->id,
+            //     'student_id' => $this->student->id,
+            //     'error' => $e->getMessage(),
+            //     'trace' => $e->getTraceAsString(),
+            // ]);
 
             // Re-throw the exception to mark job as failed
             throw $e;

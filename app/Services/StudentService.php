@@ -174,13 +174,13 @@ class StudentService extends BaseService
                 $userExam->load(['userAnswers.question.category']);
 
                 foreach ($userExam->userAnswers as $answer) {
-                    $categoryCode = strtolower($answer->question?->category?->code ?? '');
+                    $categoryCode = strtoupper($answer->question?->category?->code ?? '');
 
-                    if (str_contains($categoryCode, 'twk')) {
+                    if ($categoryCode === 'TWK') {
                         $scoreTwk += $answer->score;
-                    } elseif (str_contains($categoryCode, 'tiu')) {
+                    } elseif ($categoryCode === 'TIU') {
                         $scoreTiu += $answer->score;
-                    } elseif (str_contains($categoryCode, 'tkp')) {
+                    } elseif ($categoryCode === 'TKP') {
                         $scoreTkp += $answer->score;
                     }
                 }
@@ -324,13 +324,13 @@ class StudentService extends BaseService
                 $userExam->load(['userAnswers.question.category']);
 
                 foreach ($userExam->userAnswers as $answer) {
-                    $categoryCode = strtolower($answer->question?->category?->code ?? '');
+                    $categoryCode = strtoupper($answer->question?->category?->code ?? '');
 
-                    if (str_contains($categoryCode, 'twk')) {
+                    if ($categoryCode === 'TWK') {
                         $scoreTwk += $answer->score;
-                    } elseif (str_contains($categoryCode, 'tiu')) {
+                    } elseif ($categoryCode === 'TIU') {
                         $scoreTiu += $answer->score;
-                    } elseif (str_contains($categoryCode, 'tkp')) {
+                    } elseif ($categoryCode === 'TKP') {
                         $scoreTkp += $answer->score;
                     }
                 }

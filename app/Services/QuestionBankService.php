@@ -570,6 +570,15 @@ class QuestionBankService extends BaseService
         }
 
         $questionText = trim($row[0]);
+
+        // Auto-detect LaTeX equation: jika ada $...$ atau $$...$$,
+        // pastikan tidak diubah oleh PhpSpreadsheet.
+        // PhpSpreadsheet membaca cell sebagai string, jadi $ dan \ akan tetap ada.
+        // KaTeX akan render LaTeX di frontend.
+        if (preg_match('/\$\$.+?\$\$|\$.+?\$/s', $questionText)) {
+            // LaTeX detected — biarkan apa adanya
+        }
+
         $questionTypeLabel = trim($row[1]);
         $categoryName = trim($row[2] ?? '');
         $score = trim($row[3] ?? '1');
@@ -1088,6 +1097,43 @@ class QuestionBankService extends BaseService
             }
         }
 
+        // Add Info sheet with LaTeX instructions
+        $infoSheet = $spreadsheet->createSheet();
+        $infoSheet->setTitle('Info');
+        $infoSheet->setCellValue('A1', 'Petunjuk Pengisian Template Import Soal');
+        $infoSheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+
+        $infoSheet->setCellValue('A3', 'Format Kolom:');
+        $infoSheet->getStyle('A3')->getFont()->setBold(true);
+        $infoSheet->setCellValue('A4', 'A: Teks Soal (wajib) — bisa mengandung equation LaTeX');
+        $infoSheet->setCellValue('A5', 'B: Tipe Soal — Pilihan Ganda / Checkbox (Banyak Pilihan) / Essay / Benar/Salah');
+        $infoSheet->setCellValue('A6', 'C: Kategori — TWK / TIU / TKP');
+        $infoSheet->setCellValue('A7', 'D: Skor Soal — angka, default 1');
+        $infoSheet->setCellValue('A8', 'E: Jawaban Benar — A/B/C/D/E');
+        $infoSheet->setCellValue('A9', 'F: Grup Soal — harus sudah ada di sistem');
+        $infoSheet->setCellValue('A10', 'G: No. Gambar Soal — urutan gambar yang di-upload terpisah');
+        $infoSheet->setCellValue('A11', 'H-Q: Opsi A-E beserta Skornya');
+
+        $infoSheet->setCellValue('A13', 'Menggunakan Equation LaTeX:');
+        $infoSheet->getStyle('A13')->getFont()->setBold(true);
+        $infoSheet->setCellValue('A14', 'Anda bisa menulis equation LaTeX langsung di kolom Teks Soal atau Opsi.');
+        $infoSheet->setCellValue('A15', 'Gunakan $...$ untuk inline equation, atau $$...$$ untuk display equation.');
+        $infoSheet->setCellValue('A16', 'Contoh:');
+        $infoSheet->setCellValue('A17', '  Integral: $\int_0^1 x^2 dx$');
+        $infoSheet->setCellValue('A18', '  Pecahan: $\frac{1}{3}$');
+        $infoSheet->setCellValue('A19', '  Akar: $\sqrt{2}$');
+        $infoSheet->setCellValue('A20', '  Pangkat: $x^2 + y^2 = z^2$');
+        $infoSheet->setCellValue('A21', '  Persamaan baris baru: $$\sum_{i=1}^{n} x_i$$');
+
+        $infoSheet->setCellValue('A23', 'Catatan Penting:');
+        $infoSheet->getStyle('A23')->getFont()->setBold(true);
+        $infoSheet->setCellValue('A24', '- Equation akan dirender oleh KaTeX di frontend.');
+        $infoSheet->setCellValue('A25', '- Pastikan syntax LaTeX sudah benar sebelum import.');
+        $infoSheet->setCellValue('A26', '- Baris kosong akan menghentikan proses import.');
+        $infoSheet->setCellValue('A27', '- Untuk soal dengan gambar, upload gambar terpisah dan isi nomor urut di kolom G.');
+
+        $infoSheet->getColumnDimension('A')->setAutoSize(true);
+
         // Apply validation to rows 2 to 1000
         for ($i = 2; $i <= 1000; $i++) {
             $sheet->getCell('B' . $i)->setDataValidation(clone $validationType);
@@ -1130,6 +1176,24 @@ class QuestionBankService extends BaseService
         if (!empty($groups)) {
             $sheet->setCellValue('F3', $groups[0]);
         }
+
+        // Contoh soal dengan equation LaTeX ($...$)
+        $sheet->setCellValue('A4', 'Hitung $\int_0^1 x^2 dx$ adalah ...');
+        $sheet->setCellValue('B4', 'Pilihan Ganda');
+        $sheet->setCellValue('C4', 'TIU');
+        $sheet->setCellValue('D4', '1');
+        $sheet->setCellValue('E4', 'A');
+        if (!empty($groups)) {
+            $sheet->setCellValue('F4', $groups[0]);
+        }
+        $sheet->setCellValue('H4', '$\frac{1}{3}$');
+        $sheet->setCellValue('I4', '1');
+        $sheet->setCellValue('J4', '$\frac{1}{4}$');
+        $sheet->setCellValue('K4', '0');
+        $sheet->setCellValue('L4', '$\frac{1}{2}$');
+        $sheet->setCellValue('M4', '0');
+        $sheet->setCellValue('N4', '$1$');
+        $sheet->setCellValue('O4', '0');
 
         // Set fixed row height for better image UX
         for ($i = 2; $i <= 1000; $i++) {

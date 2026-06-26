@@ -480,13 +480,13 @@ class ExamService extends BaseService
                 $scoreTkp = 0;
 
                 foreach ($userExam->userAnswers as $answer) {
-                    $categoryCode = strtolower($answer->question?->questionGroup?->questionCategory?->code ?? '');
+                    $categoryCode = strtoupper($answer->question?->questionGroup?->questionCategory?->code ?? '');
 
-                    if (str_contains($categoryCode, 'twk')) {
+                    if ($categoryCode === 'TWK') {
                         $scoreTwk += $answer->score;
-                    } elseif (str_contains($categoryCode, 'tiu')) {
+                    } elseif ($categoryCode === 'TIU') {
                         $scoreTiu += $answer->score;
-                    } elseif (str_contains($categoryCode, 'tkp')) {
+                    } elseif ($categoryCode === 'TKP') {
                         $scoreTkp += $answer->score;
                     }
                 }
@@ -623,13 +623,13 @@ class ExamService extends BaseService
                 $scoreTkp = 0;
 
                 foreach ($userExam->userAnswers as $answer) {
-                    $categoryCode = strtolower($answer->question?->questionGroup?->questionCategory?->code ?? '');
+                    $categoryCode = strtoupper($answer->question?->questionGroup?->questionCategory?->code ?? '');
 
-                    if (str_contains($categoryCode, 'twk')) {
+                    if ($categoryCode === 'TWK') {
                         $scoreTwk += $answer->score;
-                    } elseif (str_contains($categoryCode, 'tiu')) {
+                    } elseif ($categoryCode === 'TIU') {
                         $scoreTiu += $answer->score;
-                    } elseif (str_contains($categoryCode, 'tkp')) {
+                    } elseif ($categoryCode === 'TKP') {
                         $scoreTkp += $answer->score;
                     }
                 }
@@ -900,7 +900,7 @@ class ExamService extends BaseService
      */
     public function finishExam(string $examId, string $userId, array $questions = []): array
     {
-        Log::info("Jawaban siswa", [$questions]);
+        // Log::info("Jawaban siswa", [$questions]);
         return DB::transaction(function () use ($examId, $userId, $questions) {
             try {
                 $exam = $this->examRepository->find($examId);
@@ -1013,23 +1013,22 @@ class ExamService extends BaseService
 
                         // Accumulate scores per category
                         if ($category) {
-                            if (!isset($categoryScores[$category->id])) {
-                                $categoryScores[$category->id] = [
-                                    'category_name' => $category->code,
-                                    'total_score' => 0,
-                                    'correct_count' => 0,
-                                    'wrong_count' => 0,
-                                    'unanswered_count' => 0,
+                            $categoryCode = strtoupper($category->code ?? 'OTHER');
+                            if (!isset($categoryScores[$categoryCode])) {
+                                $categoryScores[$categoryCode] = [
+                                    'score' => 0,
+                                    'correct' => 0,
+                                    'wrong' => 0,
                                 ];
                             }
 
-                            $categoryScores[$category->id]['total_score'] += $score;
+                            $categoryScores[$categoryCode]['score'] += $score;
                             if ($questionOptionIdInput === null && $answerText === null) {
-                                $categoryScores[$category->id]['unanswered_count']++;
+                                // Unanswered — tidak masuk correct/wrong
                             } elseif ($isCorrect) {
-                                $categoryScores[$category->id]['correct_count']++;
+                                $categoryScores[$categoryCode]['correct']++;
                             } else {
-                                $categoryScores[$category->id]['wrong_count']++;
+                                $categoryScores[$categoryCode]['wrong']++;
                             }
                         }
 
@@ -1080,11 +1079,17 @@ class ExamService extends BaseService
                     }
                 }
 
-                $totalScore = (int) $userExam->userAnswers()->sum('score');
+                // HITUNG TOTAL dari accumulated categoryScores
+                $totalScore = 0;
+                foreach ($categoryScores as $cs) {
+                    $totalScore += $cs['score'];
+                }
 
+                // Update user_exam dengan computed total
                 $userExam->update([
                     'end_time' => Carbon::now(),
                     'score' => $totalScore,
+                    'current_score' => $totalScore,
                     'status' => UserExam::STATUS_COMPLETED,
                 ]);
 

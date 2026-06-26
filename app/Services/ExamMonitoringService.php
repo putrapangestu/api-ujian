@@ -99,7 +99,7 @@ class ExamMonitoringService extends BaseService
      */
     public function processBulkSync(array $answers, array $monitorings, array $cheatCounters): array
     {
-        Log::info("ExamMonitoringService processBulkSync ", [$answers]);
+        // Log::info("ExamMonitoringService processBulkSync ", [$answers]);
         return DB::transaction(function () use ($answers, $monitorings, $cheatCounters) {
             try {
                 // 2. Process Answers (Update or Insert manual — tanpa upsert)
@@ -112,7 +112,7 @@ class ExamMonitoringService extends BaseService
 
                         // Verifikasi jawaban dengan kunci jawaban
                         $question = Question::with('options')->find($answer['question_id']);
-                        Log::info("question ", [$question]);
+                        // Log::info("question ", [$question]);
                         if ($question) {
                             if ($question->question_type === Question::TYPE_MULTIPLE_CHOICE || $question->question_type === Question::TYPE_TRUE_FALSE || $question->question_type === Question::TYPE_SINGLE_CHOICE) {
                                 // Pilihan ganda, question_option_id bisa dari field 'question_option_id' atau 'answer'
@@ -123,7 +123,7 @@ class ExamMonitoringService extends BaseService
                                     $isCorrect = true;
                                     $score = $correctOption->score ?? 1;
                                 }
-                                Log::info("masuk check benar / salah", [$isCorrect, $score]);
+                                // Log::info("masuk check benar / salah", [$isCorrect, $score]);
                             } else {
                                 // Essay
                                 $isCorrect = true; // Essay perlu dinilai manual nanti
@@ -136,7 +136,7 @@ class ExamMonitoringService extends BaseService
                             ->where('question_id', $answer['question_id'])
                             ->first();
 
-                        Log::info("Check data jawaban ujian user ", [$existing]);
+                        // Log::info("Check data jawaban ujian user ", [$existing]);
 
                         if ($existing) {
                             // Update jawaban yang sudah ada
@@ -172,11 +172,14 @@ class ExamMonitoringService extends BaseService
                 // 3. Recalculate current_score
                 $updatedScores = [];
                 foreach ($userExamIds as $userExamId) {
+                    $userExamStatus = UserExam::where('id', $userExamId)->value('status');
                     $totalScore = (int) \App\Models\UserAnswer::where('user_exam_id', $userExamId)->sum('score');
-                    UserExam::where('id', $userExamId)->update(['current_score' => $totalScore, 'score' => $totalScore]);
+                    if ($userExamStatus !== \App\Models\UserExam::STATUS_COMPLETED) {
+                        UserExam::where('id', $userExamId)->update(['current_score' => $totalScore, 'score' => $totalScore]);
+                    }
                     $updatedScores[$userExamId] = $totalScore;
                 }
-                Log::info("updatedScores ", [$updatedScores]);
+                // Log::info("updatedScores ", [$updatedScores]);
 
                 // 4. (Optional) Process Cheat Counters if needed to DB
                 // Saat ini cheat dihandle realtime, bisa ditambahkan jika ingin persistensi.
@@ -212,16 +215,16 @@ class ExamMonitoringService extends BaseService
 
                 if (!empty($userExamIds)) {
                     $aggregates = \App\Models\UserAnswer::whereIn('user_answers.user_exam_id', $userExamIds)
-                        ->join('questions', 'user_answers.question_id', '=', 'questions.id')
-                        ->join('question_groups', 'questions.question_group_id', '=', 'question_groups.id')
-                        ->join('question_categories', 'question_groups.question_category_id', '=', 'question_categories.id')
+                        ->leftJoin('questions', 'user_answers.question_id', '=', 'questions.id')
+                        ->leftJoin('question_groups', 'questions.question_group_id', '=', 'question_groups.id')
+                        ->leftJoin('question_categories', 'question_groups.question_category_id', '=', 'question_categories.id')
                         ->select(
                             'user_answers.user_exam_id',
-                            'question_categories.code as cat_code',
+                            DB::raw('COALESCE(question_categories.code, \'OTHER\') as cat_code'),
                             DB::raw('SUM(user_answers.score) as total_score'),
                             DB::raw('SUM(CASE WHEN user_answers.answer IS NOT NULL OR user_answers.question_option_id IS NOT NULL THEN 1 ELSE 0 END) as answered_count')
                         )
-                        ->groupBy('user_answers.user_exam_id', 'question_categories.code')
+                        ->groupBy('user_answers.user_exam_id', 'cat_code')
                         ->get();
 
                     foreach ($aggregates as $agg) {
@@ -236,7 +239,7 @@ class ExamMonitoringService extends BaseService
                         ];
                     }
                 }
-                Log::info("answerAggregates ", [$answerAggregates, $userExamIds]);
+                // Log::info("answerAggregates ", [$answerAggregates, $userExamIds]);
 
                 foreach ($updatedScores as $userExamId => $score) {
                     $userExam = UserExam::with(['user.student', 'exam'])->find($userExamId);
@@ -290,6 +293,27 @@ class ExamMonitoringService extends BaseService
                             }
                         }
 
+                        // COMPUTE total dari category scores — konsisten!
+                        $computedTotal = 0;
+                        foreach ($categories as $cat) {
+                            $computedTotal += $cat['score'];
+                        }
+
+                        // LOG jika ada perbedaan dengan DB sum
+                        if ($computedTotal !== (int)$score) {
+                            Log::warning("Score mismatch detected in processBulkSync", [
+                                'user_exam_id' => $userExamId,
+                                'db_sum' => (int)$score,
+                                'category_sum' => $computedTotal,
+                                'diff' => (int)$score - $computedTotal,
+                            ]);
+                        }
+
+                        // Update current_score dengan computedTotal (konsisten dengan categories)
+                        UserExam::where('id', $userExamId)
+                            ->where('status', '!=', \App\Models\UserExam::STATUS_COMPLETED)
+                            ->update(['current_score' => $computedTotal]);
+
                         $status = 'online';
                         if ($userExam->status === \App\Models\UserExam::STATUS_COMPLETED) {
                             $status = 'finished';
@@ -302,7 +326,7 @@ class ExamMonitoringService extends BaseService
                             'update' => [
                                 'timeRemaining' => $timeRemaining,
                                 'categories' => (object) $categories,
-                                'totalScore' => $score,
+                                'totalScore' => $computedTotal,
                                 'status' => $status
                             ]
                         ];
@@ -414,16 +438,16 @@ class ExamMonitoringService extends BaseService
             $answerAggregates = [];
             if (!empty($userExamIds)) {
                 $aggregates = \App\Models\UserAnswer::whereIn('user_answers.user_exam_id', $userExamIds)
-                    ->join('questions', 'user_answers.question_id', '=', 'questions.id')
-                    ->join('question_groups', 'questions.question_group_id', '=', 'question_groups.id')
-                    ->join('question_categories', 'question_groups.question_category_id', '=', 'question_categories.id')
+                    ->leftJoin('questions', 'user_answers.question_id', '=', 'questions.id')
+                    ->leftJoin('question_groups', 'questions.question_group_id', '=', 'question_groups.id')
+                    ->leftJoin('question_categories', 'question_groups.question_category_id', '=', 'question_categories.id')
                     ->select(
                         'user_answers.user_exam_id',
-                        'question_categories.code as cat_code',
+                        DB::raw('COALESCE(question_categories.code, \'OTHER\') as cat_code'),
                         DB::raw('SUM(user_answers.score) as total_score'),
                         DB::raw('SUM(CASE WHEN user_answers.answer IS NOT NULL OR user_answers.question_option_id IS NOT NULL THEN 1 ELSE 0 END) as answered_count')
                     )
-                    ->groupBy('user_answers.user_exam_id', 'question_categories.code')
+                    ->groupBy('user_answers.user_exam_id', 'cat_code')
                     ->get();
 
                 foreach ($aggregates as $agg) {
@@ -503,14 +527,22 @@ class ExamMonitoringService extends BaseService
                 $studentId = $userExam->student_id ?? ($userExam->userOnly->student->id ?? $userExam->user_id);
                 $studentName = $userExam->userOnly->name ?? 'Unknown';
 
+                // COMPUTE totalScore dari category scores — konsisten!
+                $computedTotal = 0;
+                foreach ($categories as $cat) {
+                    $computedTotal += $cat['score'];
+                }
+                // Jika category kosong (belum ada jawaban), fallback ke DB
+                $finalTotalScore = $computedTotal > 0 ? $computedTotal : (int) ($userExam->current_score ?: $userExam->score ?? 0);
+
                 $monitoringData[] = [
                     'id' => $studentId, // frontend expects student uuid as id
                     'user_exam_id' => $userExam->id,
                     'name' => $studentName,
                     'status' => $status,
                     'timeRemaining' => $userExam->status === UserExam::STATUS_IN_PROGRESS || $userExam->status === UserExam::STATUS_PENDING ? $timeRemaining : 0, // Based on FE's note: time_spent replaced by timeRemaining
-                    'totalScore' => (int) ($userExam->current_score ?: $userExam->score ?? 0),
-                    'currentTotalScore' => (int) ($userExam->current_score ?: $userExam->score ?? 0),
+                    'totalScore' => $finalTotalScore,
+                    'currentTotalScore' => $finalTotalScore,
                     'categories' => (object) $categories
                 ];
             }

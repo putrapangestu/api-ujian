@@ -22,7 +22,7 @@ RUN mkdir -p bootstrap/cache storage/framework/{sessions,cache,views} storage/lo
     && chown -R www-data:www-data bootstrap/cache storage
 
 # Install dependencies (production only)
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader --prefer-source
 
 # Expose port
 EXPOSE 9008

@@ -147,19 +147,36 @@ class AuthService extends BaseService
      *
      * @param User $user
      * @param array $data Validated data
+     * @param \Illuminate\Http\UploadedFile|null $avatarFile Avatar file
      * @return array
      */
-    public function updateProfile(User $user, array $data): array
+    public function updateProfile(User $user, array $data, $avatarFile = null): array
     {
         try {
+            // Filter hanya field yang diisi (tidak null/kosong)
+            $updateData = array_filter($data, function ($value) {
+                return $value !== null && $value !== '';
+            });
+
+            // Hash password jika ada
+            if (isset($updateData['password'])) {
+                $updateData['password'] = Hash::make($updateData['password']);
+            }
+
+            // Handle avatar upload
+            if ($avatarFile) {
+                $avatarPath = $avatarFile->store('avatars', 'public');
+                $updateData['avatar'] = $avatarPath;
+            }
+
             // Update user
-            $updated = $this->userRepository->update($user->id, $data);
+            $updated = $this->userRepository->update($user->id, $updateData);
 
             if (!$updated) {
                 return $this->errorResponse('Gagal update profile');
             }
 
-            // Get updated user
+            // Get updated user with fresh data
             $updatedUser = $this->userRepository->find($user->id);
 
             return $this->successResponse($updatedUser, 'Profile berhasil diupdate');

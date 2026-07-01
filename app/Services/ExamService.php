@@ -1015,6 +1015,8 @@ class ExamService extends BaseService
                             $categoryCode = strtoupper($category->code ?? 'OTHER');
                             if (!isset($categoryScores[$categoryCode])) {
                                 $categoryScores[$categoryCode] = [
+                                    'category_name' => $category->name,
+                                    'category_code' => $category->code,
                                     'score' => 0,
                                     'correct' => 0,
                                     'wrong' => 0,

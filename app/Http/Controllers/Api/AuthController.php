@@ -130,9 +130,9 @@ class AuthController extends Controller
         ),
         responses: [new OA\Response(response: 200, description: 'Success')]
     )]
-    public function updateProfile(Request $request)
+    public function updateProfile(\App\Http\Requests\Auth\UpdateProfileRequest $request)
     {
-        $result = $this->authService->updateProfile($request->user(), $request->all());
+        $result = $this->authService->updateProfile($request->user(), $request->validated(), $request->file('avatar'));
 
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);

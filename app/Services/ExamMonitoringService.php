@@ -195,14 +195,11 @@ class ExamMonitoringService extends BaseService
                     //     ->groupBy('question_categories.code')
                     //     ->pluck('total', 'code')
                     //     ->toArray();
-                    $examCategoriesTotal[$examId] = UserAnswer::where('user_answers.user_exam_id', $answer['user_exam_id'])
-                        ->join('questions', 'user_answers.question_id', '=', 'questions.id')
+                    $examCategoriesTotal[$examId] = \App\Models\QuestionExam::where('question_exam.exam_id', $examId)
+                        ->join('questions', 'question_exam.question_id', '=', 'questions.id')
                         ->join('question_groups', 'questions.question_group_id', '=', 'question_groups.id')
                         ->join('question_categories', 'question_groups.question_category_id', '=', 'question_categories.id')
-                        ->select(
-                            'question_categories.code',
-                            DB::raw('COUNT(user_answers.id) as total')
-                        )
+                        ->select('question_categories.code', DB::raw('COUNT(*) as total'))
                         ->groupBy('question_categories.code')
                         ->pluck('total', 'code');
                 }

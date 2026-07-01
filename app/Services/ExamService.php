@@ -698,13 +698,12 @@ class ExamService extends BaseService
                     'exam',
                     'userAnswers' => function ($query) {
                         $query
-                            ->join('questions', 'questions.id', '=', 'user_answers.question_id')
-                            ->join('question_groups', 'question_groups.id', '=', 'questions.question_group_id')
-                            ->join('question_categories', 'question_categories.id', '=', 'question_groups.question_category_id')
-                            ->where('user_answers.score','>',0)
+                            ->leftJoin('questions', 'questions.id', '=', 'user_answers.question_id')
+                            ->leftJoin('question_groups', 'question_groups.id', '=', 'questions.question_group_id')
+                            ->leftJoin('question_categories', 'question_categories.id', '=', 'question_groups.question_category_id')
                             ->selectRaw('
                                 user_answers.user_exam_id,
-                                SUM(user_answers.score) as score,
+                                COALESCE(SUM(user_answers.score), 0) as score,
                                 question_categories.code as category_code
                             ')
                             ->groupBy(

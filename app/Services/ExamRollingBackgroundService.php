@@ -207,11 +207,11 @@ class ExamRollingBackgroundService extends BaseService
                     ProcessExamRolling::dispatch($exam, $student);
                     $dispatchedJobs++;
 
-                    Log::info('Background job dispatched for student', [
-                        'exam_id' => $examId,
-                        'student_id' => $student->id,
-                        'group_id' => $groupId,
-                    ]);
+                    // Log::info('Background job dispatched for student', [
+                    //     'exam_id' => $examId,
+                    //     'student_id' => $student->id,
+                    //     'group_id' => $groupId,
+                    // ]);
 
                 } catch (\Exception $e) {
                     $errors[] = [

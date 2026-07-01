@@ -44,6 +44,15 @@ class AutoSubmitExams extends Command
                 return false;
             }
 
+            if ($userExam->exam->duration < 1) {
+                Log::warning('AutoSubmit: Exam skipped due to invalid duration', [
+                    'user_exam_id' => $userExam->id,
+                    'exam_id' => $userExam->exam_id,
+                    'duration' => $userExam->exam->duration,
+                ]);
+                return false;
+            }
+
             // Expected end time = start time + duration (in minutes)
             $expectedEndTime = Carbon::parse($userExam->start_time)->addMinutes($userExam->exam->duration);
 
@@ -62,6 +71,17 @@ class AutoSubmitExams extends Command
         $failCount = 0;
 
         foreach ($expiredExams as $userExam) {
+            // Log each exam that is about to be auto-submitted for debugging timing
+            $expectedEndTime = Carbon::parse($userExam->start_time)->addMinutes($userExam->exam->duration);
+            Log::info('AutoSubmit: Exam expired', [
+                'user_exam_id' => $userExam->id,
+                'student_id' => $userExam->student_id,
+                'start_time' => $userExam->start_time,
+                'duration' => $userExam->exam->duration,
+                'expected_end' => $expectedEndTime,
+                'now' => Carbon::now(),
+            ]);
+
             try {
                 $exam = $userExam->exam;
 
@@ -123,8 +143,8 @@ class AutoSubmitExams extends Command
 
                 // 3. Kirim event force_submit ke student (untuk redirect halaman user)
                 $socketService->emitEvent(
+                    'exam',
                     'admin-action',
-                    'force_submit',
                     [
                         'action' => 'exam_auto_submitted',
                         'message' => 'Waktu ujian telah habis. Ujian otomatis diselesaikan oleh sistem.',

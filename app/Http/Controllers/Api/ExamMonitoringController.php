@@ -54,7 +54,8 @@ class ExamMonitoringController extends Controller
         $result = $this->examMonitoringService->getActiveExams($filters, $perPage);
 
         if ($result['success']) {
-            return $this->successResponse($result['data'], $result['message']);
+            // return $this->successResponse($result, $result['message']);
+            return response()->json($result, 200);
         }
 
         return $this->errorResponse($result['message'], 400, $result['errors'] ?? null);
@@ -364,7 +365,7 @@ class ExamMonitoringController extends Controller
 
             // Hapus jawaban
             \App\Models\UserAnswer::where('user_exam_id', $userExam->id)->delete();
-            
+
             // Hapus log monitoring
             \App\Models\ExamMonitoring::where('user_exam_id', $userExam->id)->delete();
 
